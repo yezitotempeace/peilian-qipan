@@ -67,10 +67,24 @@ public class XiangqiActivity extends Activity {
     @Override
     public void onConfigurationChanged(Configuration cfg) {
         super.onConfigurationChanged(cfg);
+        screen = Screen.read(this);
         if (UiTheme.dark(this) != dark) {
             dark = UiTheme.dark(this);
             setTheme(UiTheme.style(dark));
             recreate();
+            return;
+        }
+        // 清单声明了 orientation|screenSize，转屏不会重建 Activity ⇒ 自己按新尺寸再算一次
+        if (scroll != null) {
+            scroll.post(this::fitBoardToScreen);
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            fitBoardToScreen();
         }
     }
 
@@ -440,6 +454,9 @@ public class XiangqiActivity extends Activity {
     }
 
     private void fitBoardToScreen() {
+        if (scroll == null || boardView == null || topChrome == null || bottomChrome == null) {
+            return;
+        }
         int availW = scroll.getWidth() - dp(16);
         int availH = scroll.getHeight() - dp(16)
                 - (fullscreen ? 0 : topChrome.getHeight() + bottomChrome.getHeight());

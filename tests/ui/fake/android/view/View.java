@@ -23,6 +23,8 @@ public class View {
     public void setMinimumWidth(int w) {}
     public void invalidate() {}
     public void postInvalidate() {}
+    /** 桩测专用：立即执行（真机上会排到下一帧，测里同步跑更好断言）。 */
+    public void post(Runnable r) { if (r != null) r.run(); }
     public void setFocusable(boolean f) {}
     public void setWillNotDraw(boolean b) {}
     public void requestLayout() {}

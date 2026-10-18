@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -37,6 +38,10 @@ public class JunqiActivity extends Activity {
     private boolean darkTheme;
     private TextView status;
     private JunqiView boardView;
+    private ScrollView scroll;
+    private LinearLayout topChrome;
+    private LinearLayout bottomChrome;
+    private int boardSideW, boardSideH;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -64,7 +69,7 @@ public class JunqiActivity extends Activity {
     }
 
     private void buildUi() {
-        ScrollView scroll = new ScrollView(this);
+        scroll = new ScrollView(this);
         scroll.setBackgroundColor(palette.background);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -72,18 +77,21 @@ public class JunqiActivity extends Activity {
         int pad = dp(8);
         root.setPadding(pad, pad, pad, pad);
 
+        topChrome = new LinearLayout(this);
+        topChrome.setOrientation(LinearLayout.VERTICAL);
         TextView title = new TextView(this);
         title.setText("军　棋");
         title.setTextSize(20f);
         title.setTextColor(palette.text);
         title.setGravity(Gravity.CENTER);
-        root.addView(title);
-
+        topChrome.addView(title);
         status = new TextView(this);
         status.setTextColor(palette.textDim);
         status.setTextSize(13f);
         status.setGravity(Gravity.CENTER);
-        root.addView(status);
+        topChrome.addView(status);
+        root.addView(topChrome, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         boardView = new JunqiView(this);
         boardView.setBoard(board);
@@ -93,11 +101,11 @@ public class JunqiActivity extends Activity {
                 onCellTap(row, col);
             }
         });
-        LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(screen.boardSizeDp(8)));
-        root.addView(boardView, bp);
+        root.addView(boardView, boardParams());
 
-        root.addView(buttonRow(new String[]{"新局", "认输", "难度"},
+        bottomChrome = new LinearLayout(this);
+        bottomChrome.setOrientation(LinearLayout.VERTICAL);
+        bottomChrome.addView(buttonRow(new String[]{"新局", "认输", "难度"},
                 new View.OnClickListener[]{
                         new View.OnClickListener() {
                             public void onClick(View v) {
@@ -118,7 +126,7 @@ public class JunqiActivity extends Activity {
                                 setStatus("难度：" + levelName() + "（下一手生效）");
                             }
                         }}));
-        root.addView(buttonRow(new String[]{"暗棋 / 明棋", "返回"},
+        bottomChrome.addView(buttonRow(new String[]{"暗棋 / 明棋", "返回"},
                 new View.OnClickListener[]{
                         new View.OnClickListener() {
                             public void onClick(View v) {
@@ -133,11 +141,88 @@ public class JunqiActivity extends Activity {
                                 finish();
                             }
                         }}));
+        root.addView(bottomChrome, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         scroll.addView(root);
         Watermark.wrap(this, scroll, palette, 6);
         sync();
         setStatus(dark ? "你执红先走。当前是暗棋。" : "你执红先走。当前是明棋。");
+        // 首帧布局完成后再按真实可用空间算棋盘大小
+        scroll.post(this::fitBoardToScreen);
+    }
+
+    private LinearLayout.LayoutParams boardParams() {
+        int h = boardSideH > 0 ? boardSideH : dp(screen.boardSizeDp(8));
+        int w = boardSideW > 0 ? boardSideW
+                : Math.max(dp(90), Math.round(h * (JunqiBoard.COLS - 1f) / (JunqiBoard.ROWS - 1f)));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(w, h);
+        lp.gravity = Gravity.CENTER_HORIZONTAL;
+        return lp;
+    }
+
+    /** 按可用空间定棋盘宽高：5×12 的格子是正方形 ⇒ 视图宽高比 = 4:11。 */
+    private void fitBoardToScreen() {
+        if (scroll == null || boardView == null || topChrome == null || bottomChrome == null) {
+            return;
+        }
+        int availW = scroll.getWidth() - dp(16);
+        int availH = scroll.getHeight() - topChrome.getHeight() - bottomChrome.getHeight() - dp(16);
+        if (availW <= 0 || availH <= 0) {
+            return;
+        }
+        float spanX = JunqiBoard.COLS - 1f;
+        float spanY = JunqiBoard.ROWS - 1f;
+        int h = Math.min(availH, Math.round(availW * spanY / spanX));
+        int w = Math.round(h * spanX / spanY);
+        int minW = dp(90);
+        if (w < minW) {
+            w = minW;
+            h = Math.round(w * spanY / spanX);
+        }
+        if (w == boardSideW && h == boardSideH) {
+            return;
+        }
+        boardSideW = w;
+        boardSideH = h;
+        ViewGroup.LayoutParams lp = boardView.getLayoutParams();
+        if (lp instanceof LinearLayout.LayoutParams) {
+            lp.width = w;
+            lp.height = h;
+            ((LinearLayout.LayoutParams) lp).gravity = Gravity.CENTER_HORIZONTAL;
+            boardView.setLayoutParams(lp);
+            boardView.requestLayout();
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(android.content.res.Configuration cfg) {
+        super.onConfigurationChanged(cfg);
+        screen = Screen.read(this);
+        if (UiTheme.dark(this) != darkTheme) {
+            recreate();
+            return;
+        }
+        // 清单声明了 orientation|screenSize ⇒ 转屏不重建，自己按新尺寸重算
+        if (scroll != null) {
+            scroll.post(this::fitBoardToScreen);
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            fitBoardToScreen();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (UiTheme.dark(this) != darkTheme) {
+            recreate();
+        }
     }
 
     private boolean[] hiddenArray() {

@@ -72,7 +72,7 @@ Peilian Qipan is an Android board-game practice app. It bundles four games — G
 
 Download from Releases (about 122 MB, bundling the three KataGo networks and the Rapfi engine):
 
-https://github.com/yezitotempeace/peilian-qipan/releases/tag/v170
+https://github.com/yezitotempeace/peilian-qipan/releases/tag/v171
 
 ## 构建 / Build
 
@@ -94,4 +94,4 @@ bash run_tests.sh  # 运行测试 / runs the test suite
 
 ## 版本 / Version
 
-v170 · versionCode 170 · versionName 1.20261018.170
+v171 · versionCode 171 · versionName 1.20261018.171

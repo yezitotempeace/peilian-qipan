@@ -69,6 +69,30 @@ public class XiangqiProbe {
         call(a, "resign");
         chk("认输先弹确认框（清空后确实新弹了框）", true, anyEvent("dialog"));
         chk("确认框里没把棋盘判终局", false, ((XiangqiBoard) get(a, "board")).gameOver());
+
+        // ⑳ 屏幕自适应：按真实可用空间定边长；转屏后要重算（清单声明了 configChanges，页面不会重建）
+        XiangqiActivity z = newPage();
+        Object zScroll = get(z, "scroll");
+        callInherited(zScroll, "fakeSize", new Class<?>[]{int.class, int.class}, 1080, 1920);
+        callInherited(get(z, "topChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 300, 300);
+        callInherited(get(z, "bottomChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 300, 600);
+        call(z, "onWindowFocusChanged", new Class<?>[]{boolean.class}, Boolean.TRUE);
+        android.view.ViewGroup.LayoutParams zlp =
+                (android.view.ViewGroup.LayoutParams) callInherited(get(z, "boardView"), "getLayoutParams", new Class<?>[]{});
+        int zdp16 = ((Integer) call(z, "dp", new Class<?>[]{int.class}, 16)).intValue();
+        int wantPortrait = Math.min(1080 - zdp16, 1920 - 300 - 600 - zdp16);
+        chk("自适应：竖屏棋盘边长 = min(可用宽, 可用高)", wantPortrait, zlp.width);
+        chk("自适应：竖屏棋盘是正方形", zlp.width, zlp.height);
+
+        // 横屏：宽高互换、顶栏/底栏变矮 ⇒ 边长必须跟着变小
+        callInherited(zScroll, "fakeSize", new Class<?>[]{int.class, int.class}, 1920, 1080);
+        callInherited(get(z, "topChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 1920, 200);
+        callInherited(get(z, "bottomChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 1920, 400);
+        call(z, "onConfigurationChanged", new Class<?>[]{android.content.res.Configuration.class}, new android.content.res.Configuration());
+        zlp = (android.view.ViewGroup.LayoutParams) callInherited(get(z, "boardView"), "getLayoutParams", new Class<?>[]{});
+        int wantLandscape = Math.min(1920 - zdp16, 1080 - 200 - 400 - zdp16);
+        chk("自适应：转横屏后按新尺寸重算", wantLandscape, zlp.width);
+        chk("自适应：横屏棋盘也不超过可用高度", true, zlp.width <= 1080 - 200 - 400 - zdp16);
     }
 
     static XiangqiActivity newPage() throws Exception {
@@ -150,6 +174,21 @@ public class XiangqiProbe {
         java.lang.reflect.Method m = o.getClass().getDeclaredMethod(name, types);
         m.setAccessible(true);
         return m.invoke(o, args);
+    }
+
+    /** 调父类里声明的方法（桩测的 View.fakeSize 在基类上）。 */
+    static Object callInherited(Object o, String name, Class<?>[] types, Object... args) throws Exception {
+        Class<?> c = o.getClass();
+        while (c != null) {
+            try {
+                java.lang.reflect.Method m = c.getDeclaredMethod(name, types);
+                m.setAccessible(true);
+                return m.invoke(o, args);
+            } catch (NoSuchMethodException e) {
+                c = c.getSuperclass();
+            }
+        }
+        throw new NoSuchMethodException(name);
     }
 
     static java.lang.reflect.Field field(Class<?> c, String n) throws Exception {
