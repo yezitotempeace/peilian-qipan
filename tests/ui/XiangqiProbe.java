@@ -70,6 +70,21 @@ public class XiangqiProbe {
         chk("认输先弹确认框（清空后确实新弹了框）", true, anyEvent("dialog"));
         chk("确认框里没把棋盘判终局", false, ((XiangqiBoard) get(a, "board")).gameOver());
 
+        // ⑲b 彩蛋：快档赢了不显示，普通/强档赢了才显示
+        for (int lv = XiangqiAI.FAST; lv <= XiangqiAI.STRONG; lv++) {
+            XiangqiActivity eg = newPage();
+            set(eg, "level", Integer.valueOf(lv));
+            android.os.FakeLog.clear();
+            call(eg, "showEndDialog", new Class<?>[]{String.class, boolean.class}, "红胜", Boolean.TRUE);
+            boolean egg = false;
+            for (String e : android.os.FakeLog.EVENTS) {
+                if (e.startsWith("dialog.view:")) {
+                    egg = true;
+                }
+            }
+            chk("象棋难度 " + lv + " 赢了彩蛋显示=" + (lv != XiangqiAI.FAST), true, egg == (lv != XiangqiAI.FAST));
+        }
+
         // ⑳ 屏幕自适应：布局完成后再算；转屏按真机顺序（onConfigurationChanged 先到、layout 在后）
         XiangqiActivity z = newPage();
         Object zScroll = get(z, "scroll");
@@ -115,6 +130,7 @@ public class XiangqiProbe {
         set(a, "resources", new android.content.res.Resources(new android.content.res.Configuration(), new android.util.DisplayMetrics()));
         call(a, "onCreate", new Class<?>[]{android.os.Bundle.class}, new android.os.Bundle());
         set(a, "alive", false);      // 关掉 AI 回调，避免线程干扰断言
+        ((XiangqiView) get(a, "boardView")).setAnimationsEnabled(false);   // 探针只测静态绘制
         return a;
     }
 

@@ -156,6 +156,7 @@ public class XiangqiActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
         boardView = new XiangqiView(this);
+        boardView.setAnimationsEnabled(true);
         boardView.setPalette(palette);
         boardView.setBoard(board);
         boardView.setOnIntersectionTap(new XiangqiView.OnIntersectionTap() {
@@ -334,7 +335,7 @@ public class XiangqiActivity extends Activity {
                     @Override
                     public void onClick(DialogInterface d, int w) {
                         setStatus("你认输了。");
-                        showEndDialog("你认输了。");
+                        showEndDialog("你认输了。", false);
                     }
                 })
                 .setNegativeButton("继续下", null)
@@ -453,10 +454,10 @@ public class XiangqiActivity extends Activity {
     private void finishGame() {
         String text = board.resultString();
         setStatus(text);
-        showEndDialog(text);
+        showEndDialog(text, board.winner() == XiangqiBoard.RED);
     }
 
-    private void showEndDialog(final String text) {
+    private void showEndDialog(final String text, boolean humanWon) {
         AlertDialog.Builder b = new AlertDialog.Builder(this)
                 .setTitle("对局结束")
                 .setMessage(text)
@@ -473,6 +474,9 @@ public class XiangqiActivity extends Activity {
                     }
                 })
                 .setCancelable(true);
+        if (humanWon && WinEgg.eggAllowed(level, XiangqiAI.FAST)) {
+            b.setView(WinEgg.buildBody(this));
+        }
         b.show();
     }
 

@@ -716,7 +716,7 @@ public class GomokuActivity extends android.app.Activity {
                     }
                 })
                 .setCancelable(true);
-        if (humanWon) {
+        if (humanWon && WinEgg.eggAllowed(level, LocalGomokuAI.FAST)) {
             b.setView(WinEgg.buildBody(this));
         }
         b.show();
@@ -758,6 +758,7 @@ public class GomokuActivity extends android.app.Activity {
         topChrome.addView(status, paramsLine());
 
         boardView = new GomokuView(this);
+        boardView.setAnimationsEnabled(true);
         boardView.setOnIntersectionTap(new GomokuView.OnIntersectionTap() {
             @Override
             public void onTap(int point) {

@@ -28,6 +28,11 @@ public class JunqiView extends View {
     private int lastTo = -1;
     private boolean inputEnabled = true;
     private OnCellTap tapListener;
+    private boolean animationsEnabled;
+    private boolean animActive;
+    private long animStart;
+    private int animFrom = -1;
+    private int animTo = -1;
 
     private final Paint bg = new Paint();
     private final Paint cellFill = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -87,9 +92,27 @@ public class JunqiView extends View {
     public void setHidden(boolean[] h) { hidden = h; invalidate(); }
     public void setSelected(int row, int col) { selected = (board == null || row < 0) ? -1 : row * cols + col; invalidate(); }
     public void setLegalPoints(int[] points) { legal = points; invalidate(); }
+    public void setAnimationsEnabled(boolean on) { animationsEnabled = on; }
+
     public void setLastMove(int fromRow, int fromCol, int toRow, int toCol) {
-        lastFrom = (fromRow < 0) ? -1 : fromRow * cols + fromCol;
-        lastTo = (fromRow < 0) ? -1 : toRow * cols + toCol;
+        int nf = (fromRow < 0) ? -1 : fromRow * cols + fromCol;
+        int nt = (fromRow < 0) ? -1 : toRow * cols + toCol;
+        boolean changed = nf != lastFrom || nt != lastTo;
+        lastFrom = nf;
+        lastTo = nt;
+        if (!changed) {
+            // 同一步（点选/刷新）不重播，否则每点一下棋子上一手都会回退再滑
+            invalidate();
+            return;
+        }
+        if (animationsEnabled && fromRow >= 0 && toRow >= 0) {
+            animFrom = lastFrom;
+            animTo = lastTo;
+            animStart = System.currentTimeMillis();
+            animActive = true;
+        } else {
+            animActive = false;
+        }
         invalidate();
     }
     public void setInputEnabled(boolean on) { inputEnabled = on; invalidate(); }
@@ -161,10 +184,18 @@ public class JunqiView extends View {
             }
         }
 
-        // 棋子：宽 0.84 格、高 0.70 格（相邻棋子之间留缝）
+        // 棋子：宽 0.84 格、高 0.70 格（相邻棋子之间留缝）；走子时滑过去
+        int animPoint = -1;
+        float animP = 1f;
+        if (animActive) {
+            animP = AnimMath.progress(animStart, System.currentTimeMillis(), AnimMath.MOVE_MS);
+            if (animP >= 1f) {
+                animActive = false;
+            } else {
+                animPoint = animTo;
+            }
+        }
         if (board != null) {
-            float pw = cell * 0.84f, ph = cell * 0.70f, radius = cell * 0.11f;
-            pieceLine.setStrokeWidth(Math.max(1.5f, cell * 0.025f));
             for (int r = 0; r < rows; r++) {
                 for (int c = 0; c < cols; c++) {
                     int color = board.ownerAt(r, c);
@@ -172,34 +203,30 @@ public class JunqiView extends View {
                         continue;
                     }
                     int p = JunqiBoard.idx(r, c);
-                    float x = cx(c), y = cy(r);
-                    boolean back = hidden != null && p < hidden.length && hidden[p];
-                    // 外圈深色边 + 内芯浅色面
-                    pieceLine.setColor(color == JunqiBoard.RED ? 0xFFB71C1C : 0xFF37474F);
-                    face.setStyle(Paint.Style.FILL);
-                    face.setColor(pieceLine.getColor());
-                    RectF outer = new RectF(x - pw / 2f, y - ph / 2f, x + pw / 2f, y + ph / 2f);
-                    canvas.drawRoundRect(outer, radius, radius, face);
-
-                    face.setColor(back
-                            ? 0xFFB0BEC5
-                            : (color == JunqiBoard.RED ? 0xFFFFE3E3 : 0xFFE6ECEF));
-                    RectF inner = new RectF(x - pw * 0.455f, y - ph * 0.44f, x + pw * 0.455f, y + ph * 0.44f);
-                    canvas.drawRoundRect(inner, radius * 0.8f, radius * 0.8f, face);
-
-                    if (back) {
-                        face.setColor(0xFF546E7A);
-                        canvas.drawCircle(x, y, cell * 0.10f, face);
-                    } else {
-                        String label = JunqiBoard.typeName(board.at(r, c));
-                        if (label != null && label.length() > 0) {
-                            text.setColor(color == JunqiBoard.RED ? 0xFFB71C1C : 0xFF263238);
-                            text.setTextSize(cell * 0.32f);
-                            canvas.drawText(label, x, y + cell * 0.113f, text);
-                        }
+                    if (p == animPoint) {
+                        continue;
                     }
+                    boolean back = hidden != null && p < hidden.length && hidden[p];
+                    drawPiece(canvas, cx(c), cy(r), color, board.at(r, c), back);
                 }
             }
+        }
+        if (animPoint >= 0) {
+            float e = AnimMath.easeOut(animP);
+            float x = AnimMath.lerp(cx(animFrom % cols), cx(animTo % cols), e);
+            float y = AnimMath.lerp(cy(animFrom / cols), cy(animTo / cols), e);
+            boolean back = hidden != null && animTo < hidden.length && hidden[animTo];
+            // 只有「走子方最后占了目标格」才滑；撞死/同归于尽只闪一下，别把守方或空格滑过来
+            int mover = board == null ? 0 : JunqiBoard.opponent(board.sideToMove());
+            if (board != null && board.ownerAt(animTo / cols, animTo % cols) == mover) {
+                drawPiece(canvas, x, y, board.ownerAt(animTo / cols, animTo % cols), board.at(animTo / cols, animTo % cols), back);
+            }
+            // 吃子闪光
+            float fa = 0.55f * (1f - animP);
+            mark.setColor(((int) (fa * 255) << 24) | 0x00FFB300);
+            mark.setStrokeWidth(Math.max(2f, cell * 0.06f));
+            canvas.drawCircle(cx(animTo % cols), cy(animTo / cols), cell * (0.30f + 0.30f * e), mark);
+            postInvalidateOnAnimation();
         }
 
         if (lastFrom >= 0) {
@@ -215,6 +242,30 @@ public class JunqiView extends View {
             }
         }
         BoardArt.boardEdge(canvas, 0, 0, getWidth(), getHeight());
+    }
+
+    private void drawPiece(Canvas canvas, float x, float y, int color, int type, boolean back) {
+        float pw = cell * 0.84f, ph = cell * 0.70f, radius = cell * 0.11f;
+        pieceLine.setStrokeWidth(Math.max(1.5f, cell * 0.025f));
+        pieceLine.setColor(color == JunqiBoard.RED ? 0xFFB71C1C : 0xFF37474F);
+        face.setStyle(Paint.Style.FILL);
+        face.setColor(pieceLine.getColor());
+        RectF outer = new RectF(x - pw / 2f, y - ph / 2f, x + pw / 2f, y + ph / 2f);
+        canvas.drawRoundRect(outer, radius, radius, face);
+        face.setColor(back ? 0xFFB0BEC5 : (color == JunqiBoard.RED ? 0xFFFFE3E3 : 0xFFE6ECEF));
+        RectF inner = new RectF(x - pw * 0.455f, y - ph * 0.44f, x + pw * 0.455f, y + ph * 0.44f);
+        canvas.drawRoundRect(inner, radius * 0.8f, radius * 0.8f, face);
+        if (back) {
+            face.setColor(0xFF546E7A);
+            canvas.drawCircle(x, y, cell * 0.10f, face);
+        } else {
+            String label = JunqiBoard.typeName(type);
+            if (label != null && label.length() > 0) {
+                text.setColor(color == JunqiBoard.RED ? 0xFFB71C1C : 0xFF263238);
+                text.setTextSize(cell * 0.32f);
+                canvas.drawText(label, x, y + cell * 0.113f, text);
+            }
+        }
     }
 
     private void drawCellRing(Canvas canvas, int p, int color) {

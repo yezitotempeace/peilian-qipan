@@ -28,6 +28,9 @@ public class BoardView extends View {
 
     private Board board;
     private int lastMove = Board.PASS;
+    private boolean animationsEnabled;
+    private boolean animActive;
+    private long animStart;
     private int[] highlight = new int[0];
     private double[] ownership;          // 逐点归属，用于复盘时的形势显示
     private boolean showNumbers = false;
@@ -125,7 +128,13 @@ public class BoardView extends View {
         invalidate();
     }
 
+    public void setAnimationsEnabled(boolean on) { animationsEnabled = on; }
+
     public void setLastMove(int point) {
+        if (animationsEnabled && point >= 0 && point != lastMove) {
+            animStart = System.currentTimeMillis();
+            animActive = true;
+        }
         lastMove = point;
         invalidate();
     }
@@ -272,12 +281,29 @@ public class BoardView extends View {
             canvas.drawCircle(cx, cy, stoneRadius * 0.92f, hintPaint);
         }
 
-        // 棋子
+        // 棋子；新落的一手弹一下
+        float animP = 1f;
+        if (animActive) {
+            animP = AnimMath.progress(animStart, System.currentTimeMillis(), AnimMath.MOVE_MS);
+            if (animP >= 1f) {
+                animActive = false;
+            }
+        }
         for (int i = 0; i < n * n; i++) {
             int v = board.grid[i];
             if (v == Board.EMPTY) continue;
+            if (animActive && i == lastMove) continue;
             float cx = left + (i % n) * spacing, cy = top + (i / n) * spacing;
             drawStone(canvas, cx, cy, v);
+        }
+        if (animActive && lastMove >= 0 && lastMove < n * n && board.grid[lastMove] != Board.EMPTY) {
+            float cx = left + (lastMove % n) * spacing, cy = top + (lastMove / n) * spacing;
+            float scl = 0.55f + 0.45f * AnimMath.easeOut(animP);
+            canvas.save();
+            canvas.scale(scl, scl, cx, cy);
+            drawStone(canvas, cx, cy, board.grid[lastMove]);
+            canvas.restore();
+            postInvalidateOnAnimation();
         }
 
         // 最后一手标记

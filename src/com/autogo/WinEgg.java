@@ -33,6 +33,16 @@ public final class WinEgg {
         return blackWon == (humanColor == Board.BLACK);
     }
 
+    /** 彩蛋只给「普通 / 强」两档（快档不显示）；各棋种用各自的 FAST 常量传进来。 */
+    public static boolean eggAllowed(int level, int fastLevel) {
+        return level != fastLevel;
+    }
+
+    /** 人认输时围棋结果串：赢家永远是人的对手（与「轮到谁」无关）。 */
+    public static String resignResult(int humanColor) {
+        return humanColor == Board.BLACK ? "W+R" : "B+R";
+    }
+
     /** 把彩蛋数字复制到剪贴板，并给一句提示。 */
     public static boolean copy(Activity a) {
         if (a == null) {
@@ -67,6 +77,11 @@ public final class WinEgg {
         android.widget.TextView code = new android.widget.TextView(a);
         code.setText(CODE);
         code.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 26f);
+        // 彩蛋弹出：先小、透明，再放大淡入（只在真的显示彩蛋时走这里）
+        code.setAlpha(0f);
+        code.setScaleX(0.6f);
+        code.setScaleY(0.6f);
+        code.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(AnimMath.EGG_MS).start();
         code.setGravity(android.view.Gravity.CENTER);
         code.setOnClickListener(new android.view.View.OnClickListener() {
             @Override

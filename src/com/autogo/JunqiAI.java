@@ -4,20 +4,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 
 /**
  * 军棋 AI（暗棋/明棋共用）。核心约束：**不得偷看**未暴露的敌子 ——
  * 决策前先把「未暴露的敌子」统一替换成 {@link #UNKNOWN}，因此改变这些棋子的真实兵种
  * 不会改变 AI 的走法（这一条用测试钉住）。
  *
- * <p>三档难度是真的三种算法，不再共用同一个「1 层贪心」：
+ * <p>三档难度是三套算法，快档也保持「能玩」而不是乱走：
  * <ul>
- *   <li>快（FAST）：2/3 概率「见子就吃」（经常一头撞进地雷/炸弹），其余随机走；</li>
- *   <li>普通（NORMAL）：1 层贪心（当前子力差最大）；</li>
- *   <li>强（STRONG）：先算 1 层，取前 24 个候选；已知子按 2 层（对手全部回手）算，
- *       未知子按敌方兵种先验算期望（会避雷/避炸弹/避开大子）。</li>
+ *   <li>快（FAST）：1 层贪心（子力差 + 推进），一步算完就走，速度最快；</li>
+ *   <li>普通（NORMAL）：1 层贪心 + 对未知敌子的期望估值（会避雷/避炸弹/避开大子）；</li>
+ *   <li>强（STRONG）：前 24 个候选做 2 层搜索（对手全部回手），未知子同样按期望估值。</li>
  * </ul>
+ * 三档都会吃 {@link JunqiLearn} 的经验加权（同一份学习库，所有档位共用）。
  */
 public final class JunqiAI {
 
@@ -28,13 +27,13 @@ public final class JunqiAI {
     public static final int NORMAL = 1;
     public static final int STRONG = 2;
 
-    /** 强档看多少个 1 层候选（再逐个模拟对手吃子回手）。 */
-    private static final int STRONG_CANDIDATES = 24;
+    /** 强档看多少个 1 层候选（再逐个模拟对手回手）。 */
+    private static final int STRONG_CANDIDATES = 48;
     /** 终局分（远大于任何子力差）。 */
     private static final int WIN_SCORE = 100000;
 
     private int level = NORMAL;
-    private final Random rnd = new Random();
+    private JunqiLearn learn;
 
     public JunqiAI() {
     }
@@ -47,17 +46,17 @@ public final class JunqiAI {
         return level;
     }
 
-    /** 测试/复盘用：固定快档的随机种子（普通/强档本来就是确定性的）。 */
-    public void setSeed(long seed) {
-        rnd.setSeed(seed);
-    }
-
     public void setLevel(int level) {
         if (level < FAST || level > STRONG) {
             this.level = NORMAL;
         } else {
             this.level = level;
         }
+    }
+
+    /** 学习库：三档共用；传 null 表示关闭学习。 */
+    public void setLearn(JunqiLearn learn) {
+        this.learn = learn;
     }
 
     /** 把棋盘上「不是 color 一方、且没被暴露」的棋子统一换成 {@link #UNKNOWN}。 */
@@ -84,6 +83,11 @@ public final class JunqiAI {
      * @param revealed 长度 = COLS*ROWS；true 表示该格棋子已暴露（双方都看得见）。可为 null（全暗）
      */
     public int[] genmove(JunqiBoard board, int color, boolean[] revealed) {
+        return genmove(board, color, revealed, null);
+    }
+
+    /** 同上；frames 不为 null 时，把这一手的「局面特征」追加进去（学习库用）。 */
+    public int[] genmove(JunqiBoard board, int color, boolean[] revealed, List<String> frames) {
         if (board == null || board.gameOver()) {
             return null;
         }
@@ -92,12 +96,10 @@ public final class JunqiAI {
         if (moves.isEmpty()) {
             return null;
         }
-        if (level == FAST) {
-            return to4(pickFast(view, color, moves));
-        }
-        if (level == STRONG) {
+        boolean[] hidden = null;
+        if (level != FAST) {
             // 只把「哪些敌格还没亮」做成掩码传给搜索；不把 revealed 数组本身交出去（守卫要求）。
-            boolean[] hidden = new boolean[JunqiBoard.COLS * JunqiBoard.ROWS];
+            hidden = new boolean[JunqiBoard.COLS * JunqiBoard.ROWS];
             for (int r = 0; r < JunqiBoard.ROWS; r++) {
                 for (int c = 0; c < JunqiBoard.COLS; c++) {
                     int p = JunqiBoard.idx(r, c);
@@ -108,51 +110,74 @@ public final class JunqiAI {
                     }
                 }
             }
-            return to4(pickStrong(view, color, moves, hidden));
         }
-        return to4(pickNormal(view, color, moves));
+        int[] chosen;
+        if (level == STRONG) {
+            chosen = pickStrong(view, color, moves, hidden);
+        } else if (level == FAST) {
+            chosen = pickFast(view, color, moves);
+        } else {
+            chosen = pickNormal(view, color, moves, hidden);   // 普通档：材料 + 未知子期望
+        }
+        if (frames != null && chosen != null) {
+            frames.add(JunqiLearn.keyFor(view, color, chosen));
+        }
+        return to4(chosen);
     }
 
-    /** 普通档：1 层贪心，分数线相同取先生成的那手。 */
-    private int[] pickNormal(JunqiBoard view, int color, List<int[]> moves) {
+    /** 普通档：1 层贪心 + 对未知敌子的期望（会避雷/避炸弹/避开大子）。 */
+    private int[] pickNormal(JunqiBoard view, int color, List<int[]> moves, boolean[] hidden) {
+        int base = evaluate(view, color);
         int[] best = moves.get(0);
-        int bestScore = score(view, color, best) - repeatPenalty(view, best);
+        int bestValue = valueOfNormal(view, color, moves.get(0), hidden, base);
         for (int i = 1; i < moves.size(); i++) {
             int[] mv = moves.get(i);
-            int s = score(view, color, mv) - repeatPenalty(view, mv);
-            if (s > bestScore) {
-                bestScore = s;
+            int v = valueOfNormal(view, color, mv, hidden, base);
+            if (v > bestValue) {
+                bestValue = v;
                 best = mv;
             }
         }
         return best;
     }
 
-    /** 快档：1/3 概率随便走一步（真会漏着），其余时候 1 层贪心 —— 明显低于普通档。 */
+    private int valueOfNormal(JunqiBoard view, int color, int[] mv, boolean[] hidden, int base) {
+        int tr = JunqiBoard.rowOf(mv[1]);
+        int tc = JunqiBoard.colOf(mv[1]);
+        int at = JunqiBoard.idx(tr, tc);
+        int value;
+        if (hidden != null && hidden[at]) {
+            value = base + expectedAttack(view, color, mv[0], mv[1]);
+        } else {
+            value = base + score(view, color, mv);
+        }
+        return value - repeatPenalty(view, mv) + learnBonus(view, color, mv);
+    }
+
+    /** 快档：1 层贪心（不额外算未知子期望），出手快，但会正常吃子、推进，不再乱走。 */
     private int[] pickFast(JunqiBoard view, int color, List<int[]> moves) {
-        // 快档：2/3 概率优先「见子就吃」（经常一头撞进地雷/炸弹），其余随机走
-        if (rnd.nextInt(3) != 0) {
-            java.util.List<int[]> captures = new ArrayList<int[]>();
-            for (int[] mv : moves) {
-                if (view.ownerAt(JunqiBoard.rowOf(mv[1]), JunqiBoard.colOf(mv[1])) != JunqiBoard.EMPTY) {
-                    captures.add(mv);
-                }
-            }
-            if (!captures.isEmpty()) {
-                return captures.get(rnd.nextInt(captures.size()));
+        int[] best = moves.get(0);
+        int bestValue = score(view, color, best) - repeatPenalty(view, best) + learnBonus(view, color, best);
+        for (int i = 1; i < moves.size(); i++) {
+            int[] mv = moves.get(i);
+            int v = score(view, color, mv) - repeatPenalty(view, mv) + learnBonus(view, color, mv);
+            if (v > bestValue) {
+                bestValue = v;
+                best = mv;
             }
         }
-        return moves.get(rnd.nextInt(moves.size()));
+        return best;
     }
 
     /**
-     * 强档：1 层取前 8 个候选，再看对手**吃子回手**里最坏的那个（2 层，只展开吃子）。
-     * 这样能避开「吃一口、马上被反吃」的亏，比普通档明显强，又不会慢到不能下。
+     * 强档：1 层取前 48 个候选，再看对手全部回手里最坏的那个（2 层）；
+     * 未知子按期望估值；三档都吃学习库加成。
      */
     private int[] pickStrong(JunqiBoard view, int color, List<int[]> moves, boolean[] hidden) {
         List<int[]> scored = new ArrayList<int[]>(moves.size());
         for (int[] mv : moves) {
-            scored.add(new int[]{mv[0], mv[1], score(view, color, mv) - repeatPenalty(view, mv)});
+            scored.add(new int[]{mv[0], mv[1], score(view, color, mv) - repeatPenalty(view, mv)
+                    + learnBonus(view, color, mv)});
         }
         Collections.sort(scored, new Comparator<int[]>() {
             @Override
@@ -168,11 +193,10 @@ public final class JunqiAI {
             int tr0 = JunqiBoard.rowOf(cand[1]);
             int tc0 = JunqiBoard.colOf(cand[1]);
             int at0 = JunqiBoard.idx(tr0, tc0);
-            boolean hiddenEnemy = hidden[at0];
-            if (hiddenEnemy) {
-                // 打未知子：用期望值，别按「排长」硬撞
+            int bonus = learnBonusPoints(view, color, cand[0], cand[1]);
+            if (hidden[at0]) {
                 int ev = evaluate(view, color) + expectedAttack(view, color, cand[0], cand[1])
-                        - repeatPenalty(view, cand);
+                        - repeatPenalty(view, cand) + bonus;
                 if (ev > bestValue) {
                     bestValue = ev;
                     best = cand;
@@ -197,18 +221,46 @@ public final class JunqiAI {
                         v = after.winner() == color ? WIN_SCORE : -WIN_SCORE;
                     } else {
                         v = evaluate(after, color);
+                        // 再往下看一手「我能马上反吃回来吗」（只展开吃子；只给前 12 个候选加深，控制耗时）
+                        for (int[] back : (i < 12 ? after.legalMoves(color) : java.util.Collections.<int[]>emptyList())) {
+                            int btr = JunqiBoard.rowOf(back[1]);
+                            int btc = JunqiBoard.colOf(back[1]);
+                            if (after.ownerAt(btr, btc) == JunqiBoard.EMPTY) {
+                                continue;
+                            }
+                            JunqiBoard after2 = after.copy();
+                            after2.play(JunqiBoard.rowOf(back[0]), JunqiBoard.colOf(back[0]), btr, btc);
+                            int v2;
+                            if (after2.gameOver()) {
+                                v2 = after2.winner() == color ? WIN_SCORE : -WIN_SCORE;
+                            } else {
+                                v2 = evaluate(after2, color);
+                            }
+                            if (v2 > v) {
+                                v = v2;
+                            }
+                        }
                     }
                     if (v < value) {
                         value = v;
                     }
                 }
             }
+            value += bonus;
             if (value > bestValue) {
                 bestValue = value;
                 best = cand;
             }
         }
         return best == null ? moves.get(0) : new int[]{best[0], best[1]};
+    }
+
+    private int learnBonus(JunqiBoard view, int color, int[] mv) {
+        return learn == null ? 0 : learn.bonus(JunqiLearn.keyFor(view, color, mv));
+    }
+
+    private int learnBonusPoints(JunqiBoard view, int color, int from, int to) {
+        return learn == null ? 0 : learn.bonus(JunqiLearn.keyFor(view, color, new int[]{from, to}));
     }
 
     /** legalMoves 用的是 {fromPoint, toPoint}，对外返回 {fr, fc, tr, tc}。 */
@@ -227,7 +279,7 @@ public final class JunqiAI {
         return s;
     }
 
-    /** 从 color 视角看子力差（兵种常量越大越强；军旗/炸弹/地雷按特殊值算）+ 少量推进奖励。 */
+    /** 从 color 视角看子力差 + 少量推进奖励。 */
     public static int evaluate(JunqiBoard board, int color) {
         int sum = 0;
         for (int r = 0; r < JunqiBoard.ROWS; r++) {
@@ -238,7 +290,6 @@ public final class JunqiAI {
                 }
                 int type = board.at(r, c);
                 int v = value(type);
-                // 推进奖励：越靠近对方底线越高（只算能动的子），避免两边的子原地来回蹭
                 if (type != JunqiBoard.MINE && type != JunqiBoard.FLAG && !JunqiBoard.isHq(r, c)) {
                     int depth = owner == JunqiBoard.RED ? (JunqiBoard.ROWS - 1 - r) : r;
                     v += depth * 4;
@@ -247,6 +298,18 @@ public final class JunqiAI {
             }
         }
         return sum;
+    }
+
+    /** 上一手是 A→B，这手又 B→A：来回蹭的惩罚。 */
+    private static int repeatPenalty(JunqiBoard board, int[] mv) {
+        List<int[]> h = board.history();
+        if (h.isEmpty()) {
+            return 0;
+        }
+        int[] last = h.get(h.size() - 1);
+        int lastFrom = JunqiBoard.idx(last[0], last[1]);
+        int lastTo = JunqiBoard.idx(last[2], last[3]);
+        return (mv[0] == lastTo && mv[1] == lastFrom) ? 40 : 0;
     }
 
     /** 敌方 25 子的先验构成（用于「打未知子」的期望值；按位置再过滤地雷/炸弹/军旗）。 */
@@ -258,11 +321,10 @@ public final class JunqiAI {
     private static final int[] PRIOR_COUNTS = {1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 2, 1};
 
     /**
-     * 强档专用：攻击一个「未知敌子」的期望子力收益（用敌方 25 子的先验构成）。
+     * 攻击一个「未知敌子」的期望子力收益（用敌方 25 子的先验构成）。
      * 位置会过滤掉不可能的兵种：军旗只可能在大本营、地雷只在后两排、炸弹不在第一排。
-     * 普通/快档仍按「未知 = 排长」的朴素估值走，会往地雷/炸弹/大子上撞。
      */
-    private static int expectedAttack(JunqiBoard view, int color, int fromPoint, int toPoint) {
+    static int expectedAttack(JunqiBoard view, int color, int fromPoint, int toPoint) {
         int atk = view.at(JunqiBoard.rowOf(fromPoint), JunqiBoard.colOf(fromPoint));
         int tr = JunqiBoard.rowOf(toPoint);
         int tc = JunqiBoard.colOf(toPoint);
@@ -311,18 +373,6 @@ public final class JunqiAI {
             return -value(atk);
         }
         return value(def) - value(atk);
-    }
-
-    /** 上一手是 A→B，这手又 B→A：来回蹭的惩罚（防止 400 手和棋）。 */
-    private static int repeatPenalty(JunqiBoard board, int[] mv) {
-        List<int[]> h = board.history();
-        if (h.isEmpty()) {
-            return 0;
-        }
-        int[] last = h.get(h.size() - 1);
-        int lastFrom = JunqiBoard.idx(last[0], last[1]);
-        int lastTo = JunqiBoard.idx(last[2], last[3]);
-        return (mv[0] == lastTo && mv[1] == lastFrom) ? 40 : 0;
     }
 
     private static int value(int type) {

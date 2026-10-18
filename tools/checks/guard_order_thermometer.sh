@@ -24,9 +24,9 @@ build_and_run() {   # $1=源码根（含 src/ tests/） $2=工作目录
     "$R/src/com/autogo/Board.java" "$R/src/com/autogo/Palette.java" "$R/src/com/autogo/Theme.java" "$R/src/com/autogo/LayoutMath.java" \
     "$R/src/com/autogo/Screen.java" "$R/src/com/autogo/GomokuBoard.java" "$R/src/com/autogo/GomokuEngine.java" \
     "$R/src/com/autogo/GomokuReview.java" "$R/src/com/autogo/LocalGomokuAI.java" "$R/src/com/autogo/RapfiGomokuEngine.java" \
-    "$R/src/com/autogo/GomokuLearn.java" "$R/src/com/autogo/XiangqiBoard.java" \
+    "$R/src/com/autogo/GomokuLearn.java" "$R/src/com/autogo/AnimMath.java" "$R/src/com/autogo/XiangqiBoard.java" \
     "$R/src/com/autogo/XiangqiAI.java" "$R/src/com/autogo/XiangqiReview.java" \
-    "$R/src/com/autogo/JunqiBoard.java" "$R/src/com/autogo/JunqiAI.java" "$R/src/com/autogo/JunqiReveal.java" || return 1
+    "$R/src/com/autogo/JunqiBoard.java" "$R/src/com/autogo/JunqiAI.java" "$R/src/com/autogo/JunqiLearn.java" "$R/src/com/autogo/JunqiReveal.java" || return 1
   "$JAVAC" -encoding UTF-8 -nowarn -cp "$W/fakecls:$W/basecls:$ANDROID_JAR" -d "$W/stubcls" $(find "$R/tests/ui/stub" -name '*.java') || return 1
   "$JAVAC" -encoding UTF-8 -nowarn -cp "$W/fakecls:$W/basecls:$W/stubcls:$ANDROID_JAR" -d "$W/realcls" \
     "$R/src/com/autogo/GomokuActivity.java" "$R/src/com/autogo/GomokuView.java" "$R/src/com/autogo/GomokuReviewActivity.java" \

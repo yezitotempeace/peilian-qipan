@@ -17,6 +17,8 @@ public class Canvas {
     public static final java.util.List<Path> PATHS = new java.util.ArrayList<Path>();
     public void drawPath(Path path, Paint p) { PATHS.add(path); }
     public void save() {}
+    public void scale(float sx, float sy) {}
+    public void scale(float sx, float sy, float px, float py) {}
     public void restore() {}
     public void translate(float dx, float dy) { translateCount++; }
 }

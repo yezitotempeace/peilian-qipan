@@ -45,6 +45,11 @@ public class XiangqiView extends View {
     private int[] legal = new int[0];
     private int lastFrom = -1;
     private int lastTo = -1;
+    private boolean animationsEnabled;
+    private boolean animActive;
+    private long animStart;
+    private int animFrom = -1;
+    private int animTo = -1;
 
     public XiangqiView(Context context) {
         this(context, null);
@@ -110,9 +115,24 @@ public class XiangqiView extends View {
     }
 
     /** 标记上一手（from/to 为 row * COLS + col，负数清掉）。 */
+    public void setAnimationsEnabled(boolean on) { animationsEnabled = on; }
+
     public void setLastMove(int from, int to) {
+        boolean changed = from != lastFrom || to != lastTo;
         lastFrom = from;
         lastTo = to;
+        if (!changed) {
+            invalidate();
+            return;
+        }
+        if (animationsEnabled && from >= 0 && to >= 0) {
+            animFrom = from;
+            animTo = to;
+            animStart = System.currentTimeMillis();
+            animActive = true;
+        } else {
+            animActive = false;
+        }
         invalidate();
     }
 
@@ -204,15 +224,42 @@ public class XiangqiView extends View {
             }
         }
 
+        int animPoint = -1;
+        float animP = 1f;
+        if (animActive) {
+            animP = AnimMath.progress(animStart, System.currentTimeMillis(), AnimMath.MOVE_MS);
+            if (animP >= 1f) {
+                animActive = false;
+            } else {
+                animPoint = animTo;
+            }
+        }
         if (board != null) {
             for (int r = 0; r < XiangqiBoard.ROWS; r++) {
                 for (int c = 0; c < XiangqiBoard.COLS; c++) {
                     int piece = board.at(r, c);
-                    if (piece != 0) {
+                    if (piece != 0 && r * XiangqiBoard.COLS + c != animPoint) {
                         drawDisc(canvas, x(c), y(r), piece);
                     }
                 }
             }
+        }
+        if (animPoint >= 0) {
+            float e = AnimMath.easeOut(animP);
+            int fr = animFrom / XiangqiBoard.COLS, fc = animFrom % XiangqiBoard.COLS;
+            int tr = animTo / XiangqiBoard.COLS, tc = animTo % XiangqiBoard.COLS;
+            float mx = AnimMath.lerp(x(fc), x(tc), e);
+            float my = AnimMath.lerp(y(fr), y(tr), e);
+            int piece = board.at(tr, tc);
+            int mover = board == null ? 0 : XiangqiBoard.opponent(board.sideToMove());
+            if (piece != 0 && XiangqiBoard.colorOf(piece) == mover) {
+                drawDisc(canvas, mx, my, piece);
+            }
+            float fa = 0.55f * (1f - animP);
+            markPaint.setColor(((int) (fa * 255) << 24) | 0x00FFB300);
+            markPaint.setStrokeWidth(Math.max(2f, spacing * 0.07f));
+            canvas.drawCircle(x(tc), y(tr), spacing * (0.30f + 0.30f * e), markPaint);
+            postInvalidateOnAnimation();
         }
 
         // 上一手

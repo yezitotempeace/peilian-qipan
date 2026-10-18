@@ -181,6 +181,7 @@ public class Driver95 {
         a.applicationInfo = new android.content.pm.ApplicationInfo();
         a.applicationInfo.nativeLibraryDir = "/nonexistent";
         call(a, "onCreate", new Class<?>[]{android.os.Bundle.class}, new android.os.Bundle());
+        ((GomokuView) get(a, "boardView")).setAnimationsEnabled(false);   // 探针只测静态绘制
         return a;
     }
 

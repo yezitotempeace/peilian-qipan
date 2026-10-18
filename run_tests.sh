@@ -48,8 +48,9 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/src/com/autogo/XiangqiAI.java" \
    "$PROJ/src/com/autogo/XiangqiReview.java" \
    "$PROJ/src/com/autogo/JunqiBoard.java" \
-   "$PROJ/src/com/autogo/JunqiAI.java" "$PROJ/src/com/autogo/JunqiReveal.java" \
+   "$PROJ/src/com/autogo/JunqiAI.java" "$PROJ/src/com/autogo/JunqiLearn.java" "$PROJ/src/com/autogo/JunqiReveal.java" \
    "$PROJ/src/com/autogo/GomokuLearn.java" \
+   "$PROJ/src/com/autogo/AnimMath.java" \
    "$PROJ/src/com/autogo/RapfiGomokuEngine.java" \
    "$PROJ/tests/BoardTest.java" \
    "$PROJ/tests/GtpTest.java" \
@@ -60,8 +61,9 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/tests/XiangqiTest.java" \
    "$PROJ/tests/XiangqiAITest.java" \
    "$PROJ/tests/XiangqiReviewTest.java" \
+   "$PROJ/tests/AnimMathTest.java" \
    "$PROJ/tests/JunqiTest.java" "$PROJ/tests/JunqiAITest.java" "$PROJ/tests/JunqiRevealTest.java" \
-   "$PROJ/tests/JunqiStrengthTest.java" \
+   "$PROJ/tests/JunqiStrengthTest.java" "$PROJ/tests/JunqiLearnTest.java" \
    "$PROJ/tests/XiangqiTrendTest.java" \
    "$PROJ/tests/RapfiGomokuTest.java" \
    "$OUT/src/"
@@ -81,8 +83,10 @@ java -cp "$OUT/classes" GomokuLearnTest
 java -cp "$OUT/classes" XiangqiTest
 java -cp "$OUT/classes" XiangqiAITest
 java -cp "$OUT/classes" XiangqiReviewTest
+java -cp "$OUT/classes" AnimMathTest
 java -cp "$OUT/classes" JunqiAITest
 java -cp "$OUT/classes" JunqiStrengthTest  # 三档难度强度回归（固定种子，慢约 15 秒）
+java -cp "$OUT/classes" JunqiLearnTest
 java -cp "$OUT/classes" JunqiRevealTest
 java -cp "$OUT/classes" JunqiTest  # 军棋规则（5×12 / 铁路 / 行营 / 战斗 / 胜负）
 java -cp "$OUT/classes" XiangqiTrendTest  # 象棋复盘走势文案 / 未终局前缀
@@ -150,7 +154,7 @@ cp "$PROJ/src/com/autogo/MenuActivity.java" "$PROJ/src/com/autogo/GomokuActivity
    "$PROJ/src/com/autogo/GomokuView.java" \
    "$PROJ/src/com/autogo/GomokuReviewActivity.java" "$PROJ/src/com/autogo/WinrateChartView.java" \
    "$PROJ/src/com/autogo/WinrateBarView.java" "$PROJ/src/com/autogo/UiTheme.java" \
-   "$PROJ/src/com/autogo/Screen.java" "$PROJ/src/com/autogo/GomokuLearn.java" "$PROJ/src/com/autogo/Changelog.java" "$OUT/ui/src/"
+   "$PROJ/src/com/autogo/Screen.java" "$PROJ/src/com/autogo/GomokuLearn.java" "$PROJ/src/com/autogo/Changelog.java" "$PROJ/src/com/autogo/AnimMath.java" "$OUT/ui/src/"
 cp -r "$PROJ/tests/ui/fake/." "$OUT/ui/fake/"
 FAKE_N=$(find "$OUT/ui/fake" -name '*.java' | wc -l)
 if [ "$FAKE_N" -lt 37 ]; then
@@ -169,8 +173,8 @@ javac -encoding UTF-8 -nowarn -d "$OUT/ui/testcls" -cp "$OUT/ui/fakecls:$OUT/ui/
   "$PROJ/tests/ui/Driver95.java" "$PROJ/tests/ui/ViewProbe.java" "$PROJ/tests/ui/ReviewProbe.java" \
   "$PROJ/tests/ui/MenuProbe.java" "$PROJ/tests/ui/XiangqiViewProbe.java" "$PROJ/tests/ui/JunqiViewProbe.java" "$PROJ/tests/ui/JunqiProbe.java" \
   "$PROJ/tests/ui/XiangqiReviewProbe.java" "$PROJ/tests/ui/XiangqiProbe.java" \
-  "$PROJ/tests/ui/WatermarkProbe.java"
-for t in Driver95 ViewProbe ReviewProbe MenuProbe XiangqiViewProbe JunqiViewProbe JunqiProbe XiangqiReviewProbe XiangqiProbe WatermarkProbe; do
+  "$PROJ/tests/ui/WatermarkProbe.java" "$PROJ/tests/ui/WinEggTest.java"
+for t in Driver95 ViewProbe ReviewProbe MenuProbe XiangqiViewProbe JunqiViewProbe JunqiProbe XiangqiReviewProbe XiangqiProbe WatermarkProbe WinEggTest; do
   java -cp "$OUT/ui/fakecls:$OUT/ui/realcls:$OUT/ui/stubcls:$OUT/ui/testcls:$OUT/classes" com.autogo.$t
   rc=$?
   if [ $rc -ne 0 ]; then

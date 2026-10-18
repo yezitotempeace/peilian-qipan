@@ -238,6 +238,35 @@ public class JunqiProbe {
         chk("主题变化重建后 revealed 表没被重置", zRev, countTrue((boolean[]) get(z, "revealed")));
         chk("主题变化走的是原地重建（没有 recreate 清局）", 0, ((Integer) get(z, "recreateCount")).intValue());
 
+        // ⑪ 彩蛋：快档赢了也不显示；普通/强档赢了才显示；学习库所有档位都记
+        for (int lv = JunqiAI.FAST; lv <= JunqiAI.STRONG; lv++) {
+            JunqiActivity eg = newPage();
+            set(eg, "level", Integer.valueOf(lv));
+            JunqiBoard win = new JunqiBoard(true);
+            win.put(1, 1, JunqiBoard.RED, JunqiBoard.COMMANDER);
+            win.put(0, 1, JunqiBoard.BLACK, JunqiBoard.FLAG);
+            win.play(1, 1, 0, 1);
+            set(eg, "board", win);
+            set(eg, "startBoard", win.copy());
+            android.os.FakeLog.clear();
+            call(eg, "finishGame");
+            boolean egg = hasPrefix("dialog.view:");
+            chk("难度 " + lv + " 赢了彩蛋显示=" + (lv != JunqiAI.FAST), true, egg == (lv != JunqiAI.FAST));
+            chk("难度 " + lv + " 结束后写入学习库", true, hasEvent("dialog.msg:", "学习库"));
+        }
+
+        // ⑫ 认输是电脑赢：学习库记 WIN，不是 LOSS（第 112 轮审计 中-1）
+        JunqiActivity rs = newPage();
+        JunqiLearn l0 = (JunqiLearn) get(rs, "learn");
+        int wins0 = l0.wins();
+        int games0 = l0.games();
+        android.os.FakeLog.clear();
+        call(rs, "resign");
+        JunqiLearn l1 = (JunqiLearn) get(rs, "learn");
+        chk("认输后学习库局数 +1", games0 + 1, l1.games());
+        chk("认输记成电脑赢（wins +1）", wins0 + 1, l1.wins());
+        chk("认输弹窗仍写学习库", true, hasEvent("dialog.msg:", "学习库"));
+
         System.out.println("军棋页面探针：PASS " + pass + " / FAIL " + fail);
         if (fail > 0) {
             System.exit(1);
@@ -253,6 +282,7 @@ public class JunqiProbe {
         a.applicationInfo = new android.content.pm.ApplicationInfo();
         a.applicationInfo.nativeLibraryDir = "/nonexistent";
         call(a, "onCreate", new Class<?>[]{android.os.Bundle.class}, new android.os.Bundle());
+        ((JunqiView) get(a, "boardView")).setAnimationsEnabled(false);   // 探针只测静态绘制
         return a;
     }
 
@@ -336,6 +366,15 @@ public class JunqiProbe {
     static String text(JunqiActivity p) throws Exception {
         android.widget.TextView s = (android.widget.TextView) get(p, "status");
         return String.valueOf(s.getText());
+    }
+
+    static boolean hasPrefix(String prefix) {
+        for (String e : android.os.FakeLog.EVENTS) {
+            if (e.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static boolean hasEvent(String prefix, String needle) {

@@ -211,6 +211,7 @@ public class MainActivity extends Activity {
         rootLayout.setPadding(pad, pad, pad, pad);
 
         boardView = new BoardView(this);
+        boardView.setAnimationsEnabled(true);
         boardView.setOnIntersectionTap(this::onIntersectionTap);
         int boardPx = screen.dp(screen.boardSizeDp(8));
         LinearLayout.LayoutParams boardLp = new LinearLayout.LayoutParams(boardPx, boardPx);
@@ -930,13 +931,14 @@ public class MainActivity extends Activity {
     }
 
     private void resign() {
-        if (gameOver) return;
-        int toMove = sideToMove();
-        String winner = toMove == Board.BLACK ? "W+R" : "B+R";
-        finishGame(winner);
+        if (gameOver || autoPlay) return;
+        // 人认输：赢家永远是人的对手；不能看「轮到谁」——
+        // 电脑思考时人点认输，轮到的是电脑，按旧写法会把赢家判成人（第 112 轮审计 中-2）。
+        finishGame(WinEgg.resignResult(humanColor));
     }
 
     private void finishGame(String forcedResult) {
+        boolean wasAutoPlay = autoPlay;
         // 终局之后不该再有引擎落子落地：把在飞的那次搜索作废。
         // 不作废的话，认输时正在跑的搜索回来会把一颗子加到已经终局的盘面上；
         // 更麻烦的是 startGameReview 拍快照时是 N 手、之后变成 N+1 手，
@@ -968,7 +970,8 @@ public class MainActivity extends Activity {
             setInfo("棋谱保存失败：" + e.getMessage());
         }
         refreshStatus();
-        if (WinEgg.goHumanWon(result, humanColor)) {
+        if (!wasAutoPlay && WinEgg.goHumanWon(result, humanColor)) {
+            // 自动对弈没有「人」，不弹彩蛋（第 112 轮审计 中-2）
             WinEgg.showWin(this);
         }
         startGameReview(result);

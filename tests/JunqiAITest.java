@@ -1,5 +1,6 @@
 import com.autogo.JunqiAI;
 import com.autogo.JunqiBoard;
+import com.autogo.JunqiLearn;
 
 public class JunqiAITest {
 
@@ -105,25 +106,33 @@ public class JunqiAITest {
         chk("强档给的仍是合法手", true,
                 strongMv != null && has(trap.legalMoves(JunqiBoard.RED), strongMv[0], strongMv[1], strongMv[2], strongMv[3]));
 
-        // A9 快档有真随机：同种子可复现；不同种子会走出不同的手（不是换个名字的普通档）
-        JunqiBoard openBoard = new JunqiBoard(true);
-        openBoard.put(6, 2, JunqiBoard.RED, JunqiBoard.COMPANY);
-        openBoard.put(0, 0, JunqiBoard.BLACK, JunqiBoard.FLAG);
-        JunqiAI fastA = new JunqiAI(JunqiAI.FAST);
-        fastA.setSeed(42);
-        JunqiAI fastB = new JunqiAI(JunqiAI.FAST);
-        fastB.setSeed(42);
-        int[] fast1 = fastA.genmove(openBoard, JunqiBoard.RED, null);
-        int[] fast2 = fastB.genmove(openBoard, JunqiBoard.RED, null);
-        chk("快档同一随机种子可复现", true, sameMove(fast1, fast2));
-        java.util.Set<String> fastMoves = new java.util.HashSet<String>();
-        for (int seed = 1; seed <= 20; seed++) {
-            JunqiAI f = new JunqiAI(JunqiAI.FAST);
-            f.setSeed(seed);
-            int[] m = f.genmove(openBoard, JunqiBoard.RED, null);
-            fastMoves.add(m[0] + "," + m[1] + "," + m[2] + "," + m[3]);
+        // A9 快档不是乱走：有便宜可占时会吃（旧版「乱吃/乱走」已去掉）
+        JunqiBoard greedy = new JunqiBoard(true);
+        greedy.put(6, 1, JunqiBoard.RED, JunqiBoard.COMPANY);
+        greedy.put(6, 2, JunqiBoard.BLACK, JunqiBoard.PLATOON);
+        int[] fastMv = new JunqiAI(JunqiAI.FAST).genmove(greedy, JunqiBoard.RED, null);
+        chk("快档会吃送到嘴边的子（不是乱走）", true,
+                fastMv != null && fastMv[0] == 6 && fastMv[1] == 1 && fastMv[2] == 6 && fastMv[3] == 2);
+        chk("快档给的手合法", true,
+                fastMv != null && has(greedy.legalMoves(JunqiBoard.RED), fastMv[0], fastMv[1], fastMv[2], fastMv[3]));
+
+        // A11 三档都吃学习库：同一局面里两着基础分相同，学过的那类子力会被优先
+        JunqiBoard lb = new JunqiBoard(true);
+        lb.put(6, 1, JunqiBoard.RED, JunqiBoard.COMMANDER);
+        lb.put(6, 3, JunqiBoard.RED, JunqiBoard.ENGINEER);
+        lb.put(0, 0, JunqiBoard.BLACK, JunqiBoard.FLAG);
+        JunqiLearn learn = JunqiLearn.load(new java.io.File("/tmp/junqi-learn-test-none.dat"));
+        String learnedKey = JunqiLearn.keyFor(lb, JunqiBoard.RED, new int[]{6, 1, 5, 1});
+        for (int i = 0; i < 3; i++) {
+            learn.recordGame(java.util.Collections.singletonList(learnedKey), JunqiLearn.WIN);
         }
-        chk("快档不同种子会走出不同的手", true, fastMoves.size() > 1);
+        for (int lv = JunqiAI.FAST; lv <= JunqiAI.STRONG; lv++) {
+            JunqiAI lai = new JunqiAI(lv);
+            lai.setLearn(learn);
+            int[] lmv = lai.genmove(lb, JunqiBoard.RED, null);
+            boolean learned = lmv != null && lmv[0] == 6 && lmv[1] == 1 && lmv[2] == 5 && lmv[3] == 1;
+            chk("难度 " + lv + " 会吃学习库（优先学过的那类子力）", true, learned);
+        }
 
         // A10 强档也不偷看：未暴露的黑子换成司令/工兵，强档走法不变
         int[] strongA = new JunqiAI(JunqiAI.STRONG).genmove(base(JunqiBoard.COMMANDER), JunqiBoard.RED, null);

@@ -12,6 +12,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import java.io.File;
 import java.util.List;
 import java.util.Random;
 
@@ -42,6 +43,10 @@ public class JunqiActivity extends Activity {
     private LinearLayout topChrome;
     private LinearLayout bottomChrome;
     private int boardSideW, boardSideH;
+    private JunqiLearn learn;
+    private final java.util.List<String> learnKeys =
+            java.util.Collections.synchronizedList(new java.util.ArrayList<String>());
+    private boolean learnRecorded;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -49,6 +54,7 @@ public class JunqiActivity extends Activity {
         darkTheme = UiTheme.apply(this);
         palette = Palette.of(darkTheme);
         screen = Screen.read(this);
+        learn = JunqiLearn.load(new File(getFilesDir(), JunqiLearn.FILE_NAME));
         newGame();
         buildUi();
     }
@@ -65,6 +71,11 @@ public class JunqiActivity extends Activity {
         legal = new int[0];
         aiThinking = false;
         resigned = false;
+        learnRecorded = false;
+        synchronized (learnKeys) {
+            learnKeys.clear();
+        }
+        ai.setLearn(learn);
         ai.setLevel(level);
     }
 
@@ -94,6 +105,7 @@ public class JunqiActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         boardView = new JunqiView(this);
+        boardView.setAnimationsEnabled(true);
         boardView.setBoard(board);
         boardView.setHidden(hiddenArray());
         boardView.setOnCellTap(new JunqiView.OnCellTap() {
@@ -381,7 +393,7 @@ public class JunqiActivity extends Activity {
         final int count = board.history().size();
         Thread t = new Thread(new Runnable() {
             public void run() {
-                final int[] mv = ai.genmove(snapshot, JunqiBoard.BLACK, rev);
+                final int[] mv = ai.genmove(snapshot, JunqiBoard.BLACK, rev, learnKeys);
                 runOnUiThread(new Runnable() {
                     public void run() {
                         aiThinking = false;
@@ -408,21 +420,47 @@ public class JunqiActivity extends Activity {
             return;
         }
         resigned = true;
-        showEndDialog("你认输了。\n" + board.endReason());
+        // 人认输 = 电脑赢（学习库从电脑视角记 WIN，别记反）
+        recordLearning(JunqiLearn.WIN);
+        showEndDialog("你认输了。\n" + board.endReason() + "\n" + learnInfo());
     }
 
     private void finishGame() {
         String text;
+        int result = JunqiLearn.DRAW;
         if (resigned) {
             text = "你认输了。";
+            result = JunqiLearn.WIN;
         } else if (board.winner() == JunqiBoard.RED) {
             text = "你赢了！";
+            result = JunqiLearn.LOSS;
         } else if (board.winner() == JunqiBoard.BLACK) {
             text = "电脑赢了。";
+            result = JunqiLearn.WIN;
         } else {
             text = "和棋。";
         }
-        showEndDialog(text + "\n" + board.endReason());
+        recordLearning(result);
+        showEndDialog(text + "\n" + board.endReason() + "\n" + learnInfo());
+    }
+
+    /** 学完这一盘后给用户看一眼（所有档位共用同一个学习库）。 */
+    private String learnInfo() {
+        return learn == null ? "" : "（" + learn.describe() + "）";
+    }
+
+    /** 一盘只记一次；记完立刻落盘。 */
+    private void recordLearning(int result) {
+        if (learnRecorded || learn == null) {
+            return;
+        }
+        learnRecorded = true;
+        java.util.List<String> copy;
+        synchronized (learnKeys) {
+            copy = new java.util.ArrayList<String>(learnKeys);
+        }
+        learn.recordGame(copy, result);
+        learn.save(new File(getFilesDir(), JunqiLearn.FILE_NAME));
     }
 
     private void showEndDialog(String text) {
@@ -442,6 +480,10 @@ public class JunqiActivity extends Activity {
                     }
                 })
                 .setCancelable(true);
+        boolean humanWon = !resigned && board != null && board.winner() == JunqiBoard.RED;
+        if (humanWon && WinEgg.eggAllowed(level, JunqiAI.FAST)) {
+            b.setView(WinEgg.buildBody(this));
+        }
         b.show();
     }
 

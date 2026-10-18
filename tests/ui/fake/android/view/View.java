@@ -21,6 +21,10 @@ public class View {
     public ViewGroup.LayoutParams getLayoutParams() { return lp; }
     public void setVisibility(int v) { android.os.FakeLog.log("setVisibility:" + v); }
     public void setMinimumWidth(int w) {}
+    public android.view.ViewPropertyAnimator animate() { return new android.view.ViewPropertyAnimator(); }
+
+    public void postInvalidateOnAnimation() {}
+
     public void invalidate() {}
     public void postInvalidate() {}
     /** 桩测专用：立即执行（真机上会排到下一帧，测里同步跑更好断言）。 */
@@ -94,5 +98,7 @@ public class View {
     public void setAlpha(float a) {
         this.alpha = a;
     }
+    public void setScaleX(float s) {}
+    public void setScaleY(float s) {}
 
 }
