@@ -32,6 +32,13 @@ public class WinEggTest {
         chk("人执黑认输，赢家是白", "W+R", WinEgg.resignResult(Board.BLACK));
         chk("人执白认输，赢家是黑", "B+R", WinEgg.resignResult(Board.WHITE));
         chk("认输结果不判人赢", false, WinEgg.goHumanWon(WinEgg.resignResult(Board.BLACK), Board.BLACK));
+        chk("围棋快档 = 0", 0, WinEgg.goLevel("fast"));
+        chk("围棋普通档 = 1", 1, WinEgg.goLevel("normal"));
+        chk("围棋强档 = 2", 2, WinEgg.goLevel("strong"));
+        chk("围棋未知档按普通", 1, WinEgg.goLevel("whatever"));
+        chk("围棋快档彩蛋不给", false, WinEgg.eggAllowed(WinEgg.goLevel("fast"), 0));
+        chk("围棋普通/强档给", true,
+                WinEgg.eggAllowed(WinEgg.goLevel("normal"), 0) && WinEgg.eggAllowed(WinEgg.goLevel("strong"), 0));
 
         System.out.println("通过 " + pass + " 项，失败 " + fail + " 项");
         if (fail > 0) {

@@ -970,8 +970,9 @@ public class MainActivity extends Activity {
             setInfo("棋谱保存失败：" + e.getMessage());
         }
         refreshStatus();
-        if (!wasAutoPlay && WinEgg.goHumanWon(result, humanColor)) {
-            // 自动对弈没有「人」，不弹彩蛋（第 112 轮审计 中-2）
+        if (!wasAutoPlay && WinEgg.eggAllowed(WinEgg.goLevel(modelAlias), 0)
+                && WinEgg.goHumanWon(result, humanColor)) {
+            // 只有「普通 / 强」档（网络）赢了才弹：快档不弹；自动对弈没有「人」，也不弹
             WinEgg.showWin(this);
         }
         startGameReview(result);
@@ -1793,6 +1794,7 @@ public class MainActivity extends Activity {
         String who = autoPlay ? "自动对弈" : (mine ? "轮到你" : "引擎");
         StringBuilder sb = new StringBuilder();
         sb.append(who).append("（").append(Board.colorToChar(toMove)).append("）");
+        sb.append("　难度：").append(WinEgg.goLevelName(modelAlias));
         sb.append("　第 ").append(board.moves.size() + 1).append(" 手");
         if (!Double.isNaN(lastWinrate)) {
             double wr = lastWinrate;

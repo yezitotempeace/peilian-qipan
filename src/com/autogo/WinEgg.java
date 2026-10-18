@@ -38,6 +38,23 @@ public final class WinEgg {
         return level != fastLevel;
     }
 
+    /** 围棋的三个网络档位映射成 0=快 / 1=普通 / 2=强；未知按普通算。 */
+    public static int goLevel(String modelAlias) {
+        if ("fast".equals(modelAlias)) {
+            return 0;
+        }
+        if ("strong".equals(modelAlias)) {
+            return 2;
+        }
+        return 1;
+    }
+
+    /** 围棋档位的中文名（状态条 / 彩蛋判定提示用）。 */
+    public static String goLevelName(String modelAlias) {
+        int lv = goLevel(modelAlias);
+        return lv == 0 ? "快" : (lv == 1 ? "普通" : "强");
+    }
+
     /** 人认输时围棋结果串：赢家永远是人的对手（与「轮到谁」无关）。 */
     public static String resignResult(int humanColor) {
         return humanColor == Board.BLACK ? "W+R" : "B+R";

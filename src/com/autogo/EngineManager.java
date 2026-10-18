@@ -79,11 +79,11 @@ public class EngineManager {
     // b10c128 约 1.7 s/手、b18 约 11 s/手）。网络越强，越该把 visits 调低才跑得动。
     public static final ModelSpec[] MODELS = {
             new ModelSpec("fast", "model_b6c96.txt.gz",
-                    "极速 b6c96", "5 MB，最快", 300),
+                    "快 · 极速 b6c96", "5 MB，最快", 300),
             new ModelSpec("normal", "model_b10c128.txt.gz",
-                    "标准 b10c128", "14 MB，平衡", 100),
+                    "普通 · 标准 b10c128", "14 MB，平衡", 100),
             new ModelSpec("strong", "model_b18c384nbt.bin.gz",
-                    "强力 b18c384nbt", "93 MB，最强，一手要十几秒", 40),
+                    "强 · 强力 b18c384nbt", "93 MB，最强，一手要十几秒", 40),
     };
 
     public static final String DEFAULT_MODEL = "normal";
