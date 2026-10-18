@@ -8,6 +8,8 @@ public class Canvas {
     public void drawRect(float l, float t, float rr, float b, Paint p) {}
     public void drawRoundRect(RectF r, float rx, float ry, Paint p) { RECTS.add(new RectF(r.left, r.top, r.right, r.bottom)); }
     public void drawLine(float x0, float y0, float x1, float y1, Paint p) { LINES.add(new float[]{x0, y0, x1, y1, p.getColor()}); }
+    public void drawOval(RectF r, Paint p) {}
+    public void drawOval(float l, float t, float rr, float b, Paint p) {}
     public void drawCircle(float x, float y, float r, Paint p) { CIRCLES.add(new float[]{x, y, r, p.getColor()}); }
     public void drawText(String s, float x, float y, Paint p) { TEXTS.add(s); }
     public static final java.util.List<float[]> CIRCLES = new java.util.ArrayList<float[]>();

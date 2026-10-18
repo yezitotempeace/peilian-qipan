@@ -9,10 +9,11 @@ import android.view.MotionEvent;
 import android.view.View;
 
 /**
- * 军棋棋盘（5 列 × 12 行）：铁路 / 行营 / 大本营 / 暗棋背面 / 选中与可走点。纯绘制，规则在 JunqiBoard。
+ * 军棋棋盘：5 列 × 12 行共 60 个点位（兵站 / 行营 / 大本营），棋子是横向长方块，站在点位上。
  *
- * <p>棋盘按「方格」画：每个交叉点是一枚棋子格（不是围棋那种线条交点），铁路画在格子后面，
- * 只从格缝里露出来；棋子格占 0.88 格、棋子占 0.84×0.70 格，保证相邻棋子之间留出空隙。
+ * <p>比例按实体棋盘来：列距 250、行距 150、棋子站 100×50（单位比例），
+ * 整盘约 1200×2100（1:1.75）；铁路是黑白相间的粗线，从棋子站后面穿过，只从缝里露出来；
+ * 中线第 2/4 列是山界，第 3 列有一小段前线铁路。</p>
  */
 public class JunqiView extends View {
 
@@ -21,7 +22,7 @@ public class JunqiView extends View {
     }
 
     private JunqiBoard board;
-    private boolean[] hidden;      // 暗棋：true = 只看背面
+    private boolean[] hidden;
     private int selected = -1;
     private int[] legal;
     private int lastFrom = -1;
@@ -35,21 +36,26 @@ public class JunqiView extends View {
     private int animTo = -1;
 
     private final Paint bg = new Paint();
-    private final Paint cellFill = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint cellLine = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint rail = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint road = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint railBase = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint railDash = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint stationFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint stationLine = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint hqFill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint face = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint pieceLine = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint mark = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint camp = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint hq = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint mountain = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    /** 每个格子的边长（px）与棋盘左上角。 */
-    private float cell, originX, originY;
+    private float cw, ch, ox, oy;
+    private float stationW, stationH;
     private static final int cols = JunqiBoard.COLS;
     private static final int rows = JunqiBoard.ROWS;
+    private static final float BOARD_W_UNITS = 4.8f;   // 4 个列距 + 左右各 0.4
+    private static final float BOARD_H_UNITS = 8.4f;   // 11 个行距 + 上下各 1.5
 
     public JunqiView(Context c) {
         super(c);
@@ -65,33 +71,40 @@ public class JunqiView extends View {
         setFocusable(true);
         bg.setColor(0xFFF6F1E7);
         bg.setStyle(Paint.Style.FILL);
-        cellFill.setStyle(Paint.Style.FILL);
-        cellFill.setColor(0xFFFFFCF4);
-        cellLine.setStyle(Paint.Style.STROKE);
-        cellLine.setColor(0x558A6A44);
-        rail.setColor(0x996D4C33);
-        rail.setStyle(Paint.Style.STROKE);
+        road.setStyle(Paint.Style.STROKE);
+        road.setColor(0x883B3B3B);
+        railBase.setStyle(Paint.Style.STROKE);
+        railBase.setColor(0xFF161616);
+        railDash.setStyle(Paint.Style.STROKE);
+        railDash.setColor(0xFFFFFFFF);
+        stationFill.setStyle(Paint.Style.FILL);
+        stationFill.setColor(0xFFFFFDF8);
+        stationLine.setStyle(Paint.Style.STROKE);
+        stationLine.setColor(0xFF2B2B2B);
+        hqFill.setStyle(Paint.Style.FILL);
+        hqFill.setColor(0xFF1B1B1B);
         text.setColor(0xFF222222);
         text.setTextAlign(Paint.Align.CENTER);
+        text.setFakeBoldText(true);
         face.setStyle(Paint.Style.FILL);
         pieceLine.setStyle(Paint.Style.STROKE);
         mark.setStyle(Paint.Style.STROKE);
         dot.setStyle(Paint.Style.FILL);
-        camp.setStyle(Paint.Style.FILL_AND_STROKE);
-        camp.setColor(0x332E7D32);
-        hq.setStyle(Paint.Style.FILL);
-        hq.setColor(0x33F9A825);
+        camp.setStyle(Paint.Style.FILL);
+        camp.setColor(0xFFFFFFFF);
+        mountain.setStyle(Paint.Style.FILL);
+        mountain.setColor(0xFFFFFDF8);
     }
 
     public void setBoard(JunqiBoard b) {
         board = b;
-        cell = 0f;
         invalidate();
     }
 
     public void setHidden(boolean[] h) { hidden = h; invalidate(); }
     public void setSelected(int row, int col) { selected = (board == null || row < 0) ? -1 : row * cols + col; invalidate(); }
     public void setLegalPoints(int[] points) { legal = points; invalidate(); }
+
     public void setAnimationsEnabled(boolean on) { animationsEnabled = on; }
 
     public void setLastMove(int fromRow, int fromCol, int toRow, int toCol) {
@@ -101,7 +114,6 @@ public class JunqiView extends View {
         lastFrom = nf;
         lastTo = nt;
         if (!changed) {
-            // 同一步（点选/刷新）不重播，否则每点一下棋子上一手都会回退再滑
             invalidate();
             return;
         }
@@ -115,76 +127,165 @@ public class JunqiView extends View {
         }
         invalidate();
     }
+
     public void setInputEnabled(boolean on) { inputEnabled = on; invalidate(); }
     public void setOnCellTap(OnCellTap l) { tapListener = l; }
 
     private void geometry(int w, int h) {
-        if (cell > 0f) {
+        if (cw > 0f && Math.abs(w - lastW) < 1 && Math.abs(h - lastH) < 1) {
             return;
         }
-        float pad = Math.max(8f, Math.min(w, h) * 0.03f);
-        cell = Math.min((w - 2 * pad) / cols, (h - 2 * pad) / rows);
-        originX = (w - cell * cols) / 2f;
-        originY = (h - cell * rows) / 2f;
+        lastW = w;
+        lastH = h;
+        float unit = Math.min(w / BOARD_W_UNITS, h / BOARD_H_UNITS);
+        cw = unit;
+        ch = unit * 0.6f;
+        ox = (w - 4.8f * cw) / 2f + 0.4f * cw;
+        oy = (h - 8.4f * cw) / 2f + 0.5f * ch;   // 上边距半行；中线另有 2 行空带
+        stationW = cw * 0.40f;
+        stationH = ch / 3f;
     }
 
-    private float cx(int col) { return originX + (col + 0.5f) * cell; }
-    private float cy(int row) { return originY + (row + 0.5f) * cell; }
+    private int lastW = -1, lastH = -1;
+
+    private float cx(int col) { return ox + col * cw; }
+
+    /** 实体棋谱：前 6 行正常，中线上方空 2 行，后 6 行接上（第 6 行中心 +2ch）。 */
+    private float cy(int row) { return oy + row * ch + (row >= 6 ? 2f * ch : 0f); }
 
     @Override
     protected void onSizeChanged(int w, int h, int ow, int oh) {
-        cell = 0f;
+        cw = 0f;
+        lastW = lastH = -1;
         super.onSizeChanged(w, h, ow, oh);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        geometry(getWidth(), getHeight());
-        if (cell <= 0f) {
+        int w = getWidth(), h = getHeight();
+        canvas.drawRect(0, 0, w, h, bg);
+        geometry(w, h);
+        if (cw <= 0f || board == null) {
             return;
         }
-        canvas.drawRect(0, 0, getWidth(), getHeight(), bg);
+        road.setStrokeWidth(Math.max(1f, cw * 0.012f));
+        stationLine.setStrokeWidth(Math.max(1.2f, cw * 0.016f));
 
-        // 每格：普通方格 / 行营圆 / 大本营方块
-        cellLine.setStrokeWidth(Math.max(1f, cell * 0.018f));
+        drawRoads(canvas);
+        drawRails(canvas);
+        drawMountains(canvas);
+        drawStations(canvas);
+        drawPieces(canvas);
+        drawMarks(canvas);
+
+        BoardArt.boardEdge(canvas, 0, 0, w, h);
+    }
+
+    private void drawRoads(Canvas canvas) {
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols - 1; c++) {
+                canvas.drawLine(cx(c), cy(r), cx(c + 1), cy(r), road);
+            }
+        }
+        for (int c = 0; c < cols; c++) {
+            for (int r = 0; r < rows - 1; r++) {
+                // 中线第 2/4 列是山界，不通
+                if (r == 5 && (c == 1 || c == 3)) {
+                    continue;
+                }
+                canvas.drawLine(cx(c), cy(r), cx(c), cy(r + 1), road);
+            }
+        }
+        // 行营八个方向：四角斜线（横竖已由上面的公路给出）
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                float x = cx(c), y = cy(r);
-                if (JunqiBoard.isCamp(r, c)) {
-                    camp.setStrokeWidth(Math.max(1.5f, cell * 0.035f));
-                    camp.setColor(0x332E7D32);
-                    canvas.drawCircle(x, y, cell * 0.47f, camp);
-                } else if (JunqiBoard.isHq(r, c)) {
-                    float s = cell * 0.47f;
-                    canvas.drawRect(x - s, y - s, x + s, y + s, hq);
-                    canvas.drawRect(x - s, y - s, x + s, y + s, cellLine);
-                } else {
-                    float s = cell * 0.44f;
-                    canvas.drawRect(x - s, y - s, x + s, y + s, cellFill);
-                    canvas.drawRect(x - s, y - s, x + s, y + s, cellLine);
+                if (!JunqiBoard.isCamp(r, c)) {
+                    continue;
+                }
+                for (int dr = -1; dr <= 1; dr += 2) {
+                    for (int dc = -1; dc <= 1; dc += 2) {
+                        int rr = r + dr, cc = c + dc;
+                        if (rr >= 0 && rr < rows && cc >= 0 && cc < cols) {
+                            canvas.drawLine(cx(c), cy(r), cx(cc), cy(rr), road);
+                        }
+                    }
                 }
             }
         }
+    }
 
-        // 铁路：压在格子上（半透明，仍看得见连续轨道），棋子再盖在它上面
-        rail.setStrokeWidth(Math.max(2.5f, cell * 0.065f));
+    private void drawRails(Canvas canvas) {
+        float rw = Math.max(4f, cw * 0.08f);
+        railBase.setStrokeWidth(rw);
+        railDash.setStrokeWidth(rw * 0.52f);
+        for (int r : new int[]{1, 5, 6, 10}) {
+            railH(canvas, r);
+        }
+        railV(canvas, 0, 1, 10);
+        railV(canvas, 4, 1, 10);
+        railV(canvas, 2, 5, 6);   // 中线第 3 列的一小段前线铁路
+    }
+
+    private void railH(Canvas canvas, int row) {
+        float x1 = cx(0) - stationW * 0.5f, x2 = cx(cols - 1) + stationW * 0.5f;
+        float y = cy(row);
+        canvas.drawLine(x1, y, x2, y, railBase);
+        float dash = Math.max(5f, cw * 0.075f);
+        for (float x = x1; x < x2; x += dash * 2f) {
+            canvas.drawLine(x, y, Math.min(x + dash, x2), y, railDash);
+        }
+    }
+
+    private void railV(Canvas canvas, int col, int r1, int r2) {
+        float y1 = cy(r1) - stationH * 0.5f, y2 = cy(r2) + stationH * 0.5f;
+        float x = cx(col);
+        canvas.drawLine(x, y1, x, y2, railBase);
+        float dash = Math.max(5f, cw * 0.075f);
+        for (float y = y1; y < y2; y += dash * 2f) {
+            canvas.drawLine(x, y, x, Math.min(y + dash, y2), railDash);
+        }
+    }
+
+    private void drawStations(Canvas canvas) {
         for (int r = 0; r < rows; r++) {
-            // 只看「整行铁路」：isRail(r, 0) 会被「第 0 列也是铁路」的规则命中，
-            // 第 1..10 行都会返回 true（第 109 轮审计 高-1）；用中间列避开列规则。
-            if (JunqiBoard.isRail(r, cols / 2)) {
-                canvas.drawLine(originX + cell * 0.10f, cy(r), originX + cell * (cols - 0.10f), cy(r), rail);
+            for (int c = 0; c < cols; c++) {
+                float x = cx(c), y = cy(r);
+                boolean campCell = JunqiBoard.isCamp(r, c);
+                boolean hqCell = JunqiBoard.isHq(r, c);
+                boolean occupied = board.ownerAt(r, c) != JunqiBoard.EMPTY;
+                if (campCell) {
+                    canvas.drawCircle(x, y, stationW * 0.5f, camp);
+                    canvas.drawCircle(x, y, stationW * 0.5f, stationLine);
+                    if (!occupied) {
+                        drawCellText(canvas, "行营", x, y, stationH * 0.52f, 0xFF2B2B2B);
+                    }
+                } else if (hqCell) {
+                    float hw = stationW * 1.5f;   // 实体大本营 150×50，比兵站宽一半
+                    RectF rf = new RectF(x - hw / 2f, y - stationH / 2f, x + hw / 2f, y + stationH / 2f);
+                    canvas.drawRoundRect(rf, stationH * 0.25f, stationH * 0.25f, hqFill);
+                    if (!occupied) {
+                        drawCellText(canvas, "大本营", x, y, stationH * 0.42f, 0xFFFFFFFF);
+                    }
+                } else {
+                    RectF rf = new RectF(x - stationW / 2f, y - stationH / 2f, x + stationW / 2f, y + stationH / 2f);
+                    canvas.drawRoundRect(rf, stationH * 0.25f, stationH * 0.25f, stationFill);
+                    canvas.drawRoundRect(rf, stationH * 0.25f, stationH * 0.25f, stationLine);
+                    if (!occupied) {
+                        drawCellText(canvas, "兵站", x, y, stationH * 0.52f, 0xFF2B2B2B);
+                    }
+                }
             }
         }
-        for (int r = 1; r < rows - 1; r++) {
-            if (JunqiBoard.isRail(r, 0)) {
-                canvas.drawLine(cx(0), originY + cell * 1.10f, cx(0), originY + cell * (rows - 1.10f), rail);
-                canvas.drawLine(cx(cols - 1), originY + cell * 1.10f, cx(cols - 1), originY + cell * (rows - 1.10f), rail);
-                break;
-            }
-        }
+    }
 
-        // 棋子：宽 0.84 格、高 0.70 格（相邻棋子之间留缝）；走子时滑过去
+    private void drawCellText(Canvas canvas, String s, float x, float y, float size, int color) {
+        text.setColor(color);
+        text.setTextSize(size);
+        canvas.drawText(s, x, y + size * 0.36f, text);
+    }
+
+    private void drawPieces(Canvas canvas) {
         int animPoint = -1;
         float animP = 1f;
         if (animActive) {
@@ -195,83 +296,100 @@ public class JunqiView extends View {
                 animPoint = animTo;
             }
         }
-        if (board != null) {
-            for (int r = 0; r < rows; r++) {
-                for (int c = 0; c < cols; c++) {
-                    int color = board.ownerAt(r, c);
-                    if (color == JunqiBoard.EMPTY) {
-                        continue;
-                    }
-                    int p = JunqiBoard.idx(r, c);
-                    if (p == animPoint) {
-                        continue;
-                    }
-                    boolean back = hidden != null && p < hidden.length && hidden[p];
-                    drawPiece(canvas, cx(c), cy(r), color, board.at(r, c), back);
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                int color = board.ownerAt(r, c);
+                if (color == JunqiBoard.EMPTY) {
+                    continue;
                 }
+                int p = JunqiBoard.idx(r, c);
+                if (p == animPoint) {
+                    continue;
+                }
+                boolean back = hidden != null && p < hidden.length && hidden[p];
+                drawPiece(canvas, cx(c), cy(r), color, board.at(r, c), back);
             }
         }
         if (animPoint >= 0) {
-            float e = AnimMath.easeOut(animP);
-            float x = AnimMath.lerp(cx(animFrom % cols), cx(animTo % cols), e);
-            float y = AnimMath.lerp(cy(animFrom / cols), cy(animTo / cols), e);
-            boolean back = hidden != null && animTo < hidden.length && hidden[animTo];
-            // 只有「走子方最后占了目标格」才滑；撞死/同归于尽只闪一下，别把守方或空格滑过来
-            int mover = board == null ? 0 : JunqiBoard.opponent(board.sideToMove());
-            if (board != null && board.ownerAt(animTo / cols, animTo % cols) == mover) {
-                drawPiece(canvas, x, y, board.ownerAt(animTo / cols, animTo % cols), board.at(animTo / cols, animTo % cols), back);
+            int tr = animTo / cols, tc = animTo % cols;
+            int mover = JunqiBoard.opponent(board.sideToMove());
+            if (board.ownerAt(tr, tc) == mover) {
+                float e = AnimMath.easeOut(animP);
+                float x = AnimMath.lerp(cx(animFrom % cols), cx(tc), e);
+                float y = AnimMath.lerp(cy(animFrom / cols), cy(tr), e);
+                boolean back = hidden != null && animTo < hidden.length && hidden[animTo];
+                drawPiece(canvas, x, y, mover, board.at(tr, tc), back);
             }
-            // 吃子闪光
             float fa = 0.55f * (1f - animP);
             mark.setColor(((int) (fa * 255) << 24) | 0x00FFB300);
-            mark.setStrokeWidth(Math.max(2f, cell * 0.06f));
-            canvas.drawCircle(cx(animTo % cols), cy(animTo / cols), cell * (0.30f + 0.30f * e), mark);
+            mark.setStrokeWidth(Math.max(2f, cw * 0.04f));
+            canvas.drawCircle(cx(tc), cy(tr), stationW * (0.55f + 0.35f * AnimMath.easeOut(animP)), mark);
             postInvalidateOnAnimation();
         }
-
-        if (lastFrom >= 0) {
-            drawCellRing(canvas, lastFrom, 0xFFF9A825);
-            drawCellRing(canvas, lastTo, 0xFFF9A825);
-        }
-        if (selected >= 0) {
-            drawCellRing(canvas, selected, 0xFF1A73E8);
-        }
-        if (legal != null) {
-            for (int p : legal) {
-                canvas.drawCircle(cx(p % cols), cy(p / cols), cell * 0.10f, dot);
-            }
-        }
-        BoardArt.boardEdge(canvas, 0, 0, getWidth(), getHeight());
     }
 
     private void drawPiece(Canvas canvas, float x, float y, int color, int type, boolean back) {
-        float pw = cell * 0.84f, ph = cell * 0.70f, radius = cell * 0.11f;
-        pieceLine.setStrokeWidth(Math.max(1.5f, cell * 0.025f));
-        pieceLine.setColor(color == JunqiBoard.RED ? 0xFFB71C1C : 0xFF37474F);
+        float pw = stationW * 0.94f, ph = stationH * 0.94f;
+        float radius = ph * 0.26f;
+        pieceLine.setStrokeWidth(Math.max(1.5f, cw * 0.018f));
+        pieceLine.setColor(color == JunqiBoard.RED ? 0xFFB71C1C : 0xFF263238);
         face.setStyle(Paint.Style.FILL);
         face.setColor(pieceLine.getColor());
         RectF outer = new RectF(x - pw / 2f, y - ph / 2f, x + pw / 2f, y + ph / 2f);
         canvas.drawRoundRect(outer, radius, radius, face);
-        face.setColor(back ? 0xFFB0BEC5 : (color == JunqiBoard.RED ? 0xFFFFE3E3 : 0xFFE6ECEF));
-        RectF inner = new RectF(x - pw * 0.455f, y - ph * 0.44f, x + pw * 0.455f, y + ph * 0.44f);
-        canvas.drawRoundRect(inner, radius * 0.8f, radius * 0.8f, face);
+        face.setColor(back ? 0xFFB0BEC5
+                : (color == JunqiBoard.RED ? 0xFFFFE3E3 : 0xFFE6ECEF));
+        RectF inner = new RectF(x - pw * 0.45f, y - ph * 0.42f, x + pw * 0.45f, y + ph * 0.42f);
+        canvas.drawRoundRect(inner, radius * 0.7f, radius * 0.7f, face);
         if (back) {
             face.setColor(0xFF546E7A);
-            canvas.drawCircle(x, y, cell * 0.10f, face);
+            canvas.drawCircle(x, y, ph * 0.22f, face);
         } else {
             String label = JunqiBoard.typeName(type);
             if (label != null && label.length() > 0) {
                 text.setColor(color == JunqiBoard.RED ? 0xFFB71C1C : 0xFF263238);
-                text.setTextSize(cell * 0.32f);
-                canvas.drawText(label, x, y + cell * 0.113f, text);
+                text.setTextSize(ph * 0.64f);
+                canvas.drawText(label, x, y + ph * 0.23f, text);
             }
         }
     }
 
-    private void drawCellRing(Canvas canvas, int p, int color) {
+    private void drawMountains(Canvas canvas) {
+        float y = (cy(5) + cy(6)) / 2f;
+        for (int c : new int[]{1, 3}) {
+            float x = cx(c);
+            canvas.drawCircle(x, y, cw * 0.30f, mountain);
+            canvas.drawCircle(x, y, cw * 0.30f, stationLine);
+            drawCellText(canvas, "山界", x, y, stationH * 0.50f, 0xFF2B2B2B);
+        }
+        // 中线第 1/3/5 列是前线；第 2/4 列是山界
+        for (int c : new int[]{0, 2, 4}) {
+            drawCellText(canvas, "前线", cx(c), y, stationH * 0.46f, 0xFF2B2B2B);
+        }
+    }
+
+    private void drawMarks(Canvas canvas) {
+        if (lastFrom >= 0) {
+            drawStationRing(canvas, lastFrom, 0xFFF9A825);
+            drawStationRing(canvas, lastTo, 0xFFF9A825);
+        }
+        if (selected >= 0) {
+            drawStationRing(canvas, selected, 0xFF1A73E8);
+        }
+        if (legal != null) {
+            for (int p : legal) {
+                canvas.drawCircle(cx(p % cols), cy(p / cols), stationW * 0.13f, dot);
+            }
+        }
+    }
+
+    private void drawStationRing(Canvas canvas, int p, int color) {
+        int r = p / cols, c = p % cols;
         mark.setColor(color);
-        mark.setStrokeWidth(Math.max(2f, cell * 0.05f));
-        canvas.drawCircle(cx(p % cols), cy(p / cols), cell * 0.47f, mark);
+        mark.setStrokeWidth(Math.max(2f, cw * 0.035f));
+        RectF rf = new RectF(cx(c) - stationW * 0.62f, cy(r) - stationH * 0.72f,
+                cx(c) + stationW * 0.62f, cy(r) + stationH * 0.72f);
+        canvas.drawRoundRect(rf, stationH * 0.3f, stationH * 0.3f, mark);
     }
 
     @Override
@@ -280,16 +398,27 @@ public class JunqiView extends View {
             return super.onTouchEvent(e);
         }
         geometry(getWidth(), getHeight());
-        if (cell <= 0f) {
+        if (cw <= 0f) {
             return super.onTouchEvent(e);
         }
-        float x = e.getX(), y = e.getY();
-        if (x < originX || y < originY || x >= originX + cell * cols || y >= originY + cell * rows) {
+        int col = Math.round((e.getX() - ox) / cw);
+        if (col < 0 || col >= cols) {
             return super.onTouchEvent(e);
         }
-        int col = (int) ((x - originX) / cell);
-        int row = (int) ((y - originY) / cell);
-        if (col < 0 || col >= cols || row < 0 || row >= rows) {
+        // 中线空 2 行，纵坐标不能按 row*ch 反算；扫 12 行取最近的点位
+        int row = -1;
+        float best = Float.MAX_VALUE;
+        for (int r = 0; r < rows; r++) {
+            float d = Math.abs(e.getY() - cy(r));
+            if (d < best) {
+                best = d;
+                row = r;
+            }
+        }
+        if (row < 0 || best > ch * 0.48f) {
+            return super.onTouchEvent(e);
+        }
+        if (Math.abs(e.getX() - cx(col)) > cw * 0.48f) {
             return super.onTouchEvent(e);
         }
         tapListener.onTap(row, col);

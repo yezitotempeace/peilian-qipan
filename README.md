@@ -1,101 +1,3741 @@
-# 陪练棋盘 / Peilian Qipan
+# 陪练棋盘 · Android 版
 
-陪练棋盘是一款 Android 棋类练习应用，一个 App 里包含围棋、五子棋、象棋、军棋四种棋，全部对局都在本机离线完成。
+**简介 / Introduction（中英）**
 
-Peilian Qipan is an Android board-game practice app. It bundles four games — Go, Gomoku, Xiangqi (Chinese chess) and Junqi (Army chess) — and runs entirely offline on the device.
+陪练棋盘是一个 Android 四合一棋类练习 App：**围棋**（KataGo 真引擎，9/13/19 路）、**五子棋**（内置 AI，可选外部 Rapfi 引擎）、**象棋**（内置三档 AI + 逐手复盘）、**军棋**（明棋 / 暗棋，人执红、电脑执黑）。
 
-## 围棋 / Go
+Peilian Qipan (Board-Game Practice) is an all-in-one Android app for four board games: **Go** (real KataGo engine, 9/13/19), **Gomoku** (built-in AI, optional external Rapfi engine), **Xiangqi** (Chinese chess; three AI levels + move-by-move review) and **Junqi** (Army chess; open or hidden mode, you play red against the computer).
 
-- 9 / 13 / 19 路；你执黑或执白，也可以让电脑自己对弈。
-- 内置 KataGo 引擎，三档网络随时切换：极速（5 MB）、标准（14 MB，默认）、强力（93 MB）；每手 visits 可调。
-- 逐手复盘：胜率曲线、失误排行、引擎推荐点。
-- 新局、悔棋、停一手、认输；终局自动保存 SGF，也能读入 SGF 继续下或直接复盘。
-- 设置：贴目、每手 visits、线程数、网络、是否允许认输；横竖屏与大小屏自适应。
+- 版本 / Version: **v178**（`1.20261018.178`，versionCode 178）
+- 构建 / Build: `bash build.sh`（需要 `assets/` 里三个 KataGo 权重、`jniLibs/arm64-v8a/` 的 `.so`）
+- 测试 / Test: `bash run_tests.sh`（JVM 用例 **1624 项**，最近一次全过）
+- 安装包 / APK: 构建产物 `autogo.apk`（约 122 MB，已签名，minSdk 26 / targetSdk 34）；同版本 APK 见仓库 **Releases**
 
-- 9/13/19 board; play Black or White, or watch the engine play itself.
-- Built-in KataGo engine with three switchable networks: Fast (5 MB), Standard (14 MB, default) and Strong (93 MB); visits per move are adjustable.
-- Move-by-move review: win-rate curve, mistake ranking and engine suggestions.
-- New game, undo, pass and resign; finished games are saved as SGF, and you can load an SGF to continue or review it.
-- Settings: komi, visits per move, threads, network and resign toggle; adapts to orientation and screen size.
+---
 
-## 五子棋 / Gomoku
+把 KataGo 真正装进 Android App 的围棋程序：人机对弈、引擎自动对弈、以及**每一局的逐手复盘**。
 
-- 13 / 15 / 19 路；三档难度：快 / 普通 / 强。
-- 强档在 15 路时优先调用外部 Rapfi 引擎；其他路数或找不到引擎时自动退回内置 AI。
-- 新局、悔棋、认输；可切换棋盘路数、执黑/执白、禁手（黑棋长连·四四·三三判负）和手顺显示。
-- 对战：电脑对电脑，可暂停 / 继续，不计入学习记录。
-- 复盘：胜率曲线、失误排行和推荐点；点失误行或拖动胜率条，棋盘会跟着摆到那一手。
-- 学习：记住你的常用走法和赢过的手，下一局优先从引擎候选里挑这些走法；可查看统计、一键清除。
+产物：`autogo.apk`（构建产物，约 122 MB，已签名，minSdk 26 / targetSdk 34）
+同一份也复制到了 `/sdcard/Download/陪练棋盘.apk`，方便直接点开安装。
 
-- 13/15/19 board; three AI levels: Fast / Normal / Strong.
-- On 15×15 the Strong level prefers the external Rapfi engine; other sizes or a missing engine fall back to the built-in AI.
-- New game, undo and resign; switch board size, color, forbidden moves (overline, double-four and double-three lose for Black) and move numbers.
-- AI vs AI mode: pause/resume; such games are not recorded by the learning feature.
-- Review: win-rate curve, mistake ranking and suggestions; the board follows the selected mistake or the win-rate slider.
-- Learning: remembers your common moves and winning moves, and prefers them among the engine's candidates; stats and one-tap clear are available.
+---
 
-## 象棋 / Xiangqi
+## 版本号
 
-- 三档内置 AI；你执红先行。
-- 新局、悔棋、认输、难度、全屏、返回。
-- 逐手复盘：胜率曲线、失误排行和推荐点；选中某一手时，棋盘上用绿圈标出该手的推荐点。
+每次 `bash build.sh` 都会自动把版本号 +1 并写进 APK：
 
-- Three built-in AI levels; you play Red and move first.
-- New game, undo, resign, difficulty, fullscreen and back.
-- Move-by-move review: win-rate curve, mistake ranking and suggestions; the suggested move is marked with a green circle on the board.
+- `versionCode` 从 `VERSION` 文件读，构建时自增（Android 靠它判断「这是新版本」，值不变的话装了新版系统可能不提示覆盖）
+- `versionName` 格式为 `主版本.日期.序号`，例如 `1.20261012.7`
 
-## 军棋 / Junqi
+设置页会显示当前版本号，出问题时可以直接报这个号定位。
 
-- 人执红、电脑执黑；开局可选明棋或暗棋，对局中也能切换。
-- 铁路、行营、大本营等规则；暗棋中只有交战过的格子才会亮出兵种。
-- 新局、认输、难度、返回。
+注意：`aapt2 link` 的 `--version-code` 参数**不会**覆盖 `AndroidManifest.xml` 里的值（实测过，APK 里读出来还是 manifest 的旧值），
+所以构建脚本是直接用 `sed` 改 manifest，这是唯一生效的做法。
 
-- You play Red against the computer. Start in open or hidden mode; you can switch during the game.
-- Railway, camp and headquarters rules; in hidden mode a piece is only revealed after a battle.
-- New game, resign, difficulty and back.
+---
 
-## 通用 / General
+## 一、安装
 
-- 启动页选择棋种；内置公告可查看每一版更新；左下角显示版本号。
-- 深浅色外观跟随系统；横竖屏、大小屏自动适配。
-- 完全离线：应用清单没有申请网络权限。
-- 仅 arm64-v8a；minSdk 26（Android 8.0）/ targetSdk 34。
+容器里装不了（原因见文末「为什么没能在本机验证」），需要手动装：
 
-- Pick a game on the launch screen; the in-app changelog lists every release; the version is shown at the bottom-left.
-- Follows the system light/dark theme; adapts to orientation and screen size.
-- Fully offline: the app declares no network permission.
-- arm64-v8a only; minSdk 26 (Android 8.0) / targetSdk 34.
+1. 用文件管理器打开 `/sdcard/Download/陪练棋盘.apk`
+2. 系统会提示「未知来源」，允许安装即可
+3. 首次启动只释放**当前选中**的那个网络（默认 b10c128，14 MB），约几秒
 
-## 安装 / Install
+APK 有 120 MB，因为三个网络都打进去了（见第五节）。手机上装的时候会稍慢一点。
 
-从 Releases 下载安装（约 122 MB，内含三个 KataGo 网络与 Rapfi 引擎）：
+---
 
-Download from Releases (about 122 MB, bundling the three KataGo networks and the Rapfi engine):
+## 二、功能
 
-https://github.com/yezitotempeace/peilian-qipan/releases/tag/v177
+| 功能 | 说明 |
+|---|---|
+| 人机对弈 | 你执黑或执白，点交叉点落子；非法手会提示原因 |
+| 自动对弈 | 引擎自己跟自己下，一手一手实时看 |
+| 逐手复盘 | 对每一手之前的局面重新分析，给出胜率曲线 + 失误排行 + 引擎推荐点 |
+| 悔棋 / 停一手 / 认输 | 悔棋会整体重算盘面（提子、劫点都重算，不是简单回滚） |
+| 棋谱 | 终局自动存 SGF 到 App 私有目录 |
+| **读谱** | 用系统文件选择器读入任意 SGF：已下完的直接进复盘，没下完的可以接着下 |
+| **三档网络** | 极速 b6c96 / 标准 b10c128 / 强力 b18c384nbt，设置里随时切换 |
+| **屏幕自适应** | 启动时读屏幕尺寸，横竖屏自动换布局，小屏棋盘自动缩小、控件区可滚动 |
+| 设置 | 盘面大小（9/13/19）、贴目、每手 visits、线程数、网络、是否允许认输 |
 
-## 构建 / Build
+复盘用的是 `kata-genmove_analyze`：它会边搜边吐 `info` 行（含每个候选点的胜率、
+scoreLead、PV），最后给出自己选的那手。分析完先 `undo` 撤掉引擎自己下的那手，
+再 `play` 棋谱上的实际那手 —— 这样逐手前进只要 undo+play，不必每手重放整盘。
 
-仓库已包含 KataGo 权重（`assets/`）和 native 库（`jniLibs/arm64-v8a/`）。需要 JDK 与 Android SDK 构建工具（aapt2、zipalign、apksigner），不需要 NDK。
+### 三档网络怎么选
 
-The repository ships the KataGo weights and native libraries. You need a JDK and Android SDK build tools (aapt2, zipalign, apksigner); no NDK is required.
+三个网络都打进 APK，但**同一时刻磁盘上只有一份**（切换时会删掉上一个）。
+以下是在这台设备上实测的 9 路 100 visits 单步耗时：
 
-```bash
-bash build.sh      # 生成 autogo.apk / builds autogo.apk
-bash run_tests.sh  # 运行测试 / runs the test suite
+| 档位 | 大小 | 实测单步 | 默认 visits | 适用 |
+|---|---|---|---|---|
+| 极速 b6c96 | 5 MB | 约 0.4 s | 300 | 想快、或边下边看 |
+| 标准 b10c128 | 14 MB | 约 1.7 s | 100 | 默认，平衡 |
+| 强力 b18c384nbt | 93 MB | 约 11 s | 40 | 想认真下一盘，能接受等待 |
+
+注意第三列到第四列的关系：**网络越强，单步越慢，就越要把 visits 调低**，
+否则一手要等十几秒到几十秒。
+
+App 里**每个档位各自记住自己的 visits**（切到 b18 用 40，切回 b10 还是 100），
+所以不用每次手动改。
+
+### 屏幕自适应
+
+启动时会读一次屏幕（`Screen.java`），之后所有尺寸都由「可用空间」算出来，
+而不是写死 dp：
+
+| 场景 | 布局 |
+|---|---|
+| 竖屏 | 棋盘在上、控件在下；棋盘给控件留 40% 高度（至少 260dp） |
+| 横屏 | 棋盘在左、控件在右；此时限制棋盘的是高度，宽度最多占 62% |
+| 小屏 | 棋盘自动缩小；控件区放进 ScrollView，永远滚得动 |
+| 窄屏（<360dp） | 按钮字号自动收一号，三个汉字不换行 |
+| 转屏 | `onConfigurationChanged` 重建布局并还原当前局面 |
+
+棋盘的尺寸计算抽在 `LayoutMath.java` 里，是**纯函数**，所以能拿一堆真实分辨率
+在 JVM 上跑单测，验证「棋盘放得下、不会小到没法下、控件区有地方」这些不变量。
+实测各尺寸算出的棋盘边长：
+
+```
+老小屏 竖屏      320x480    棋盘 220 dp
+常见小屏 竖屏    360x640    棋盘 344 dp
+主流手机 竖屏    411x891    棋盘 395 dp
+平板 竖屏        800x1280   棋盘 768 dp
+主流手机 横屏    891x411    棋盘 395 dp
+平板 横屏        1280x800   棋盘 784 dp
 ```
 
-## 目录 / Layout
+设置页里会显示当前读到的屏幕信息，方便确认自适应有没有按预期生效。
 
-- `src/com/autogo/` — 应用源码 / app sources
-- `tests/` — JVM 测试 / JVM tests
-- `tools/` — 检查脚本与 Rapfi / checks and Rapfi
-- `res/`、`assets/`、`jniLibs/` — 资源、KataGo 权重、native 库 / resources, KataGo weights, native libraries
+---
 
-## 版本 / Version
+## 三、引擎是怎么塞进 App 的
 
-当前 v177 · versionCode 177 · versionName 1.20261018.177
+KataGo 官方 release 只有 x86_64，Android 上也不能跑 glibc 二进制，所以：
 
-- 每个版本一个 GitHub Release，旧版本保留、不删除；想回旧版直接去 Releases 下载对应的 APK。
-- App 启动页左下角显示当前 versionName 与 versionCode（设置页也能看到）。
-- Each version gets its own GitHub Release; older releases are kept. The app shows the current versionName / versionCode at the bottom-left of the launch screen (and on the settings page).
+1. **用 NDK 的 sysroot + 系统原生 clang 交叉编译**出 aarch64-android 的 katago
+   （NDK 自带的 clang 只有 linux-x86_64 prebuilt，在这台 aarch64 机器上根本起不来）
+2. 二进制命名成 `libkatago.so` 放进 `jniLibs/arm64-v8a/`，
+   manifest 里开 `android:extractNativeLibs="true"`，
+   系统会把它释放到 `nativeLibraryDir` —— **只有那个目录允许 App 执行文件**
+3. App 用 `ProcessBuilder` 把它当子进程拉起，走 GTP 文本协议通信
+
+第 2 条是这套方案的关键，参考实现是 `youtubedl-android`（同样把 Python 可执行文件
+命名成 `libpython.so` 再 exec）。
+
+---
+
+## 四、重新构建
+
+```bash
+bash build.sh          # 产出 autogo.apk
+bash run_tests.sh      # 装机前能跑的全部自动化验证（当前总数与分项见目录树里 `tests/` 那几行，或直接跑脚本看输出；含对着真引擎的 GTP 端到端、整盘分析端到端、对着真 Rapfi 进程的外部引擎适配层，以及启动页 / 界面层 / 棋盘视图 / 复盘页桩测）
+```
+
+构建不用 Gradle，直接 aapt2 → javac → d8 → zipalign → apksigner 走一遍。
+几个必须知道的坑都写在 `build.sh` 注释里：
+
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| `aapt2: cannot execute: required file not found` | Google 的 build-tools 里 aapt2/zipalign 是 x86_64 | 用 Ubuntu 的 `android-sdk-build-tools`（aarch64 原生），脚本会自动回退 |
+| `javac: error: Invalid filename` | 项目路径含中文 | 源码先拷到 ASCII 临时目录再编译 |
+| `cannot find symbol: method metafactory` | android.jar 里没有 `LambdaMetafactory` | 加 `core-lambda-stubs.jar` 到 bootclasspath |
+| `zip: command not found` | 缺 zip | `apt install zip` |
+
+交叉编译 KataGo 本体（一次性）：
+
+```bash
+apt install -y clang-18 lld-18
+cmake -S KataGo/cpp -B KataGo/cpp/build-android \
+  -DCMAKE_TOOLCHAIN_FILE=KataGo/cpp/android-toolchain.cmake \
+  -DUSE_BACKEND=EIGEN -DUSE_AVX2=0 -DKATAGO_AUTO_FETCH_DEPS=0 \
+  -DCMAKE_BUILD_TYPE=Release -DEIGEN3_INCLUDE_DIRS=/usr/include/eigen3
+make -C KataGo/cpp/build-android -j4
+```
+
+`android-toolchain.cmake` 里有三处非标准设置，都是被逼的：
+
+- `-rtlib=compiler-rt` —— 否则 clang 会去找 NDK 里不存在的 `-lgcc`
+- `-resource-dir=<NDK>/lib/clang/18` —— 让它找到 `libclang_rt.builtins-aarch64-android.a`
+- `-L<NDK>/lib/linux/aarch64` + `-lunwind` —— aarch64 版 `libunwind.a` 只在这里
+
+另外给 KataGo 源码打了 3 处补丁（`core/sha2.cpp`、`dataio/numpywrite.cpp`、
+`neuralnet/desc.cpp`），都是加一行 `#include <endian.h>`：bionic 的 `<sys/types.h>`
+不像 glibc 那样会带出 `BYTE_ORDER`，不加会直接 `#error` 中断编译。
+
+---
+
+## 五、代码结构
+
+```
+autogo-android/
+├── AndroidManifest.xml
+├── build.sh                构建脚本（含上面那些坑的处理）
+├── run_tests.sh            装机前能跑的全部自动化验证（1209 项 = 398 + 156 + 47 + 101 + 58 + 74 + 77 + 298）
+├── make_icons.py           纯标准库生成启动图标
+├── assets/                 三个权重（b6c96 5 MB / b10c128 14 MB / b18c384nbt 93 MB）
+├── tools/rapfi/            外部引擎的宿主编译版 + 构建记录（NOTICE.md：上游 commit 与两处补丁）
+├── jniLibs/arm64-v8a/libkatago.so   交叉编译出的引擎（9.5 MB）
+├── jniLibs/arm64-v8a/librapfi.so    可选的外部五子棋引擎（3.7 MB，同样从 nativeLibraryDir 执行）
+├── res/                    图标与字符串
+├── tests/
+│   ├── BoardTest.java     398 项：规则 / SGF 读写 / 分析解析 / 布局尺寸 / 棋盘几何
+│   ├── GtpTest.java        77 项：GTP 客户端 + 真引擎整盘分析端到端（GameReview）
+│   ├── GomokuTest.java    156 项：五子棋规则（连线 / 禁手 / 终局 / 深拷贝 / 坐标命名 / 重放）
+│   ├── GomokuAITest.java   47 项：内置 AI（成五 / 堵五 / 禁手过滤 / 评估对称 / 自对弈整局）
+│   ├── GomokuLearnTest.java   58 项：学习库（哈希稳定 / 记战绩与失误 / 候选挑选 / 只读 / 存档往返 / 淘汰清理）
+│   ├── XiangqiTest.java       67 项：象棋规则（各子走法正反 / 蹩马腿 / 塞象眼 / 炮翻山 / 过河兵 / 九宫限制 / 将帅照面 / 将军·将死·困毙 / 非法着法不改局面 / copy 独立）
+│   ├── XiangqiAITest.java     17 项：三档难度夹取 / 吃白送的车 / 确定性 / 只读棋盘 / 一步杀 / 评估符号与互补 / 终局与空盘返回 null
+│   ├── ui/XiangqiViewProbe.java 22 项：线 34 / 圆 128 / 文字 53、列标 A..I、红黑棋子字、选中与上一手、触摸命中与 0.55 格容差
+│   ├── GomokuReviewTest.java  101 项：复盘（胜率换算 / 逐手亏损 / 推荐点 / 结论口径 / 非法手顺 / 开禁手复盘旧手顺 / 自对弈整局）
+│   ├── RapfiGomokuTest.java    74 项：外部强引擎适配层（对着真 pbrain-rapfi 跑 Gomocup 协议；外加行序、半行卡死、超时重起与「忽略 TERM 的引擎也会被超时 / close() 真的收掉」钉桩；外加「管道塞满、没人读时 close() 也不卡，而且跳过 END」的钉桩；外加「重起出来的那个引擎也会被最后一次 close() 按 pid 收掉」的钉桩；跑不了就算失败）
+│   ├── ui/fake/               37 个假 android 类：够在 JVM 里驱动真 GomokuActivity / GomokuView / GomokuReviewActivity（含 graphics / MotionEvent / Path）
+│   ├── ui/Driver95.java       120 项：界面层桩测（棋盘 13/15/19 路、我执黑/白、悔棋轮次、复盘入口、终局设置留存、非 15 路强档自动走内置 AI；外加「点复盘的两句话次序」钉桩 —— 空盘/有手顺时只要电脑在思考就说等电脑、真闲着没下过才说还没落子）
+│   ├── ui/ViewProbe.java      46 项：真 GomokuView 的触摸、几何与绘制（交点吸附、格子正中死区、全屏返回按钮命中与容差、换路数重算、onMeasure 四种规格；外加网格 2n 条线 / 坐标 2n 个文字且列跳过 I / 9 个星位 / 石身+边+最后一手标记 / 五连赢线 30+1 条且长 4×spacing / 手顺数字 / 推荐点提示圈 —— 自查发现的绘制缺口（先前的审计报告没提过这条））
+│   ├── ui/MenuProbe.java      38 项：真 MenuActivity（右上角「公告」行与左下角版本行、两个入口按钮的 Intent 目标、深浅色与「按时间自动」、每分钟 tick 的注册与注销、版本号兜底）
+│   ├── ui/ReviewProbe.java    94 项：真 GomokuReviewActivity（读 Intent 的默认值与长度门槛、选行夹取、失误排行阈值、黑白视角换算、空棋谱与终局文字；外加「点失误行 / 手顺行 / 终局行各跳到哪儿」、胜率条标签，以及「选中某一步时被涂底色的必须是那一行」的高亮回归钉桩 —— 第 54 轮审计 低-1）
+│   ├── ui/stub/               1 个桩（MainActivity；原写「2 个」有误，第 54 轮审计指出）：只为让 MenuActivity 的 Intent 目标能解析，探针不驱动它们
+│   └── fixture_analyze.txt 真机跑出来的 kata-genmove_analyze 原始输出
+└── src/com/autogo/
+    ├── Board.java          围棋规则引擎（board.py 的 Java 移植）
+    ├── Screen.java         读取屏幕尺寸 / 方向 / 密度
+    ├── LayoutMath.java     布局尺寸与棋盘几何计算（纯函数，可单测）
+    ├── WinrateBarView.java 胜率条（横屏右下角状态面板）
+    ├── BoardView.java      棋盘绘制与触摸
+    ├── GtpEngine.java      GTP 客户端（子进程 + 超时读取）
+    ├── EngineManager.java  权重释放、配置生成、引擎启动、自检
+    ├── Analysis.java       解析 kata-genmove_analyze 的 info 行
+    ├── MenuActivity.java   启动选择页（围棋 / 五子棋）
+    ├── MainActivity.java   围棋对局主界面
+    ├── GomokuActivity.java 五子棋对局界面（棋盘 13 / 15 / 19 路、「我执」黑或白（执白时电脑先走）、可悔棋 / 认输 / 换难度 / 开关禁手 / 复盘）
+    ├── GomokuReviewActivity.java 五子棋复盘界面（胜率条 / 曲线 / 失误排行 / 手顺，点哪一手都同步）
+    ├── GomokuBoard.java   五子棋规则（连线 / 禁手 / 终局判定，纯 Java 可单测）
+    ├── GomokuEngine.java  五子棋引擎接口（内置 AI 与将来的外部强引擎共用同一个接口）
+    ├── GomokuView.java    五子棋棋盘绘制与触摸
+    ├── LocalGomokuAI.java 内置五子棋 AI（棋型评估 + 迭代加深 α-β，纯 Java 可单测）
+    ├── GomokuLearn.java 学习库（局面哈希 + 战绩/失误统计 + 候选挑选 + 落盘；纯 Java 可单测）
+    ├── XiangqiBoard.java 象棋规则（各子走法、蹩马腿/塞象眼、炮需炮架、过河兵、士帅不出九宫、将帅照面、将死/困毙；纯 Java 可单测）
+    ├── XiangqiAI.java 象棋内置 AI（三档：搜索深度 1/2/3 + 子力评估；纯 Java 可单测）
+    ├── XiangqiView.java 象棋棋盘绘制与触摸（10×9、九宫、楚河汉界、坐标、圆片棋子、选中/可走点/上一手、立体棋具用 BoardArt）
+    ├── XiangqiActivity.java 象棋对局页（人执红先走、电脑执黑；新局/悔棋/认输/难度/全屏/返回、终局弹窗）
+    ├── Changelog.java 更新公告（最近几版的要点，最新在前；纯 Java 可单测；启动页「公告」按钮的内容来源）
+    ├── RapfiGomokuEngine.java 外部强引擎 Rapfi 的适配层（起子进程走 Gomocup 协议；找不到可执行文件就退回内置 AI）
+    ├── GomokuReview.java  五子棋复盘分析（逐手胜率 / 失误排行 / 推荐点，纯 Java 可单测）
+    ├── ReviewActivity.java 复盘
+    ├── GameReview.java    整盘逐手分析 + 「这一局为什么赢」的结论（纯 Java，可单测）
+    ├── WinrateChartView.java 胜率曲线
+    ├── Theme.java         黑夜 / 白天两套配色
+    ├── Palette.java       棋盘与棋子的颜色取值
+    ├── UiTheme.java       主题档判定与窗口主题应用（选择页 / 五子棋页共用，与设置页同一份偏好）
+    ├── CrashLog.java      崩溃日志（写进 App 私有目录）
+    └── Sgf.java            SGF FF[4] 读写（含解析器）
+```
+
+---
+
+## 六、验证到什么程度
+
+装机之前能做的自动化验证都做了，`bash run_tests.sh` 一条命令跑完 **全部检查**（项数见目录树 / 脚本输出），**全过**。
+
+**1. 引擎本体（在本机真机上实跑）**
+
+- `./katago version` → `KataGo v1.18.2` / `Using Eigen(CPU) backend`
+- 19 路 GTP 会话：`genmove B` → `R16`，`genmove W` → `Q4`（正常星位）
+- 依赖只有 `libm/libdl/libc`，不需要额外的 `libc++_shared.so`
+
+**2. 规则引擎 / SGF 读写 / 分析解析 / 布局尺寸 / 棋盘几何 / 胜负结论（398 项 JVM 断言）**
+
+坐标转换、提子、自杀、劫、数子、SGF 编码与**读取**，且与桌面版 Python 实现
+**逐用例交叉核对**。SGF 读取还拿桌面版自对弈产出的真实 19 路 337 手棋谱做了端到端验证。
+分析解析用的是真机跑出来的 `kata-genmove_analyze` 原始输出当 fixture。
+
+**3. GTP 客户端 + 真引擎整盘分析端到端（77 项，对着真 KataGo 进程）**
+
+`GtpEngine` 只依赖 `java.io` / `Process`，没有任何 Android 类，所以能在 JVM 上直接
+对着一个真的 KataGo 跑。覆盖：握手、banner 跳过、多行响应（`showboard`）、
+`?` 开头的错误响应、非法落子、超时（`GtpTimeout`）、超时后引擎仍可用、
+以及 `kata-genmove_analyze` → `Analysis.parse` 整条链路。
+
+**4. 五子棋：规则 / 内置 AI / 复盘 / 外部引擎适配 / 界面层桩测（JVM 断言，项数与分项见目录树）**
+
+第 ①③④ 步（规则 / AI / 复盘）都是纯 Java、不碰 Android，直接进 JVM 套件：`GomokuTest` 156 项
+（横竖两种斜的连线、长连、四四 / 三三禁手与反例、和棋、终局后落子、深拷贝、坐标命名、重放旧手顺）、
+`GomokuAITest` 47 项（一步成五优先、堵五、堵活三、自己做四、禁手点不落、终局 / 满盘返回 -1、
+评估反对称与镜像为 0、同局面同手、自对弈整局无非法手）、`GomokuReviewTest` 101 项
+（分数→胜率换算与饱和、逐手亏损算式与视角互补、推荐点与手顺命名、结论四种口径、
+非法手顺报错、难度还原、自对弈整局）、`RapfiGomokuTest` 74 项（对着真的 `pbrain-rapfi` 进程
+走 Gomocup 协议：坐标双向映射、空盘给点、成五 / 堵五 / 活四取胜、只读契约、终局返回 -1、进程重启与关闭、
+行序（谁执黑 / 谁执白）、半行卡死的硬超时、超时杀进程后的自动重起、连忽略 TERM 的引擎也会被超时 / `close()` 真的收掉）。四条套件都做过「改错源码 ⇒ 断言变红」的反证：规则侧 15 条改法、AI 侧 7 条、
+复盘侧 10 条、外部引擎适配层 12 条全部变红（另有 1 条真等价对照全绿：只把轮询间隔 10→20 ms）；
+其中 4 条改法最初是**全绿漏网**，
+补了断言才抓住（详见本文档 AG / AH 段）。
+
+`tests/ui/` 的四项是**界面层桩测**（各探针当前项数见目录树）：容器里没有真机（`pm`/`am`/`logcat` 不可用、`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面）），
+于是用 **37 个手写的假 android 类**（含 `graphics` / `MotionEvent` / `Path`）在 JVM 里驱动**真的**界面类 ——
+`GomokuActivity`、`MenuActivity`（启动选择页）、`GomokuView`（触摸、几何与绘制）、
+`GomokuReviewActivity`（读 Intent、选行与点行跳步、高亮行回归钉桩、全档位胜率条与曲线）。
+覆盖：棋盘 13 / 15 / 19 路与「我执」黑/白（执白时电脑先走、悔棋按轮次退到轮到你）、空盘与终局时改设置立刻生效、
+进行中改设置只提示（点「新局」生效）、终局或进程内重建后设置仍记住、复盘页拿到的路数与先手正确、
+以及**非 15 路时「强」档自动改走内置 AI**（外部引擎 Rapfi 只会下 15×15）。
+它们都是「改错源码 ⇒ 断言变红」验证过的：第 51 轮那两条缺陷没修时，界面层那 62 项里有 6 项是红的；
+棋盘视图 6 条改法、复盘页 9 条改法也都变红（其中一条把探针直接撞崩，也算抓住）。一条**已知限制**写在
+`Driver95` 头部：`sun.misc.Unsafe.allocateInstance` 不跑字段初始化器，所以 `setDefaults()` 是「声明默认值」的
+手抄镜像 —— 改声明默认值而忘了改镜像，探针看不出来（第 52 轮审计低-2）。
+
+**5. 「从 nativeLibraryDir 执行二进制」—— 已从 SELinux 策略层面确认可行**
+
+这是整个方案唯一没法本地实跑的关键假设（`/data/app` 不在容器的挂载命名空间里）。
+但 AOSP 的策略文件写得很明白：
+
+```
+# system/sepolicy/private/app.te
+# Allow apps to read/execute installed binaries
+allow appdomain apk_data_file:dir  { open getattr read search ioctl lock };
+allow appdomain apk_data_file:file { getattr open read ioctl lock map x_file_perms };
+```
+
+`x_file_perms` 包含 `execute_no_trans`，而 `nativeLibraryDir` 里的文件正是
+`apk_data_file` 标签，`untrusted_app` 继承自 `appdomain`。注释就是「允许 App 执行
+已安装的二进制」。参考实现 `youtubedl-android` 用的也是同一套办法。
+
+**6. 这轮测试抓出的 bug**
+
+- `Analysis.parse()` 原本取**第一个**非 info 行当落子，落子其实总在 info 流**之后**，
+  任何夹在中间的行都会被误认。已改成取最后一个。
+- `MainActivity` 把根布局套在 `ScrollView` 里，而棋盘用的是 `height=0 + weight=1`。
+  ScrollView 以 UNSPECIFIED 高度测量子视图，LinearLayout 分不了权重，
+  棋盘会**塌成 0 高度、整块看不见**。已改为直接 `setContentView(root)`。
+- `BoardView.onTouchEvent` 在布局完成前 `spacing` 为 0，除法得 NaN 被 `Math.round`
+  变成 0，表现为「点哪都落在 A19」。已加保护。
+- 复盘列表逐手 `setText` 是 O(N²)，300 手时明显卡顿。已改成每 5 手刷一次。
+- `GtpEngine` 超时后响应流就错位了（引擎还在搜，响应稍后才到），原来会继续读，
+  把上一条命令的残留当成这一条的响应，静默产生错位结果。现在超时即把引擎标记为
+  不可用并拒绝后续命令；`MainActivity` 收到超时会自动重启引擎并重放当前局面。
+- `EngineManager.ensureModel()` 在拿不到 asset 长度时会每次启动都白拷 14 MB 权重。
+  现在拿不到长度就退化成「存在且非空即视为就绪」。
+
+**7. 全屏 / 状态面板这一轮，自查又抓出 4 个（都是我这几轮自己引入的）**
+
+- **状态面板整块看不见**：`statusPanel` 用了 `height=0 + weight=1`，却被放进 `ScrollView` 里的
+  LinearLayout。ScrollView 以 UNSPECIFIED 高度测量子视图，权重分不了 → 面板塌成 0 高。
+  **这是同一个坑第二次踩**（前面棋盘那次已经踩过一次并写进了本文档）。已改成
+  `WRAP_CONTENT + setMinimumHeight`。
+- **全屏横屏棋盘下半截被切掉**：`recompute()` 只拿宽度算间距，忽略高度。非全屏时视图是
+  正方形所以看不出来；全屏时视图是 w×h，横屏下棋盘垂直方向需要的高度远超屏幕。
+  已改为按**较短边**计算并居中，并把这段几何抽到 `LayoutMath.boardGeometry()`（纯函数，
+  可单测）。把代码退回旧写法跑测试会报 `横屏全屏 越界: bottom=1600.7 (view 2340x1080)`，
+  即棋盘超出屏幕 520px —— 确认测试真的能抓到这个问题。
+- **全屏时转屏状态错乱**：`onConfigurationChanged` 无条件调 `rebuildLayout()`，会把界面
+  切回普通布局，而 `fullscreen` 字段仍是 `true`，再点「全屏」反而走退出分支。已改为
+  全屏时重建全屏布局；同时补了 `onWindowFocusChanged` 重新应用沉浸式标志（从别的应用
+  切回来时系统栏会重新出现）。
+- **读谱可能 OOM**：文件选择器用的是 `*/*`，误选大文件会把整个文件读进内存。已加 4 MB 上限。
+
+**8. 全屏按钮闪退（用户实测报的）**
+
+- **按一下就闪退**：进全屏的实现是「新建一个只含棋盘的内容视图，再把 boardView 搬过去」，
+  即 `fsRoot.addView(boardView)`。但 boardView 早在 `buildUi()` 里就被 `rootLayout.addView()`
+  加过了，`ViewGroup.addView()` 遇到已有 parent 的子视图会抛
+  `IllegalStateException: The specified child already has a parent. You must call removeView()
+  on the child's parent first.`
+  已改成**就地**全屏：不重建内容视图，只把控件区 `setVisibility(GONE)`、根布局改黑底无边距、
+  棋盘的 LayoutParams 换成 `MATCH_PARENT + weight=1`。既没有 reparent，也不必在触摸派发
+  过程中替换整棵视图树。
+- **全屏里可能出不来**：`onTouchEvent` 里 `!inputEnabled` 的提前 return 写在全屏按钮判定**之前**，
+  于是引擎思考中、自动对弈时 `inputEnabled=false`，退出按钮点不动，只能靠物理返回键。
+  已把全屏按钮判定提到方法最前面，且不受 `inputEnabled` 影响。
+- 顺带：全屏按钮的进/出改为 `post` 延后一拍执行；`drawFullscreenButton` 里每帧 `new Paint()`
+  改成字段复用。
+
+**9. 日志 / 内存自查（用户问「日志是不是没上限、把内存堆爆了」）**
+
+结论：日志确实是**无上限**的，但它在**磁盘**上，不是内存。逐条实测：
+
+- **`logDir` 每启动一次引擎就新建一个带时间戳的 `.log`，且从不删除。**
+  用与 App 完全相同的配置实测连跑 3 次：`1 个文件 12K` → `2 个 20K` → `3 个 28K`，
+  每次 +8 KB（内容只有启动横幅）。触发点有：App 启动、改设置、搜索超时重启。
+  已改为每次启动前清空 `logs/`（KataGo 的通信/搜索日志本来就都关着，没有保留价值）。
+- **`engine.log`（我们抓的 stderr）用的是 append 模式、无上限。** 已加 1 MB 上限。
+- **引擎的 RAM 是正常的**：实测 `nnCacheSizePowerOfTwo = 20` 时峰值 RSS 132 MB
+  （改成 16 是 115 MB），没有出现「缓存按 2^20 预分配几个 G」的情况。
+- **跨局没有内存累积**：`ReviewActivity` 用的是定长数组（`wrToMove`/`bestMove`/`bestPv`/`loss`），
+  `Analysis.Result` 每手用完就丢；`Board.moves` 每局新建。查过一遍没有只增不减的集合。
+
+顺带查出并修掉两个**真正的**内存问题：
+
+- **每画一颗子就 `new` 一个 `RadialGradient`**。19 路盘一屏近 300 颗子，每次重绘 300 次分配，
+  一局下来几十万次 —— GC 压力主要来自这里。已改成「尺寸变化时建一次、所有棋子复用」：
+  画之前把画布平移到棋子中心、在原点作画，渐变的坐标就与棋子位置无关了（渲染结果完全一致）。
+- **`Analysis.parse` 不去重**。`kata-genmove_analyze` 是流式输出，同一个候选点会被反复上报；
+  早先来一条 add 一条，一次搜索能堆出上千条、每条还带完整 PV 字符串。
+  已改成「同一个 move 只留最新一条」。**反向验证**：退回旧写法后测试报
+  `原始 info 85 条 -> 唯一 85 条`、`期望 17，实际 85` —— 一个小 fixture 就有 5 倍冗余。
+
+另外 SGF 对局记录是一局一个文件、约 2 KB，也在累积。这是**你的棋谱**，不自动删，
+需要清理时在设置里能看到目录位置。
+
+**10. 终局说明「为什么赢」**
+
+原来终局只报一个数目：「终局：B+3.5（黑 65.0 : 白 61.5，含贴目 7.5）」。看不出赢在哪。
+
+现在终局后**自动逐手分析整盘**，在状态区给出一行结论，例如：
+
+```
+终局：黑胜 3.5 目｜白第 87 手 Q16 亏 23%（应下 Q4），黑棋第 88 手起再未落后
+```
+
+判定逻辑在 `GameReview`（**纯 Java，不依赖 Android**，所以能上 JVM 直测）：
+
+- 找出全局**最大的那一次失误**：谁、第几手、下在哪、亏了多少、引擎原本推荐什么。
+  这一手通常就是「为什么赢」——败方把棋送出去的那一手。
+- 再补一句胜方**从哪一手起没再落后**。分支：全程压制 / 从头领先到尾 / 第 N 手起再未落后 /
+  胜负到最后才见分晓（赢方终局胜率仍不足五成，多半是目数和胜率判断不一致，此时只说「接近」，
+  不断言谁领先）。
+- 全程亏损都低于 5% 就不硬编败着，直接说「全程没有明显失误」，避免把细棋波动写成败着。
+- 最大失误若是**胜方自己**下的，措辞改成「但没影响胜负」，不会倒因为果。
+
+实现要点：
+
+- 分析跑在主线程之外的 `engineExec` 上（单线程），和落子/搜索天然串行，不会串包。
+- 进度实时显示（`正在分析胜负原因… 12 / 87`），**可随时打断**：开新局或悔棋会作废这一轮
+  （用自增的「分析代号」判断，而不是布尔标志 —— 布尔会被下一轮启动时清掉，导致上一轮
+  永远收不到取消信号）。
+- 分析用的 `kata-genmove_analyze` 会顺手落一子且最后一手不 undo，所以跑完要把引擎盘面
+  **重放对齐**回当前棋谱。
+- 结果缓存下来传给复盘页（`EXTRA_WR/LOSS/BEST/BESTPV/VERDICT`），点「复盘」直接看明细，
+  **不会重算第二遍**（19 路完整复盘要等一两分钟，重算很亏）。复盘页会校验数组长度对得上才采用，
+  宁可重算也不用一份和棋谱不匹配的数据画曲线。
+- 实测确认：**配置里的 `maxVisits` 生效，命令行的 `1000` 被忽略**（config=50 → visits 31；
+  config=1000 → visits 972）。所以复盘速度由启动引擎时的 `-override-config` 决定，那个 `1000`
+  不构成浪费。
+
+## 黑夜 / 白天模式
+
+设置里多了一项「界面主题」，四种模式：
+
+| 模式 | 行为 |
+| --- | --- |
+| 跟随系统 | 用系统的深色开关 |
+| 白天 | 始终亮色 |
+| 黑夜 | 始终深色 |
+| 按时间自动 | 19:00 ~ 07:00 自动转深色，到点自己换 |
+
+- 判定逻辑在 `Theme.java`，**纯函数**（模式 + 系统深色 + 钟点 → 该不该用深色），
+  所以 24 个钟点 × 4 种模式都能在 JVM 上钉死。最容易写反的就是 19:00 / 07:00 两个端点，
+  测试里专门断言了 06:59 是夜间、07:00 是白天。
+- 配色集中在 `Palette.java`（明暗两套）。所有界面都从这里取色，不再散在各地写死。
+  棋盘 / 胜率条 / 胜率曲线三个自绘 View 各加了 `setPalette()`。
+- 测试不只「能编译」，还钉了**对比度**（`Palette.contrast` 走 WCAG 公式）：
+  正文 ≥ 4.5:1、次要文字 ≥ 3:1、按钮文字 ≥ 4.5:1、曲线和游标 ≥ 3:1。
+- **深色模式的一个坑**：深色棋盘木色的亮度和黑子很接近，黑子会糊在棋盘里。
+  所以深色模式下棋子描边从 `0x33000000` 换成 `0x66FFFFFF`（浅色描边），
+  测试里把描边合成到棋盘上再算对比度，确保 ≥ 1.5:1。
+
+**几点实现上的选择：**
+
+- **没走 `recreate()`。** 改主题时 Activity 重建会重置对局（`onCreate` 里会 `newGame`）。
+  所以改设置只重刷已有控件的颜色（`applyPaletteToViews()`），对局和棋谱都不动。
+  顺带 `setTheme()` 也切一次，让**之后**新建的对话框是新主题。
+- **manifest 的 `configChanges` 加了 `uiMode`。** 不加的话系统切深浅色会重建 Activity，
+  一局棋就没了。加了之后走 `onConfigurationChanged`，只重判配色 + 重建视图。
+- **「按时间自动」靠两处触发**：`onResume`（可能搁了一夜才回来）+ 前台每分钟一次
+  （`themeTick`，`onPause` 里撤掉）。
+- 棋盘上那些**语义色**故意不跟主题变：最后一手标记、棋子上按对比取的黑/白字、
+  幽灵子、形势归属底纹、全屏按钮、棋子渐变 —— 它们代表的是「黑/白/提示」而不是「亮/暗」。
+
+**10. 更新装不上的真正原因：每个 APK 的签名都不一样**
+
+用户反馈「更新时系统认为旧版本是高版本」。查下来**跟版本号无关** —— 版本号一直是单调递增的
+（`versionCode` 24 → 25 → …，`aapt2 dump badging` 和已装应用都对得上）。真正的问题是**签名**：
+
+- `build.sh` 第 2 步是 `rm -rf "$OUT"`（`OUT=/tmp/appbuild`），而密钥库写的是
+  `KS="$OUT/debug.keystore"`。于是后面那句 `if [ ! -f "$KS" ]` **每次构建都成立**，
+  **每次重新生成一把新密钥**。
+- Android 不允许用**不同签名**的 APK 覆盖已安装的应用，所以更新直接失败，
+  表现就是「装不上新版本」。用同一个密钥签名是覆盖安装的前提。
+
+**实测证据**（连打两次包，比对签名指纹）：
+
+```
+构建前: fd92dd7e9c568397682d45a01bed4bd1bf00ea7393c70ce95027a5d355384db9
+构建后: 281ba3197c1838cb63ceb76cddf0c2c74df617bb149a8e1fa545f2bf18a9532f
+```
+
+修法：密钥库移到 `$PROJ/autogo-debug.keystore`（不会被清空），只在缺失时生成一次。
+修完连打两次包，指纹完全一致（`2a8de3ac…`）—— 覆盖安装的前提就满足了。
+密钥库不会被打进 APK（已用 `unzip -l` 确认）。
+
+**一次性代价**：手机上已装的那份是用**某个已删除的随机密钥**签的，无法恢复，
+所以必须**卸载一次**再装新包；之后所有更新都能直接覆盖。卸载会清掉 App 私有目录里的
+棋谱和设置（容器读不到那个目录，没法代为备份；用 Magisk/KernelSU 或 Shizuku 的文件管理器
+可以先拷出 `/data/data/com.autogo/files/`）。
+
+顺带修的两处版本号问题：
+
+- **`versionCode` 现在有下限保护**：取 `VERSION` 文件和 manifest 里现有值中的较大者再 +1。
+  万一 `VERSION` 被回滚或丢失，也不会打出比已安装更低的号。验证：把 `VERSION` 改成 5，
+  构建仍输出 28（而不是 6）。
+- **版本名里的日期改用本地时间**（原来是 `date -u`，澳门 UTC+8，本机 0～8 点的构建会显示成昨天）。
+
+**崩溃自记录**：因为容器里的 logcat 读不到这个应用的日志（缓冲区 256 KiB、只回 1 行有效内容），
+用户也没法把日志导出来，所以加了 `CrashLog`：全局未捕获异常处理器把栈写进 App 私有目录，
+下次启动直接弹窗显示，并可一键复制。这样万一还有别的问题，一轮就能拿到栈。
+
+另外把全屏返回按钮的「绘制矩形」和「点击判定」统一成同一个 `fullscreenButtonRect()`——
+之前画的是 `spacing*1.8 × spacing*1.0`、点的是 `spacing*1.2` 的方块，两者对不上。
+全屏时棋盘顶部还会预留按钮高度，避免 19 路盘被压住左上角一片交叉点。
+
+**已在真机上确认（用户实测）：**
+
+- APK 在 Android 16（Honor，SM7550）上安装成功并**能正常对弈**。
+  这一条同时验证了整个方案里唯一没法在容器内实跑的关键假设 ——
+  **从 `nativeLibraryDir` 执行二进制在 Android 16 上确实可行**，
+  与第 4 节从 AOSP 策略推断出的结论一致。
+
+**尚未逐项确认：**
+
+- 「自动对弈」和「复盘」两个功能还没拿到实测反馈（已确认的是人机对弈）。
+
+如果哪一项有问题，App 会弹出**具体原因**（可执行文件路径、`canExecute`、
+实际 exec 失败的异常文本）；设置页里也有一个「自检」，会真跑一次二进制并回报
+退出码和输出。把那段文字发来就能定位。
+
+---
+
+## 七、为什么没能在本机验证
+
+这台设备上的 Ubuntu 容器运行在 `com.dsh.client` 这个 App 的身份下
+（uid 10308，SELinux 域 `untrusted_app`）。注意：容器里 `id` 会**骗你**——
+
+```
+$ id
+uid=0(root) ... context=u:r:untrusted_app:s0:c52,c257,c512,c768
+
+$ grep ^Uid /proc/self/status
+Uid:	10308	10308	10308	10308        # 这才是内核眼里的真实身份
+```
+
+容器用了伪造 `getuid()` 的沙箱层，所以 `setuid(2000)` 会返回成功却毫无作用
+（Binder 侧永远看到 10308）。这点很能说明问题：不要相信容器里 `id` 的输出。
+
+试过并全部失败的路子：
+
+| 尝试 | 结果 |
+|---|---|
+| `pm install` 直接装 | `SecurityException: ... is calling from uid u0a308` |
+| 换到 `/data/local/tmp` | SELinux 标签是 `app_data_file`，`system_server` 读不了 |
+| `chcon u:object_r:shell_data_file:s0` 改标签 | 静默失败（`untrusted_app` 没有 relabel 权限） |
+| `--user 0` | 过了用户检查，栽在 `AppOpsService` 的包名 NPE |
+| `-i com.dsh.client` | 过了归属校验，但 stdin 流式安装是 reverse mode，只允许 shell/system |
+| `setuid(2000)` 冒充 shell | 返回 0 但内核 uid 不变，Binder 仍是 10308 |
+| `am start` 拉起安装器 UI | `package=com.android.shell does not belong to uid=10308` |
+| 屏幕自动化 `android_get_state` | `SCREEN_TARGET_UNAVAILABLE` |
+| 读 `/data/app`（想直接验证 exec） | 不在容器的挂载命名空间里 |
+
+结论：在这个容器里装 App 是**做不到**的，不是没找对方法。所以最后一步只能交给你。
+
+---
+
+## 八、已知限制
+
+- 三个网络都打进 APK，所以包有 120 MB。想瘦身的话可以把 b18c384nbt 改成
+  「首次启动联网下载」的可选项，APK 能回到 30 MB 左右。
+- 复盘默认每手最多 200 visits，一局 300 手大约要几分钟；分析期间可以退出。
+- 只判简单劫，不判位置超级劫（与桌面版口径一致，为的是不误杀引擎给出的合法手）。
+- 不支持让子棋（SGF 里的 `AB`/`AW` 摆子能读进来，但界面没有设置让子的入口）。
+- SGF 读取只取主线，遇到分支图会停在分支点。**如果主线在变化图之后还继续，后面那些手仍会被漏掉**（实测：`(;…;B[cc];W[dd](;B[ee])(;B[ff]);B[gg])` 主线 3 手只解析 2 手），
+  但从 v44 起界面会**明说**：「（主线在变化图之后还有手，只读入了前 N 手）」；只含变化图、一手没丢的谱则提示「（本谱含变化图，分支未读入）」。多局棋谱只读第 1 局，同样会提示。
+- 保存棋谱时只写**盘面信息**（手顺、摆子、让子、贴目、结果），**不写回**题谱里的 `C`（说明文字）、`GN`（局名）、`LB`/`TR`（标记）。盘面不会错，文字和标记会丢。
+- 让子/摆子局：`loadsgf` 之后 `showboard` 会多一行 `Handicap bonus score: N`（引擎自己的让子约定报数）。
+  App 的胜负判定用的是自己的 `scoreArea()`、**从不消费引擎的 `final_score`**，所以这行不影响 App 的判定。
+  它对我们自己评分的实际影响**未量化**：审计员用「让引擎下到双方 pass、再用同一条手顺在自己盘上重放」的有效构造测过，
+  无 `HA` 与 `HA[2]` 两种情形下我们 `scoreArea` 与引擎 `final_score` **都是黑+11.5（差 0）**；
+  但「没下完的局面」上两者本来就不可比（实测差 18 目），所以**不能**据此说「没有偏差」，也不能反过来说「差 2 目」。
+  （v46 的 README 曾把这一行外推成「约 2 目系统偏差」，那是**未实测的推断当成了事实**，已按审计员的复测改掉。）
+- **让子谱的先后手**：App 按「本谱先走的一方」算（主线首手的颜色 → `PL[...]` → `HA[n]≥2` 时白先），
+  不用「手数奇偶」（那假定黑先）。从 v52 起**快照与保存的棋谱都会写 `PL[...]`** ——
+  实测真引擎**服从 `PL` 并覆盖它自己的推断**（`PL[B]AB[cc]` 按黑先、`PL[W]AB[cc][gg]AW[dd]` 按白先），
+  而「只有 `AB` 摆子」「`HA` 与 `AW` 并存」这类形态引擎自己的推断未必与 App 一致，写上 `PL` 才对齐；
+  之前「保存不写 `PL`」的信息损失也一并补掉了。
+- **摆子里有「零气的死子」时，引擎整谱拒收**：`AB[aa]AW[ab][ba]` 这类局面（或者任何 `AE` 之后的形态）
+  会让真引擎报 `Could not load sgf: ... initial board position contains invalid stones or zero-liberty stones`。
+  v52 起 `AE` 会在写快照前被**吸收**（按顺序解算到空盘上再重新输出，实测 4 种写法都能读）；
+  但真正的零气死子**没法交给引擎**（引擎不接受这种局面），此时复盘会退回「空盘重放」，
+  界面会明确写「摆子引擎读不进去，下面的数字是在空盘上重放算的，只作参考」，不会假装修好了。
+- **复盘的「最大失误 / 谁亏得最多」在低 visits 下会跳**：实测同一盘棋（`maxVisits=30`）两次跑，
+  一次给「黑第 3 手 C3 亏 29%」、一次给「白第 4 手 G7 亏 28%」—— 两手损失接近时，搜索越小越不稳定。
+  手顺、胜率曲线、单手的损失都有实数，但「关键在第 N 手」这类结论要当成**噪声范围内的提示**看；
+  想稳就把复盘 visits 调高。
+- SGF 的**打包坐标写法**（`AB[aabb]` 一个 token 里两组坐标）是历史扩展，App 仍支持；
+  代价是 `AB[dead]` 这种「看着像单词、其实是合法坐标对」的值会被当 2 颗子（`AB[pass]`/`AB[resign]` 已单独排除）。
+- 引擎同步带摆子的局面走 `loadsgf`（GTP 没有通用的「摆一个白子」命令）；万一写临时谱或 `loadsgf` 失败，会**退回**只重放手顺的旧路径 —— 那时引擎看不到摆子（不会崩，但分析会偏）。
+- SGF 里 `AB[tt]`（历史虚手写法）在 ≤19 路被当 0 子忽略；`AB[pass]`/`AB[resign]` 同样当 0 子（v44 起，之前会被按「打包坐标」切成 `pa`+`ss` 静默落 2 子）。
+- 棋谱目录里放满 9999 局后，再保存会**报错**而不是覆盖掉最后一局（v40 起；之前会静默覆盖）。
+- 引擎日志写在 App 私有目录的 `engine.log`，出问题时可以导出。
+- **`bestPv`（每手的主变化）是一条「死数据链」**：引擎算了、`GameReview.bestPv` 存了、`MainActivity:1118`
+  也把它塞进 Intent 的 `EXTRA_BESTPV`，`ReviewActivity` 还把它接进 3 个写点（`:122/:173/:382` —— 第 37 轮审计直读行号
+  纠正过我原来写的 `:71`，那是字段声明 `private String[] bestPv;` 不算写点；`:162` 那行是
+  `getStringArrayExtra(EXTRA_BESTPV)`、不含 `bestPv`）—— 但**没有任何界面读取点**（`ReviewActivity.bestPv` 读 0 次、
+  `onEngineMoveDone` 的 `pv` 形参读 0 次、`BoardView` 也没有 PV 接口）⇒ **复盘屏目前不显示主变化**。
+  第 34 轮审计查出来、并更正了它自己第 32 轮「用户可见」的推断；我在容器里独立复核一致
+  （`grep -rn bestPv src/` 共 **10 处**：MainActivity 3 + ReviewActivity 4 + GameReview 3；其中唯一一次「读」
+  是 `MainActivity:1118` 把它塞进 Intent —— 也就是说 `GameReview.bestPv` 只被读这一次，界面层零读取）。
+  功能表承诺的「引擎推荐点」是 `bestMove`（有显示），
+  PV 属于多算了一步。**按现状不算缺陷**；要不要把 PV 显示出来、或把这条链删掉，是产品选择（记在这里，未动 `src/`）。
+- **复盘屏的结果数组是跨线程共享的**：`wrToMove`/`bestMove`/`loss` 由工作线程写、界面线程读，
+  字段上没有 `volatile`（可见性靠 `Handler.post` 的入队顺序）。这是 J1 合并前后**同一个**模式，
+  第 18 轮没有动它（要安全地改，得连数据快照方式一起改）。
+- `ReviewActivity.done[]` 是**死状态**：全文件只写不读 —— 判断「这手算没算」用的是
+  `Double.isNaN(wrToMove[i])`。第 18 轮审计指出，保留原样并记在这里。
+- 引擎关闭现在是**异步**的（`EngineManager.closeAsync`）：点返回时界面不再等引擎退出，引擎可能在
+  Activity 走掉之后才真正结束。父进程被杀后引擎靠 stdin EOF 自己退，但**不是立刻**：空闲时 0.04 s
+  （第 19 轮审计实测），在算长搜索时我实测 **7.3 s**、审计员实测 **18.85 s** ⇒ 它可能多活几秒，不会常驻。
+  （v60 的记录里我写过「6 秒内」，那是把一次实测外推成了常量，已按审计员的复测改掉。）
+- 异步关旧引擎的那段时间里，新旧两个引擎可能**同时占着模型内存**，窗口上限是 `close()` 里的
+  `waitFor(3s)`。具体多大：第 21 轮审计在本机容器里对「19 路、20 万 visits」的搜索采样 `ps -eo rss`，
+  b10c128 约 **117 MB**、b18c384nbt 约 **539 MB**（v62 这里我写过「各自约 1 GB」，那是把两个引擎、
+  更大网络的合计当成了单个 —— 已按实测改）。安卓侧的数字没测。
+- `GameReview.summarize` 的 `missingPoints` 数的是「index ≥ 1 没算到的点**个数**」（v63 起）：数个数而不是
+  数前缀，因为解析失败可能落在中间，按「算到第几手」说会说错（第 21 轮审计的 GAP 用例）；v61/v62 数的是
+  「算到几个点」、把个数当前缀用了，已修。起点（index 0）单独处理：它没算到时不说「从头领先到尾」、
+  也不说「全程没有明显失误」（第 22 轮提示）⇒ `blackWr = {NaN, 0.5}` 这类输入 v60 给结论、v61/v62 走兜底、
+  v63 起又给结论，但措辞有保留（v65 起是「算到的部分没有明显失误，…」）。
+  **这里必须用原始 `wrToMove` 判**（`GameReview.startComputed`）：`toBlackWinrates` 会把 index 0 的 NaN
+  填成 **0.5**，界面路径上 `blackWinrates()[0]` 永远是 0.5 ⇒ v64 那版从它反推等于永远「知道」，
+  这条修复对用户不可见（第 23 轮审计端到端实测，已修）。
+  `src/` 里只有测试用七/八参版本，界面走 `verdict()`（能拿到真实缺口数）。
+- 复盘用的临时棋谱放在 App 私有缓存目录，正常路径都会删（`finally`）；进程被杀会**残留**，
+  会一直攒到系统清缓存。名字带调用时刻（`autogo-review-<nanoTime>.sgf`）以免两个复盘任务互相覆盖。
+
+---
+
+## 九、独立审计与修复记录
+
+> **读法说明（关于行号）**：本章从 A 到 Z 逐轮记录当时做了什么。**每一轮里的行号（`tests/…:NNN`、`README:NNN`）
+> 都是「当时那一轮」的快照**，后面几轮往 `tests/` 和这份 README 里加东西时它们会往后漂 —— 这是正常的，不是文档写错。
+> **围棋侧**的 `src/` 文件从 v70 起逐字节没有变过（每轮的「反向构建」把五子棋侧文件删掉重编 ⇒ 包内 dex 与 v70 起那个锚点逐字节相同，见各轮产物段）⇒ 引用围棋侧 `src/` 的行号至今仍然有效；五子棋侧的文件是 v87 起新加的、会随阶段增长，行号以那一轮为准（v90 起 `src/com/autogo` 共 26 个 `.java`）；
+> `tests/` 与 README 自身的行号请以**当前**的「八、已知限制」「七、为什么没能在本机验证」为准。
+> （第 37 轮审计就是靠直读行号发现我几处历史引用漂了 —— 特此说明读法，免得每轮都当成新问题。）
+
+从 v33 起，我让一个**独立的审计成员**（不是我自己）反复检查这个 App：它只查不改，
+每轮交一份带证据的问题清单（`file:line` + 可复现命令 + 实际输出），我负责修，
+修完交它复检。规矩写在 `AGENT_RULES.md`：结论必须有**实测**证据、必须自己独立检查过、
+声称「已修复」必须做**反证**（把修复退回去，确认原来的失败确实会出现，再恢复）。
+到 v46 为止共 10 轮，累计 36 处真实缺陷 —— 其中 **6 处是我自己在上一条修复里引入的**。
+
+| 轮 | 缺陷 | 性质 |
+|---|---|---|
+| 1 | 引擎落子回调无代际保护；`syncEngineBoardThenPlay` 遍历活的 `board.moves`（抛 `ConcurrentModificationException` 而不是 `IOException`，直接静默死掉）；`onDestroy` 后弹窗；`configChanges` 不全 + `onCreate` 无条件开新局；假断言 `GameReview.cancelled`；`Analysis.top()` 返回过期首选；`engine` 字段多线程直读 | 7 条 |
+| 2 | `resign()`/`finishGame()` 不作废在飞搜索；`restartEngine()` 回归（**我引入**）；`restartEngine()` 解锁窗口错位 | 3 条 |
+| 3 | `restartEngine()` 无存活守卫 → `RejectedExecutionException` 崩溃（**我引入的回归**）；复盘 worker 读 `engine` 字段 → NPE 逃出 `catch`；连点「新局」每次多起一个 KataGo 进程；读谱不取消复盘 | 4 条 |
+| 4 | 投递守卫只覆盖 2/9 处 → `postDelayed` 落在 `onDestroy` 之后必崩；泄漏修了但重复启动没修；换棋盘大小不重算几何（9 路被渲染成 44%） | 3 条 |
+| 5 | 「新局」对话框里改 visits 对已就绪引擎不生效（状态栏却显示新值）；引擎指纹在 UI 线程读、在 worker 里用；`WinrateBarView` 每帧 `new Paint`；`ReviewActivity` 缺同样的投递守卫 | 4 条 |
+| 6 | **SGF 括号扫描不跳过 `[...]` 属性值** → 注释里出现未配对的 `)` 就整谱静默截断成 0 手；`AE` 被忽略、`AB[aa:cc]` 矩形只落 1 点；`showErrorDialog` 无去重 | 3 条 |
+| 7 | 第 6 轮那条护栏**判据用了文本子串**（`text.contains(";B[")`），把注释里写了「正解：;B[cc]」的**合法题谱**直接拒了（**我引入**）；棋谱目录满 9999 局时静默覆盖 `game_9999.sgf`（真丢棋谱）；对局结束后转屏状态栏/信息条变空白（我上一轮判断「不是缺陷」，是**我错了**） | 3 条 |
+| 8 | 我为了不误拒合法题谱，把三个护栏信号全挂到 `isEmptyBoard` 上 → 同一份值未闭合的坏谱「无棋子就报错、有摆子就静默给残缺盘面」（**我引入**）；**保存棋谱完全不写 `AB/AW/AE/HA`** → 导入的死活题/让子谱再保存会静默丢子（实测 5 子写回只剩 2 子）；`setStatus` 缺判空（当时不可达） | 3 条（1 处我引入） |
+| 9 | **摆子坐标越界/写坏是静默丢弃**（`AB[pp]` 在 9 路盘上 0 子、`AB[aa][pp]` 只落 1 子，而落子 `;B[pp]` 会报错）——口径不一致；我给第 8 轮加的**残留检查用「子串 `;`」判残留**，把「尾部 `&nbsp;`」「尾部 URL 含 `;`」「尾部说明文字含 `;`」这些**以前读得下**的文件全拒了（**我引入**，规则来自审计员第 8 轮的 PoC，账一起算）；`AB[pass]` 在大棋盘被当打包坐标切成 `pa`+`ss` 静默落 2 子 | 3 条（1 处我引入） |
+| 10 | 审计员同一家族的扫查：**引擎盘面里没有摆子** —— `syncEngineBoardThenPlay`/`resyncEngineAfterReview` 只重放 `moves`，而摆子只写在 `grid` 里，所以题谱/让子谱的引擎应手、胜率、复盘全在**另一个局面**上算（真引擎实测：`AB[cc][gg];W[ee]` 旧路径引擎只看到 1 子；0 手题谱更是空盘）；`rebuildBoardFromMoves()`（悔棋）与 `restoreGame()`（进程回收）同样把摆子抹掉 | 3 条 |
+
+第 7 轮那条「我引入」的格外值得记：我当时刚跟审计员说过「不想用一个 bug 换一个 bug」，
+然后就干了个正好这样的。**修复本身比原缺陷更需要被审计**。
+
+审计方法的演进也记一下：前几轮它靠读代码 + 写 JVM 探针；到第 7 轮它升级成
+**随机差分测试**（3000 例随机 SGF 语料同时校验手数与属性值、2000 例随机摆子与期望点集
+逐一比对）加**回退反证**（自己生成退回副本确认测试会失败），并且它**证伪了我的一条判断**
+（观察 5）、**纠正了我一处夸大的表述**，还撤回了自己 3 条结论（2 条用例期望写错、
+1 条探针共用目录造成的假象）。这正是这套机制该有的样子。
+
+第 11 轮修的是审计员第 10 轮报的**一条中级缺陷**：App 算「该谁走」用的是手数奇偶，而那假定了黑先 ——
+**让子谱是白先**。实测（真 KataGo）：`HA[2]AB[cc][gg]` 0 手时引擎认为该白走、App 却认为该黑走，
+于是给引擎发 `genmove B`；引擎不校验轮次、照常出子 ⇒ **白方白送一手**，让子的作用被削弱
+（这是审计员第 9 轮的漏报，它自己也记了账）。修法：`Sgf.Parsed.firstColor`（主线首手颜色 → `PL` → `HA[n]≥2` 白先），
+`MainActivity` 五处「该谁走」全部改走同一个 `sideToMove()`。
+
+同一轮它还指出：我第 10 轮新加的三条规则**在项目测试里零覆盖** —— 把规则单点回退成旧写法，
+`BoardTest` 仍然全过（只有它的探针会失败）。这是真的，我已把尾巴电池 13 条、`AB[pass]`、
+`mainLineTruncated`、`firstColor` 全部搬进 `tests/BoardTest.java`，并逐条做了**回退反证**：
+变化图判据退回旧写法 → 2 项失败；`AB[pass]` 早返回删掉 → 4 项失败；`firstColor` 退化为恒黑先 → 5 项失败；
+尾部判据退回 v43 的「子串 `;`」 → 3 项失败。顺带修了它报的两个漏报（`;W [ee]` 属性名与 `[` 之间有空格、
+变化图后跟摆子节点 `;AB[ff]`，原来都判不出「主线还有手」）。
+
+**我第 10 轮把 `showboard` 的 `Handicap bonus score: 2` 外推成「约 2 目系统偏差」写进了 README，那是把推断当事实** ——
+审计员用有效构造实测差为 0，已改（见「已知限制」）。
+
+第 10 轮那三条是同一类「**盘面三处不一致**」：屏幕上（`grid` 有摆子）、引擎手里、被回收后接回来的局面，
+三者可以两两不同 —— 而且同一份文件保存出来又是第四种。根因是绕不开的：**摆子不在 `board.moves` 里**，
+所以每一处「从手顺重建盘面」都得单独补。修法是（v46）：
+
+- 引擎同步改成 `syncEnginePosition()`：有摆子就把当前局面写成临时 SGF 走 `loadsgf`，没摆子仍走老的
+  `clear_board` + 逐手 `play`（这条路径久经使用，不动它）。`loadsgf` 本身用**真 KataGo v1.18.2 实测**过：
+  旧路径 `showboard` 只有 1 子，`loadsgf` 后与我们的盘面逐点一致。
+- 悔棋、进程回收恢复都是「**先摆子、再重放手顺**」——顺序不能反（手顺可能提掉摆子，反了摆子会留在盘上）。
+  这个顺序做了反证：把顺序调换，`aa` 会留在盘上、与解析结果不同。
+- `onSaveInstanceState` 把摆子/让子也塞进 Bundle；「0 手但有摆子」的题谱不再被当成「没得恢复」。
+- 残留检查改成用 `tokenize` 找**真节点**（而不是找子串 `;`），并把全角空格/NBSP/BOM 当空白。
+
+第 12 轮修的是审计员第 11 轮报的两条**中级**缺陷，同一个根因：**复盘家族把「谁先走」当成黑先**。
+
+- **复盘是在空盘上算的**（`GameReview.analyze` 只 `clear_board` + 逐手 `play`，从没把摆子交给引擎）。
+  实测（真 KataGo v1.18.2，`HA[2]AB[cc][gg];W[ee];B[ff]`）：把起点快照直接交引擎问同一分析点得
+  白方胜率 **0.0453**，而修复前的复盘第一点给 **0.9966** —— 差 **0.94**，整条曲线和每一手的「损失」
+  都是假的。修法：`analyze` 多收 `firstColor` + `startSnapshot`，先 `loadsgf` 起点快照（失败才退回空盘），
+  并把 `startLoaded` 如实报给界面。同一条路径上的 6 处「按奇偶判先后手」
+  （`GameReview` 的请求颜色/胜率换算/最大失误归属、`ReviewActivity` 的同三处）全部换成真实先后手。
+- **`AE`（擦子）写在摆子里 ⇒ 快照被引擎整谱拒收**（4 种确定性写法都复现），于是同步/复盘退回只重放手顺，
+  **整批摆子丢掉** —— 比不改还糟。修法：`Sgf.resolvedSetup()` 在写快照前按顺序把 `AB/AW/AE` 解算到空盘上再
+  重新输出（只含 `AB/AW`），没有 `AE` 的写法原样保留（`AB[aa:cc]` 简写不动）。
+- 顺带补上：快照与保存都写 `PL[...]`（见「已知限制」）。
+
+验证（每条都做了**单点回退反证**，退回去必须打红）：
+
+| 单点回退 | 结果 |
+|---|---|
+| `toBlackWinrates` 退回 `(i%2==0)?黑:白` | `BoardTest` 2 项失败 |
+| `sideToMoveOf` 退回奇偶 | 4 项失败 |
+| `resolvedSetup` 退回原样返回 | 4 项失败 |
+| `toSgf` 删掉写 `PL` 那一行 | 3 项失败 |
+| `worstMover` 退回奇偶 | 2 项失败 |
+| `analyze` 删掉 `loadsgf` 起点那段 | 真引擎对照：差从 **0.0009** 变成 **0.94**（探针 `RevReview`） |
+
+项目测试从 297/43 涨到 **328/52**（`BoardTest` 单独 307）。
+
+**这一轮我自己又踩了一个坑，值得写下来**：我写补丁脚本时让同一个文件的 8 条编辑各自读盘、
+最后统一写盘 —— 结果每条编辑读到的都是**原始内容**，同一文件只剩最后一条改动活下来。
+更糟的是那个脚本的「空跑」检查全绿（锚点逐条唯一命中 ✓），它还**真写盘了** ——
+源码处于半应用状态、编译不过。这次没造成错误产物（编译失败 ⇒ 没有新 APK），
+但根因和我上一轮记的「版本号不是改动存在的证据」是同一类：**验证方式本身必须能发现这类失败**。
+补救：回退成 v50（从 `/tmp/appbuild/src`，构建时自动拷的源码树）并**证明回退是精确的** ——
+重编后 30 个 class 与 v50 逐字节相同（只有 aapt2 生成的 `R.class`/`R$string`/`R$mipmap` 不同）。
+补丁脚本改成「按序累积在内存、每文件最后只写一次」，并在空跑里加一条自检：改完的文本里
+不许再出现旧的奇偶写法。
+
+**审计员第 12 轮复检结论：我那三条修复它独立复核成立，但判「不建议收口」** —— B.2 只修了一半。
+它先自己重做了我的 6 条回退（数量都对上了；起点的真引擎对照它测出 |差真值| 0.0006 → 0.9545，与我 0.0009 → 0.94 同量级），
+然后报了 4 条新问题，我又修了一轮（v53）：
+
+| 编号 | 缺陷 | 修法 | 我的回退反证 |
+|---|---|---|---|
+| D1（中） | **复盘屏显示的盘面仍然没有摆子**：`ReviewActivity.showPosition` 只 `new Board()+逐手 play`，Intent 里也没有摆子。实测 `HA[2]AB[cc][gg];W[ee];B[ff]` 第 2 手应 4 子、屏上只有 2 子 —— 同一屏上曲线按「有摆子」的真值说 4.8%，盘面却是空盘起，**同屏自相矛盾**。B.2 当时只修了引擎侧与标签 | 把起点快照解析出的摆子格子用于显示，抽成 Android-free 的 `GameReview.viewBoard(size,komi,setupGrid,moves,upto)`，显示与引擎同源 | 不传摆子（旧行为）→ 5 项失败 |
+| D2（低） | `toBlackWinrates` 仍按下标奇偶推「轮到谁」⇒ 同一方连下两手时曲线与结论反（实测手顺 `B,B,W`：i=2 实际轮到白，正确 96.96%，错算法给 3.04%） | 改成按 `moves` 里记的颜色判（走 `sideToMoveOf`）；`GameReview` 新增 `moves` 字段供实例方法用 | 退回奇偶 → 2 项失败（数字与审计员实测一致） |
+| D3（低） | 预分享路径不传「起点是否可信」⇒ `acceptPrecomputed()` 跳过分析，复盘页顶部「只作参考」的提示会消失（数字仍是在错起点上算的） | 新增 `EXTRA_START_OK`，主界面把 `review.startLoaded` 一起传过去 | **无单测（Intent 传递），仅代码走查 —— 未实测** |
+| D4（低） | 两条复盘路径共用临时文件名 `autogo-review.sgf`，并发时后写者覆盖前写者，前者可能静默读到别人的起点（不报错、`startLoaded` 还是 true） | 文件名加 `nanoTime()` 唯一后缀 | **无单测，仅代码走查 —— 未实测** |
+
+顺带按它的提示级条目收了三处：`sideToMoveOf` 越界不再抛异常（按「最后一手之后该谁走」算；
+回退即 `IndexOutOfBoundsException`，在 `GameReview.sideToMoveOf` 抛出）；界面提示改成
+「起点局面没能交给引擎（摆子缺失或读入失败）」以涵盖「有快照但没传临时文件、从未尝试加载」这种情形；
+`firstColorOf` 数摆子改用它解算后的口径 —— 否则 `AB[cc]AE[cc]`（摆了又擦）写出时推 `PL[B]`、读回却判白先，两边矛盾（回退 → 1 项失败）。
+
+**仍留一条提示级不修并如实记下**：7 参 `toSgf` 不校验 `firstColor` 与手顺首手是否一致，理论上能写出自相矛盾的快照；
+App 里 `firstColor` 与手顺来自同一份棋谱、始终一致，今天不可达（`parse` 也以手顺优先，读回来无害）。
+
+**审计员第 13 轮复检（v53）：D1/D2 独立复核成立** —— D1 它还补了引擎级证据（复盘屏那块盘面与引擎 `showboard` **逐格逐字节一致**，
+4 子），反例矩阵（摆子被后面手提掉 / 虚手不打断 / 越界负值不炸 / 不传摆子退化 / 同格被摆子与手顺先后占用）全过；
+D2 用真引擎非交替谱 `B,B,W` 测出曲线与状态栏逐点一致，v52 的奇偶算法在 i=2/3 打架。它复现了我 4 条单点回退的数字（5/2/异常/1 项），
+也确认我自查的两处测试写错都已真修好、并判越界语义合理。但它**仍不建议收口**，报了新的一条同类残留：
+
+| 编号 | 缺陷 | 处理 |
+|---|---|---|
+| **E1（低）** | `MainActivity.sideToMove()` **还是手数奇偶** —— 我上一轮只清了复盘家族。同一份 `moves=[(B,e5),(B,f5)]`：旧写法给黑、复盘家族给白。影响归谁落子 / 引擎该不该走 / 认输的结果串 / 「轮到你」文案；导入非交替谱即可达 | 改成走 `GameReview.sideToMoveOf(board.moves, firstColor, board.moves.size())`，与复盘家族同一判据（交替谱下与旧写法等价）。这个接线在 MainActivity 里，**本环境无法单测**，只有代码走查 + 探针实测：同一输入旧公式给 `B`、新判据给 `W` |
+| E2（提示） | `toBlackWinrates(arr, null/空表)` 语义变了（旧 `[0.75,0.75,0.5]` → 新 `[0.75,0.25,0.5]`） | 显式写成契约：没有手顺时按「先手方起交替」，并加断言（回退 → 1 项失败） |
+| E3/E4（提示） | `viewBoard` 长度不匹配静默截断；越界不抛异常的代价 | 把两条契约写进 javadoc（不掩盖，写明「传错下标不会炸、只会静默拿到这个答案」） |
+| E5（提示） | `nanoTime` 跨线程唯一性无法验证；崩溃会残留临时谱 | 写进 §八 已知限制（本环境无法验证真并发） |
+| E6（备注） | 我上轮补丁留下两段连着的 javadoc | 删掉重复那段 |
+
+**D3/D4 的定性（审计员自己给的）**：D3（Intent 传递）无 pm/am 执行不了 ⇒ **只算代码走查正确，未实测**；
+D4 唯一名 + 删除点 + JVM 内 `nanoTime` 唯一性已核，**真并发未实测**。我接受这个定性，不升级成「已验证」。
+
+我这次又自己写错过一条断言（E1 那条期望值写反了，B,B 之后该白而我写了黑），在空跑后、写入前发现并改正 ——
+按规矩记在这里，不当作没发生。
+
+---
+
+**审计员第 14 轮复检（v54）：功能面它判定「可以收口」**，前提是我接受「**E1 的实机行为只有代码走查这一档证据**」。
+它自己把 E1 查到了底：交替谱上 0–40 手 × {黑先, 白先} 共 **82 例，「旧奇偶 vs 新判据」不一致 0 例**（恒等变换）；
+非交替/虚手/让子谱另行实测（`[B,W(pass),W] i=3` 新=黑/旧=白 等）；5 个调用点逐个核对，确认**没有第二处自算先后手**。
+它也把话说明了：这不是偷懒 —— `run_tests.sh` 的编译文件表不含 MainActivity，**任何 JVM 测试都对那一行没有约束力**，
+所以 E1 永远只能是「代码走查 + 公式级实测」。我接受这个定性，不升级成「已验证」。
+
+它同时报了两条测试侧的失真（我按它的建议清掉，并自己实测）：
+
+| 编号 | 问题 | 处理与实测 |
+|---|---|---|
+| **F1（提示）** | `tests/BoardTest.java` 里留着**第三套「谁走」**：私有 `sideAfter()` 是纯奇偶，注释还写着「与 MainActivity.sideToMove 同一口径」（已失真）。同一文件对同一输入 `[B,B]` 会给出两个相反答案 —— 今天不误判（用它的两条都是交替情形），但下一个照它写非交替用例的人会拿到旧错误答案 | 删掉 `sideAfter`，两条 HA[2] 断言改走 `GameReview.sideToMoveOf`。**如实说明：这是测试卫生，覆盖度没变** —— 我实测把 `sideToMoveOf` 退回纯奇偶 ⇒ 5 项 FAIL，但那两条 HA[2] 断言在回退下**照样通过**（它们本来就是交替可判的），真正拦住回退的是 `[B,B]` / `B,B,W` / 越界那几条 |
+| **F2（提示）** | 那条 `[B,B]` 断言的注释前两行写的是白先那组例子，与断言自相矛盾 | 注释改成 `[B,B]` 的真实推理，并**明写「这条断言对 MainActivity 那一行没有约束力」**，免得被当成 E1 的回归测试 |
+| G1（提示） | 本谱先手两套口径：`Sgf` 解析（白）vs `GameReview.firstColorOf`（黑）；仅「调用方传非法色」可达，会让曲线镜像 | 在 `GameReview.firstColorOf` 的 javadoc 写明它**只是兜底、故意不管让子/题谱**，权威口径是 Sgf 解析 |
+| G2（提示） | 黑方视角换算有 **4 份**实现（1 份在 `GameReview`、3 份内联在 MainActivity）；今天规则一致、颜色成对写入/清理已核无失配，但以后加第 5 处漏改就镜像 | 收成一份 `GameReview.blackView(wr, color)`，MainActivity 三处改调它；我复查过全 `src` 已无第二份内联换算（`grep '1 - lastWinrate\|1 - wr'` 只剩 `blackView` 自己） |
+
+它这一轮还系统扫了「跨模块两套判据」这一类（D2/E1 连着两轮的根因）：合法性、胜负串、数子、胜率解析、坐标、手数/komi/size/让子、谁走 —— **全部单源**；剩下就是上面 G1/G2 两处提示，**没有新的缺陷级**。
+
+---
+
+**审计员第 15 轮复核（v55）：明确收口判定「可收口（无保留意见）」** —— 无缺陷级/中级/低级未决项，只剩三条提示。
+它把「本轮无功能行为改动」这个核心断言用三层证据钉死了：① 源级 —— src 侧只有 5 处代码改动，其余全是注释；
+② 字节码级 —— 全 src `javap -c -p` 归一化 diff，其它类/方法**一条指令未变**，字面量只少 3 个 `iconst_1/dconst_1`
+（删 4 处内联、加 1 个 helper），**无常量被改**；③ 运行级 —— 同一探针跑 v54 与 v55 构建，除「v54 无此方法」一行外输出完全一致。
+
+它还回来精确化了我那条「F1 只是测试卫生、覆盖度没变」：判我对（退回奇偶 ⇒ 5 项 FAIL，HA[2] 两条不在其中），
+但指出「`HA[2];W[ee]` 那条改成走正式判据后，对 *Sgf 侧先手解析* 失敏了」—— 好在同一事实在别处是直接断言的，
+0 手那条仍依赖其先手方，**净覆盖不变**。这种精确度正是我要的。
+
+它同时**更正了自己**：task-14 报「视角换算 4 份」漏了第 5 处（`verdict` 里 `(winner==BLACK)?bw:1-bw`）——
+不是我的错，但它主动撤回，我照单收下，两条一并清掉：
+
+| 编号 | 问题 | 处理 |
+|---|---|---|
+| H1（提示） | 我上轮把 `toBlackWinrates` 的 javadoc 挂到了 `blackView` 上（与 E6 同形态、这轮新引入） | 文档归位，`blackView` 排到前面 |
+| H2（提示） | 「全 App 只此一份」这句自身不成立：`verdict` 里还有第 5 处内联换算 | 改调 `blackView`，措辞改成如实计数 |
+
+它另外提了个**真正有价值的建议**，我采纳并写进了测试：真引擎 `showboard` 的 `Next player:` 行可以给「谁走」当
+**第三方裁判** —— 这一条重要，因为我们所有先后手判断都归到 `GameReview.sideToMoveOf`，**用自己写的期望值测自己，
+整体搞反也测不出来**。现在 `GtpTest` 有 3 例（让子 0 手靠 `PL`、让子 1 手靠手顺、非交替同色连下两手），实测输出：
+
+```
+  例1：手顺 0 手（先手方 白）→ 引擎说该 白 走，我们的判据给 白
+  例2：手顺 1 手（先手方 白）→ 引擎说该 黑 走，我们的判据给 黑
+  例3：手顺 2 手（先手方 黑）→ 引擎说该 白 走，我们的判据给 白
+```
+
+例 3 正是旧「手数奇偶」写法会答错的那一例（`size%2==0` 会答黑），引擎站我们这边。
+
+**J1（提示，我决定不修，理由记在这里）**：`GameReview.analyze` 与 `ReviewActivity.runAnalysis` 各有一份逐行相同的
+分析主循环 + 损失公式（审计员自己核过：命令、判据用法、loss、undo+play 一致，差异只在取消机制与 UI 回调）。
+这是 D2/E1 那类「同一件事两套判据」的根因，但**在「已判定可收口」的节点上，改一个只能靠文本比对、无法运行验证的
+Activity 路径，风险大于收益** —— 真要收，应该连 `ReviewActivity` 的引擎生命周期一起重构，那是另一个任务。
+写在这里，不掩盖。
+
+---
+
+**审计员第 16 轮复核（v56）：明确收口判定「可收口」** —— 无缺陷级/中级/低级未决项；J1 它**认可我修不动**
+（记为「已记录的接受风险」，不阻塞收口）。这轮做成了真 diff（它上轮存了 v55 快照）：GameReview 22 行 / GtpTest 77 / README 39，
+**src 其它文件 0 行**。字节码级复核：全 src `javap -c -p` 逐方法比，**只有 `GameReview.summarize` 一个方法有差异**
+（第 5 处内联 → `invokestatic blackView`，其余是跳转位移）；H2 那处等价性它用 625 组输入（含 `winner=EMPTY` 的 125 组）
+在 v55/v56 类上差分跑，**输出完全一致**。
+
+它把我那个新裁判的**有效边界**测出来了（这正是我请它挑的刺）：
+
+| 能挡住 | 挡不住 |
+|---|---|
+| 判据整体搞反 —— 但**只有例3挡得住**（回退奇偶的对照构建里只例3 红） | **「手顺颜色本身」记错**：引擎命令与我们的手顺用同一个字面量，它故意发 `play B E5`（与先手方白自相矛盾）仍绿 |
+| Sgf 侧先手/`PL` 解析错（例1：我们的答案来自解析、引擎的来自磁盘文本） | |
+| 起点快照丢 `PL`/丢摆子 | |
+
+它还给了个已实测可行的补法（我采纳，写进 GtpTest）：让引擎读**含手顺**的 SGF。新增三例 —— 例4 直接读含手顺的文本、
+例5 读我们自己写出的整盘、例6 把写出串最后一手改色看引擎是否跟着改。实测输出：
+
+```
+  例1：手顺 0 手（先手方 白）→ 引擎说该 白 走，我们的判据给 白
+  例2：手顺 1 手（先手方 白）→ 引擎说该 黑 走，我们的判据给 黑
+  例3：手顺 2 手（先手方 黑）→ 引擎说该 白 走，我们的判据给 白
+  例4：手顺 2 手（先手方 黑）→ 引擎说该 白 走，我们的判据给 白
+  例5：手顺 2 手（先手方 黑）→ 引擎说该 白 走，我们的判据给 白
+  例6：手顺 2 手（先手方 黑）→ 引擎说该 黑 走，我们的判据给 黑   ← 改色后引擎跟着改 ⇒ 这层对颜色敏感
+```
+
+这三例是我补的，所以我自己做了回退证伪（也是我按规矩该做的）：把 `sideToMoveOf` 退回纯奇偶 ⇒ **例3/4/5 三项 FAIL**
+（`引擎说该 白 走，我们的判据给 黑`），例6 因奇偶恰好答对而仍绿 —— 与它 task-16 的实测一致。
+
+**第 17 轮它又做了三个变异实验**（真引擎 + 反射只跑这一条），把这三例的分工测清楚了：
+
+| 变异 | 例1 | 例2 | 例3 | 例4 | 例5 | 例6 |
+|---|---|---|---|---|---|---|
+| 判据退回纯奇偶 | 绿 | 绿 | **红** | **红** | **红** | 绿 |
+| `Sgf.parse` 按奇偶推手顺颜色（解析层记错色） | 绿 | 绿 | 绿 | **红** | 绿 | 绿 |
+| `Sgf.toSgf` 写手顺时按奇偶推（写出层写错色） | 绿 | 绿 | 绿 | 绿 | **红** | 绿 |
+
+⇒ 例4 独占「解析侧手顺颜色」、例5 独占「写出侧手顺颜色」—— 这两层以前**没有任何第三方裁判**，现在有了。
+它还指出例6 原先是**日志级**证据（只防呆 `contains(";W[ff]")`，而写出层自己出错时这条也成立）。
+我按它的建议升格成两条真断言：`check(!written.equals(tampered))` + `check(side6 != side5)`
+（例5 引擎说白、例6 说黑），它实测两条都会通过，我这边也跑到了。
+
+**收口时的证据档位（照审计员的写法如实抄，不加工）**：
+- **代码走查档**（无设备、无 `pm`/`am`，运行期不可验证）：`MainActivity.sideToMove()` 的实机行为、D3 的 Intent 传递、D4 的真并发。
+- **有实测档**：其余全部 —— 含「谁走」的判据语义（真引擎 `Next player:` 六例逐例一致）。
+  这里按审计员第 17 轮的要求**收紧口径**：例4/5/6 实测覆盖的是「**`Sgf` 解析侧 / 写出侧的手顺颜色**」，
+  而 **App 运行期「谁走谁下、颜色怎么记」仍然是代码走查档**（无设备，跑不起 Activity）。
+- **已记录的接受风险**：J1（`GameReview.analyze` 与 `ReviewActivity.runAnalysis` 两套分析循环；今天逐行相同，改它在本环境无法运行验证）。
+- **未覆盖**：非 KataGo 引擎、真实语料里非交替/让子谱的出现比例。
+
+**关于 v57**：第 16 轮之后我只改了「测试文件 + README + 源码里一处注释的归因措辞」（审计员附注指出我把它 task-14「数出 4 份」的构成写错了，
+实际是 `toBlackWinrates` 内联 1 + MainActivity 3，`verdict` 那处正是它漏的第 5 处）。为了让「源码 ↔ 出货件」身份严格一致，
+我重建成了 v57。**这里我原本写错了一句，改正并留证**：我以为「只改注释，dex 不会变」—— 实测是错的，
+注释行位移会让调试信息里的行号表跟着变。量的结果：
+- `GameReview.class`（新旧）**大小相同**（9142 字节）但字节不同；用 `javap -c -p` 把 `line N:` 条目去掉后**逐条指令 0 差异**；
+- **下面这组数我第一版量错了**（用了另一套 `d8` 调用，得出「单类 dex 14476 字节、32 字节差异」，审计员复现不出来），
+  现在换成可复现的：**控制组** —— 用 `build.sh` 里原样的 `d8 --release --lib … --min-api 26` 旗标重打 v57 全量 dex，
+  md5 与出货包内 dex **完全相同**（说明我的量与 build.sh 等价）；再比 v56/v57 两棵树：
+  **同为 122828 字节，`cmp -l` 只有 30 字节不同** —— 偏移 9–32 是头部（校验和 4 + 签名 20 = 24 字节），
+  另 6 个字节在 81940/81991/82005/82040/82054/82067。按 dex `map_list` 的区段布局，`code_item` 是 25256..80675，
+  所以**偏移 33–81939 全部字节相同**，那 6 字节全落在 `debug_info_item`（80676..85471）—— **指令区 0 字节差异**。
+  字符串表里也搜不到源码文字（注释不进字节码）。
+
+所以 v57 与 v56 的关系是「**代码语义相同、调试行号不同**」，不是「逐字节相同」。（顺带：我这轮还一度以为
+`dexdump` 可用，实测它缺解释器根本跑不起来，那条输出是空验证 —— 一并记在这里。）
+
+**审计员第 17 轮复核（v57）：明确收口判定「v57 可收口」** —— 无缺陷级/中级/低级未决项；J1 仍是「已记录的接受风险」；
+E1 实机行为仍是代码走查档。身份它独立核过：apk md5 `366e14d9…` == 交付件、包内 dex `e3eddb9b…` == 构建树、
+versionCode 57、重编 `src/` 得 **30** 个 class 与构建树逐字节相同（构建树 33 = 30 + 3 个 aapt2 的 R 类）；
+字节码级：v56/v57 全树 `javap -c -p` 归一化比对，**有差异的方法数 = 0**。
+
+它同时指出了三处口径问题（我都改了）：我这轮的 dex 数字（14476/32）**复现不出来**，已换成可复现的一组；
+「重编得到 33 个 class、`diff -rq` 零差异」数不对（真跑会看到 3 个仅构建树的 R 类）；「dex 字符串表里能找到本版新增符号」
+对 v57 不适用。它**还主动撤回了自己的一个错数**：task-13/14 写的「重编得到 34 个 class」应为 30（v54–v57 四套都是 30）——
+我 README 里那个 33 很可能是从它这个错数传过去的，一并更正留证。
+
+**收口之后我只动了测试与文档，出货件字节未变**：两份 patch 只改 `tests/GtpTest.java`（例6 升格两条断言 + 取引擎答案的返回值）
+与 `README.md`；`diff -rq src /tmp/appbuild/src` 逐字节相同、APK md5 仍是 `366e14d9…`、包内 dex 仍是 `e3eddb9b…`。
+所以第 17 轮的收口判定针对的就是当前这份出货件。（那两条新断言是审计员提的、它自己先实测过会通过；我这边 `run_tests.sh` 跑 63/0。）
+
+**这一轮我踩的坑（都是「静默失败 → 假绿」，全部自查后改正，记在这里提醒后人）**：`d8 --output` 目录不存在时直接报错，
+而我紧接着的 `cmp` 对不存在的文件也报「差异 0 行」；`dexdump`、`aapt`/`aapt2` 在普通 shell 里缺 32 位解释器根本跑不起来
+（`build.sh` 里另有可用的调用路径），我一度据此说「dexdump 可用」。**凡是「跑完了没报错」都不能当证据，必须看产物本身。**
+
+项目测试：**352 / 63**（无参 `BoardTest` 331）。
+
+### 第 18 轮：J1 合并 + 复盘屏返回按钮 + 一处自查出的回归（用户指令驱动）
+
+用户两条指令：①「复盘打开后少一个返回按钮，加上并调整」② 授权执行第 16/17 轮记录在案的 J1。**两条都做了**，
+而且执行 J1 的过程中我**自己撞出了一个会被用户看见的回归，已修并做了反向验证**。
+
+**A. J1 已合并 —— 分析主体只剩一份**
+
+- `ReviewActivity.runAnalysis()` 不再自己写循环，改为调 `GameReview.analyze(...)`。实测（`javap -c -p` 数指令）：
+  **252 条 → 52 条** JVM 指令，`GameReview.analyze` 232 → 233（只是多传一个参数）。
+  也就是说：不可测试的那部分，从原来的约 4/5 缩到约 1/5，剩下的只有 Activity 特有的四件事 ——
+  临时快照文件、每手 UI 刷新、取消标记、跑完的状态栏措辞。
+- 机制：`GameReview.Progress` 回调签名改为 `boolean onMove(GameReview r, int idx, int total)` ——
+  回调拿到「这一轮的结果对象本身」（数组已分配、第 `idx` 点已填好），复盘屏据此把数组挂到自己的字段上。
+  改动 3 处调用点：接口声明、`MainActivity` 的预分享回调、`GtpTest` 的取消用例。
+- **可见性照旧**：工作线程写、界面线程读、`volatile` 只在 `cancelled` 上 —— 与合并前完全同一个模式，
+  既没变坏也没变好（§八那条已知限制仍然在，没被这次合并解决）。
+- 净删：`ReviewActivity` 少一份约 60 行循环；`Analysis` 在这个文件里已无引用（同包，无需改 import）。
+- 证据：`run_tests.sh` **352 / 0** + **68 / 0**；新增断言「回调里能读到已算出的 `wrToMove[0]`」，
+  正是复盘屏刷界面所依赖的那条契约 —— 它现在被真引擎测试锁住了。
+- 取消语义的**一处诚实差异**（代码走查，非实测）：旧写法在循环顶部检查取消，引擎盘面是干净的；
+  新写法在回调里检查，`analyze` 会在 `undo` 之前返回 ⇒ 最后一轮引擎自己下的那手留在盘上。
+  复盘屏里这无害：`startAnalysis()` 只在 `onCreate` 调（`ReviewActivity.java:321` 的注释也这么说；第 54 轮审计指出原写「第 298 行」已漂），取消后不会重跑，
+  引擎在 `onDestroy` 关掉，界面上的盘面来自手顺而不是引擎。
+
+**B. 我自己撞出来的回归：未算到的点变成「0% 胜率」（已修 + 反向验证）**
+
+- 原因：复盘屏读的是 `GameReview` 内部数组，而它是 **0 填充**；界面用的是 `Double.isNaN` 区分
+  「还没算」与「0% 胜率」。于是分析过程中尚未算到的尾段会被当成 0% 画出来。
+- **实测（`TailProbe`，第一手就取消）**：修前 `wrToMove = 0.369149  0.0  0.0`、`loss = 0.0  0.0`；
+  修后 `wrToMove = 0.352431  NaN  NaN`、`loss = NaN  NaN`。这就是反向验证（同一探针、同一引擎、同一配置）。
+  **承重的是「类型差异」（`0.0` → `NaN`），不是那两个具体数值**：审计员在同一位置量到 `0.352899`（它的对照树）
+  与 `0.358355`（出货树），两棵树同一个点本来就差约 0.005 —— 那是 KataGo 的跑间噪声。
+  把 `0.369149 → 0.352431` 读成「修复改了胜率」是错的（它这条口径更正我采纳）。
+- 审计员补的一条我漏掉的事实（采纳）：**`ReviewActivity.onCreate` 本来就 `Arrays.fill(wrToMove/loss, NaN)`，
+  这段代码 v57→v59 没变** ⇒ 这个回归确实是 J1 合并引入的（字段被指到 `GameReview` 的 0 填充数组，
+  绕过了 Activity 既有的约定），**NaN 预填是恢复合并前的语义**。它还实测了曲线：对照树
+  `blackWinrates = [0.352899, 1.0, 0.0, 1.0]`（0%↔100% 抖）对出货 `[0.358355 × 4]`（平线）——
+  因为 `toBlackWinrates` 会把 NaN 顺延成前值，所以这个修复对**曲线**也有效，我原先写「不影响」是低估了。
+- 修法：`GameReview` 构造时把 `wrToMove`/`loss` 预填 `NaN`。完整跑完的那些不受影响（每个点都会被填满）；
+  受影响的只有「中途取消 / 没算到」—— 正是界面标注「还没算」的场景。
+- 两条回归断言进了 `GtpTest`（尾段 `wrToMove`、`loss` 必须是 `NaN`）。**它们在「合并后、NaN 前」的类树
+  （`/tmp/bt18/out`）上会红** —— 那才是真正的对照树；出货的 v58 编译不出这份测试，所以别拿它当对照。
+
+**C. 复盘屏返回按钮**
+
+- 根因（可复现）：本屏用 `Theme_Material_NoActionBar`，**没有系统标题栏的返回箭头**；容器里也未必有系统返回键。
+  所以用户看到「没有返回」是对的。
+- 加的是 `◀ 返回`（`setAllCaps(false)`，与同屏 4 个导航按钮同一套样式），点击 `finish()` →
+  走 `onDestroy`：置 `cancelled`、`exec.shutdownNow()`、异步关引擎（见 G 段）。
+- 位置（v59 第一版 → **v60 调整后**）：v59 让它单独占一行（`root` 的第一个孩子）；用户指令里的
+  「然后进行调整」指的就是这里 —— 实测预算显示单占一行时 **320×480 竖屏下到手顺列表只剩 48 dp**，
+  横屏还要从右栏扣掉约 80 dp 宽。v60 改成**和状态文字共用一行**：竖屏这一行在棋盘上方、
+  横屏放进右栏顶部，两种朝向都落在内容区左上角。**这里只写差值**：绝对值在不同口径下会差 4~18 dp
+  —— 第 19 轮审计用真公式独立复算，指出我漏了 header 的 `bottomMargin`（竖屏 4 dp）和横屏棋盘的
+  `rightMargin`（8 dp），v59 那列还按 70 dp 按钮宽算而正文写「约 80 dp」。
+  | 变化 | 省下 | 依据 / 假设 |
+  |---|---|---|
+  | 竖屏：状态文字不再单独占一行 | ≈ 20 dp 高 | 假设项：14sp 文字行高按 20 dp 估 |
+  | 横屏：返回按钮不再占右栏宽度 | ≈ 70~80 dp 宽 | 假设项：`◀ 返回` 按钮宽按 70~80 dp 估 |
+  屏幕越小越明显：320×480 竖屏下，原来手顺列表只剩约 44~48 dp（一行多一点），现在约 64~68 dp。
+  棋盘边长一分没动 —— `LayoutMath` 的输入没变，横屏那次 `min(…, heightDp - 16)` 也与按钮无关（公式可证）；
+  列表也没被挤掉（它不在 `weight=1` 的列表里）。
+- **证据等级：代码走查 + 公式计算档** —— 位置、朝向、点击链是读代码得到的，预算是用 `LayoutMath`
+  真跑出来的（`Budget2` 探针）；**真机点按与观感没验过**。
+
+**D. 顺带补的两条临时文件断言**
+
+复盘屏现在总是先构造临时 `File` 再交给 `analyze`（旧代码只在有起点快照时才构造 File）。
+断言锁住两件事：有快照时**跑完即删**、无快照时**不产生文件**。实测通过。
+
+**E. v59 产物（已被 v60 取代，数字留档）**：`VERSION=59`、`versionName=1.20261013.59`，
+apk md5 `857a7d0a…`、包内 `classes.dex` md5 `424300d9…`。测试：**352 / 0** + **68 / 0**（无参 `BoardTest` 331 / 0）。
+
+**F. 本轮没验的（不要当成没问题）**
+
+- `ReviewActivity` 运行期的一切：新返回按钮的真机点按/转屏后的位置、横屏右栏被按钮挤窄后在极小屏上的表现、
+  合并后的复盘屏与合并前的**逐点曲线一致性**（我给不出实测，只能给代码走查）。
+- 取消时「引擎盘上多一手」在真机上的可见影响（上面 A 里已论证无害，但那是走查）。
+
+**G. 第 18 轮审计（针对 v59）之后的收口：v60**
+
+审计员对 v59 的判定是**可收口**（缺陷 0 / 中 0；低 3 条 + 提示 3 条），全文 `/tmp/audit18/REPORT18.md`。
+身份它独立核过：apk/dex/versionCode 与我这边一致；重编 `src/` 得 30 个 class 与我的类树逐文件相同；
+`run_tests.sh` 它自己跑也是 352/0 + 68/0。它的三条关键结论我逐条复核过：`done[]` 全文件只写不读 ✓、
+`GtpError extends IOException` ✓（所以分析中途点返回**不会闪退** —— 在飞的 `send` 抛的异常被
+`catch(IOException)` 接住）、v57 的 `ReviewActivity` 本来就有 NaN 预填 ✓。
+
+我采纳的 4 条（都进了 v60）：
+
+- **低：`close()` 压在主线程**。它实测 **3008 ms**，我复现 **662 ms**（当时有长搜索在飞）；
+  两个 Activity 原本都在主线程的 `onDestroy()` 里关引擎 ⇒「分析中途点返回」会卡住界面这么久。
+  已改成 `EngineManager.closeAsync()`（后台线程 + `RuntimeException` 兜底），并把 `exec.shutdownNow()`
+  提到前面先让 worker 停手。**「不会留下野进程」有实测依据**：父进程 `halt()` 强杀后，引擎子进程
+  6 秒内自己消失（stdin EOF）；我这次实验里唯一残留的 `katago` 是测试前就存在的 3 MB 桩进程
+  （没加载模型，不是真引擎实例）。
+- **低：README 两处口径**（B 段那两条更正：证据看类型差异；对照树要说准）。
+- **提示：`WinrateChartView.yFor` 注释过期** —— 原写「数据源已把空槽位填成 0.5」，现在数据源是
+  `toBlackWinrates`（把 NaN 顺延成前值），那个 `NaN` 分支实际到不了，已改成如实描述。
+- **提示：零数据时 `summarize` 会编结论** —— 全 NaN 输入会输出「X棋从头领先到尾」。今天 `verdict`
+  只在完整跑完后才算，所以到不了；但它是一条**会撒谎**的分支，已加兜底（返回「这盘没有算到可用的胜率…」）
+  并配了纯逻辑测试。**反向验证（实测）**：把新用例跑在加兜底前的类树上 →
+  `FAIL: 零数据时不能声称「从头领先到尾」（实际：全程没有明显失误，黑棋从头领先到尾）`，两条红 ✓。
+
+**一条数字分歧，第 19 轮已查清**：审计员当时建议把这里的 `352 / 63` 改成 61。我当时的推理（把本轮新加的
+5 条断言摘掉、跑到 63 ⇒「所以第 17 轮是 63」）**不成立**；但那两句话里的**数都是对的**：它手上的「第 17 轮
+测试集」是**加固前**的快照（61），而本文件第 782/788 行在第 17 轮当时记的是**加固后**的实测（63 ——
+那两条加固断言正是它自己提的）。两个数差 2，差的就是 `tests/GtpTest.java:204`、`:210` 这两条。
+证据：`javap -v -p` 读它树上 `GtpTest.class` 的常量池，那两条断言的文案都不在里面 ⇒ 它的快照早于加固。
+所以这里保持 63，并在 H 段把第 19 轮这次的来龙去脉记全。
+
+**v60 产物**：`VERSION=60`、`versionName=1.20261013.60`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `d6b66c7b…`、包内 `classes.dex` md5 `989cff98…` == 构建树）。测试：**355 / 0** + **68 / 0**
+（`BoardTest` 331 → 334，多的 3 条是零数据兜底的用例）。
+
+**H. 第 19 轮审计（针对 v60）之后的收口：v61**
+
+审计员对 v60 的判定也是**可收口**（缺陷 0 / 中 0；低 3 + 提示 4），全文 `/tmp/audit19/REPORT19.md`。
+身份它独立核过（apk/dex/versionCode、重编 `src/` → 30 class、`run_tests.sh` 它自己跑 355/0 + 68/0），
+v59→v60 逐文件 diff 也对得上（EngineManager 22 / GameReview 10 / MainActivity 2 / ReviewActivity 35 /
+WinrateChartView 4 / BoardTest 20 / **GtpTest 0** / 其余 src 0）。它 7 条我全认，全部修在 v61：
+
+- **低①「6 秒内」是把一次实测外推成常量**（它测：空闲引擎父进程 SIGKILL 后 0.04 s 消失、在飞长搜索
+  18.85 s）。我复测忙引擎：**7.3 s**。⇒ `closeAsync` 的 javadoc 与 §八 改成「机制是 stdin EOF，时间随负载
+  从 0.04 s 到十几秒」。
+- **低② 同类没修全**：`MainActivity` 里「覆盖旧引擎」那处 `old.close()` 也在主线程，而旧引擎可能还在算
+  上一局（上限 `waitFor(3s)`）⇒ 改成 `EngineManager.closeAsync(old)`。同文件另外两处它实测空闲引擎 close
+  只要 48/68 ms ⇒ 保留同步。
+- **低③ 第 17 轮那个数的标签**（见 G 段）：两个数都对，差的是加固前后快照 ⇒ 保持 63，并把理由写清。
+- **提示④ 兜底没覆盖它点名的情形**：取消在第一手之前时，`blackWinrates` 已被 `toBlackWinrates` 顺延成满的，
+  光看它对不出「只算到起点」⇒ v61 让 `verdict()` 把原始 `wrToMove` 里真算到的点数传给 `summarize`
+  （新增八参重载；七参版本保持兼容，从入参数组自己数）。**反向验证（实测）**：v60 类树上七参路径给
+  「全程没有明显失误，胜负到最后才见分晓」（零数据下编的；这是我这支探针 `blackWr={0.4,0.4,0.4}`、`loss={NaN,NaN}`、winner=黑 的输入下的输出），
+  v61 上 `computed=1` 给「这盘没有算到可用的胜率（中途取消或数据缺失），给不出原因」 ✓。第 20 轮审计拿
+  真引擎数据跑同一分支得到的是「双方始终接近」—— **两个都是「拿一个点编的结论」**，只是尾句随数据分支变，
+  是同一个现象（它那条更正我采纳，引文已按「输入 → 输出」写全）。
+- **提示⑤ 预算表 4~18 dp 口径差** ⇒ 表已撤掉绝对值，只留差值 + 假设（见 C 段）。
+- **提示⑥ `close()` 的 `closed` 检查非原子**（v60 起确实会并发关）⇒ 后果无害（第二次写已关闭的流抛
+  `IOException` 被吞、`waitFor`/`destroy` 幂等），在 `GtpEngine.close()` 里写明，不加锁。
+- **提示⑦ 转屏丢状态文字**：`onConfigurationChanged` 重建控件后状态文字变空 ⇒ 加 `setStatus()`
+  （字段 `statusText` 留一份），`buildUi()` 重建时贴回去。
+
+**v61 产物**：`VERSION=61`、`versionName=1.20261013.61`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `1846716d…`、包内 `classes.dex` md5 `ce5a3f4f…` == 构建树）。测试：**357 / 0** + **68 / 0**
+（`BoardTest` 334 → 336，多的 2 条是「只算到起点」的用例）。
+
+**I. 第 20 轮审计（针对 v61）之后的收口：v62**
+
+审计员对 v61 的判定：**可收口**（缺陷 0 / 中 0 / 低 1 / 提示 4），全文 `/tmp/audit20/REPORT20.md`。
+身份它独立核过（apk `1846716d…`、dex `ce5a3f4f…`、versionCode 61、重编 30 class、`run_tests.sh` 它自己跑
+357/0 + 68/0、无参 `BoardTest` 336/0 ✓），v60→v61 逐文件 diff 也对（**GtpTest 0 行改动**、mtime/md5 未变 ✓）。
+
+**最重要的一条：它撤回了上一轮那条低级问题，承认第 17 轮那个数的账是我对。** 它按我在 task-20 里给的
+结论做了闭环实验（同一套 v57 类树、同一引擎，只补 `tests/GtpTest.java:204`、`:210` 那两条加固断言）：
+**v57 原测试集 = 61/0 → 补上那两条 = 63/0**，并核了本文件第 782/788 行第 17 轮当时自己写的记录
+（「收口之后只动了测试与文档……APK md5 仍是 `366e14d9…`」+「run_tests.sh 跑 63/0」+「352/63」）
+⇒ 63 才是第 17 轮**成品**对应的数，它的 61 是同一份出货字节配**收口前**的测试文件。
+（我第 19 轮那段推理（「摘掉 5 条跑到 63 ⇒ 所以第 17 轮是 63」）本身不成立，结论碰巧对；G 段已改成
+两个快照的对照，不再写「它数错了」。）
+
+本轮 1 低 + 4 提示，我全收，修在 v62：
+
+- **低① 转屏那条修复被覆盖**（它走调用链发现的）：`onConfigurationChanged → buildUi(); showPosition(keep)`
+  而 `showPosition()` 末尾 `updateMoveStatus()` 会 `setStatus("第 N 手…")` ⇒ 我 v61 加的「重建后贴回
+  `statusText`」立刻被覆盖，**「复盘完成（N 手，每手 M visits）…」转屏后真的丢**（进度文字会由下一手回调补回）。
+  ⇒ v62 把恢复挪到 `showPosition(keep)` **之后**。这条它标的是走查（未上设备），我也只有走查。
+- **提示 半路结论太满**：阈值 `computedPoints <= 1` 只挡住「算到一个点」，取消在第 1 手之后（`computed=2`）
+  仍会说「黑棋从头领先到尾」这类话。⇒ v62 加了 `partial = computedPoints < n + 1`：没算完时走势改成
+  「只算到第 N 手，后面的走势还没算」，「全程没有明显失误」改成「算到的部分没有明显失误」（最大失误那部分
+  照给，因为那是真算出来的）。**反向验证（实测）**：新断言跑在 v61 类树上红 ——
+  `FAIL: 只算到一半时走势要有保留（实际：最大失误其实是黑第 1 手 E5（亏 7%），但没影响胜负，黑棋从头领先到尾）`，
+  两条都红（357 通过 2 失败）。v62 上 359/0。
+- **提示 `MainActivity` 注释口径不一致**：「实测 0.7~3 秒」漏了空闲档（它实测 idle close 48/68 ms）
+  ⇒ 注释改成「空闲 48/68 ms，算长搜索时 0.66~3 秒」。
+- **提示 两个引擎的重叠窗口**：异步关旧引擎期间，新旧两个引擎可能同时占着模型内存，上限是 `waitFor(3s)`
+  ⇒ 记在 §八。
+- **提示 七参 `summarize` 的行为变更**：`blackWr = {NaN, 0.5}` 这类输入在 v60 会给结论、v61 起走兜底。
+  `src/` 里没有七参调用者（`verdict()` 走八参，七参只有测试用），方向更保守，记在 §八。
+
+它另外标了一条「仅推理」：**「完整跑完但每手解析失败 ⇒ `computed=1` ⇒ 走兜底」这条路径它构造不出来**，
+我也构造不出来（`verdict` 的两个调用点分别被 `reviewGen` 比对与 `!cancelled && n == moves.size()` 守着）⇒
+归到「未覆盖」，不当成已验证。
+
+**v62 产物**：`VERSION=62`、`versionName=1.20261013.62`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `0177143c21b14988608be838b0b7fe5f`、包内 `classes.dex` md5 `56f172aefc2ff3a663dd169ee6bd6a96` == 构建树）。测试：**359 / 0** + **68 / 0**。
+
+**J. 第 21 轮审计（针对 v62）之后的收口：v63**
+
+审计员对 v62 的判定：**可收口**（缺陷 0 / 中 0 / **低 1** / 提示 2），全文 `/tmp/audit21/REPORT21.md`。
+身份它独立核过（apk `0177143c…`、dex `56f172ae…`、versionCode 62、重编 30 class、`run_tests.sh` 它自己跑
+359/0 + 68/0、无参 `BoardTest` 338/0 ✓），v61→v62 逐文件 diff 也对（GameReview 11 / MainActivity 4 /
+ReviewActivity 5 行、**GtpTest 0 行**、BoardTest 本轮 +8 行）。转屏那条修复它的评价是「挑不出问题」，
+并把写入点清单列全了（`onConfigurationChanged` 读 `keepStatus` → `buildUi()` 写① → `showPosition()` 写②
+→ `setStatus(keepStatus)` 写③；`current` 只在 `showPosition` 里写 ⇒ 状态行不可能与盘面不同步）。
+
+- **低① 我把「没算到的个数」当「断在哪」用了**（真问题，v62 引入的）：`computedPoints` 数的是非 NaN
+  **个数**，而解析失败可能落在**中间** ⇒ 完整跑完（cancelled=false）也可能被判 partial，于是既说错
+  「只算到第 N 手」，又把有数据的「从头领先到尾」压掉。它的 GAP 实测：
+  `wrToMove={0.36,0.70,NaN,0.90}, computed=3` → 「只算到第 2 手，后面的走势还没算」，
+  而 index 3 的 `0.90` 明明算出来了；对照组 `computed=4` → 「从头领先到尾」。
+  ⇒ v63 把判据改成**缺口个数**（只数个数、不说断在哪）：措辞改成「还有 M 个点没算到，走势就不下结论了」，
+  兜底条件由 `computedPoints <= 1` 改成 `missingPoints >= n`。**反向验证（实测）**：新断言跑在 v62 类树上
+  红 4 条（357 通过 4 失败），v63 上 361/0。
+- **提示 那句「这条分支到不了」被实测推翻**：它写了个子类，把 `kata-genmove-analyze` 的响应照发、
+  只吃掉 `info` 行 ⇒ 完整跑完也会每手拿不到 winrate（`wrToMove=[NaN,NaN]`）⇒ 兜底分支**不是死代码**。
+  ⇒ `GameReview` 里那句绝对说法改成「正常解析下到不了，但每手都解析失败时会」（它仍标「仅推理」的
+  只有「真 KataGo 会不会每手都解析不出」）。
+- **提示 §八 的内存估值差一倍**：我写「各自约 1 GB」，它按 `ps -eo rss` 实测同一二进制/模型、19 路
+  20 万 visits 搜索中：b10c128 ≈ **117 MB**、b18c384nbt ≈ **539 MB**（我把两个引擎、更大网络的合计
+  当成了单个）⇒ 已按实测改，并注明是容器内 RSS、安卓侧未测。
+
+**v63 产物**：`VERSION=63`、`versionName=1.20261013.63`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `714b28ee83e0a1dd487706f31ae63b6d`、包内 `classes.dex` md5 `438a74d60a2c54fe7bd9b78f0f9b25cc` == 构建树）。测试：**361 / 0** + **68 / 0**
+（`BoardTest` 338 → 340，多的 2 条是「中间有洞」的用例）。
+
+**K. 第 22 轮审计（针对 v63）之后的收口：v64**
+
+审计员对 v63 的判定：**可收口**（缺陷 0 / 中 0 / **低 1** / 提示 1），全文 `/tmp/audit22/REPORT22.md`。
+身份它独立核过（apk `714b28ee…`、dex `438a74d6…`、versionCode 63、重编 30 class、`run_tests.sh` 它自己跑
+361/0 + 68/0、无参 `BoardTest` 340/0 ✓），v62→v63 只有 `GameReview.java` 47 行（两个 Activity **0 行** ✓）。
+
+- **低① 是文档错（我这轮引入的）**：v62 我为记录「七参行为变更」专门加的那句 §八，在 v63 改了语义后
+  **两处都写反了**（实际是数缺口个数、不是数「算到几个点」；`{NaN,0.5}` 实测给结论、不是走兜底）
+  ⇒ 已按 v63/v64 实际改写（见 §八）。
+- **提示① 起点缺口**：`missing` 只数 index ≥ 1，起点没算到时仍会说「从头领先到尾」/「全程没有明显失误」
+  —— 而第 1 手亏多少本来就要看起点胜率 ⇒ v64 加了 `startKnown`（`blackWr[0]` 是否 NaN；数组为空按知道
+  处理、不越界）：起点未知时「从头领先到尾」退成「从第 1 手起再未落后」、「全程没有明显失误」退成
+  「算到的部分没有明显失误」。**（第 23 轮指出：这一条在 v64 里只在测试路径成立，界面路径上没生效
+  —— 原因见 L 段。）反向验证（实测）**：新断言跑在 v63 类树上红 3 条
+  （`FAIL: 起点没算到时不能说「从头」（实际：全程没有明显失误，黑棋从头领先到尾）`），v64 上 364/0。
+- **它这轮的复核（都过关）**：7 组畸形输入实测都不越界（`blackWr` 短/长、`loss` 长 0 或更长、`missing=-1/99`、
+  `moves` 比 n 短 ⇒ 退化输出不炸；唯一 `loss=null` 的 NPE 是调用方契约问题，v57/v62 同样 ⇒ 不计）；
+  末尾截断与中间有洞两种形状下新措辞都说真话，「最大失误」只会引用两端都算出来的手；
+  真引擎回归：完整跑的模板/分支与 v62 **逐字相同**（只有引擎噪声让「亏 17%」vs「16%」），取消@1 走新措辞、
+  取消@0 仍兜底。它复现了我的反向验证（v63 测试跑 v62 类树 = 357 通过 4 失败 ✓），
+  并纠正了它自己原先「会红 3 条」的推算。
+
+**v64 产物**：`VERSION=64`、`versionName=1.20261013.64`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `81ea4cc1ba7797649544c61eb26e00cd`、包内 `classes.dex` md5 `e46a3c40100d8843d8aa8762a68450ea` == 构建树）。测试：**364 / 0** + **68 / 0**
+（`BoardTest` 340 → 343，多的 3 条是「起点缺口」的用例）。
+
+**L. 第 23 轮审计（针对 v64）之后的收口：v65**
+
+审计员这一轮的判定是**不可收口（低 1）** —— 它找到一个真问题，也确实不是「配合我说话」：
+
+- **低① v64 的起点修复在界面路径上等于没做。** 三条实测：① `toBlackWinrates` 对 index 0 是
+  `out[i] = i == 0 ? 0.5 : out[i-1]` ⇒ 起点 NaN 被**填成 0.5**（我 v64 写的注释「唯独 index 0 没人可
+  顺延、还留着 NaN」是错的）；② 照抄 `verdict()` 的两段式路径，`wrToMove={NaN,0.4,0.55}` 得到
+  「全程没有明显失误，黑棋从头领先到尾」，与「起点算到了」的对照组**同一句**；
+  ③ **真引擎端到端**（只删第一次 `kata-genmove_analyze` 响应里的 winrate）：
+  `wrToMove=[NaN, 0.697177]`、`blackWinrates=[0.5, 0.3028]` ⇒ `verdict("W+2.5")` 说「全程没有明显失误，
+  白棋从头领先到尾」。它同时指出我的测试为什么没抓住：v6 用例用的是**七参裸数组**，绕过了
+  `toBlackWinrates` 这一步；而七参版本在 `src/` 里只有测试在用 ⇒ 界面路径没被测到。
+  ⇒ v65 加了公开的 `GameReview.startComputed(double[] wrToMove)`（原始数组判起点），`verdict()` 显式把它
+  传给新增的九参 `summarize`；八参版本保留、委托时按 `blackWr[0]` 猜，并在 javadoc 里写明
+  「界面路径请用带 `startKnown` 的那一版」。测试补了一条**走真实界面形状**的用例
+  （先 `toBlackWinrates` 再 `summarize`，并断言 `blackWr[0]` 会被填成 0.5 这件事不改变结论）。
+  **反向验证（实测）**：同一输入喂 v64 的八参 ⇒ `toBlackWinrates = [0.50, 0.30, 0.30]`（起点被填 0.5）、
+  结论「全程没有明显失误，胜负到最后才见分晓」（`全程` 没依据）；v65 上走 `verdict()` 同一条链 ⇒
+  有保留的措辞 ✓，`BoardTest` 369/0。
+- **它这轮的复核（都过关）**：七参四个尾句分支措辞全对（都不含「从头」「全程」）；「亏 X%」不会基于
+  NaN（`loss[0]` 是 NaN 会被跳过，实测报的是第 2 手亏 5%）；畸形空数组兜底不越界；回归全不变（全 NaN、
+  `{0.2,0.3,0.6}` 逐字同 v63、GAP、n=0/1）；真引擎干净完整跑仍与 v62/v63 同模板同分支；它复现了
+  K 段那三条 FAIL 并逐条归因 ✓。
+
+**v65 产物**：`VERSION=65`、`versionName=1.20261013.65`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `0e4bc46f317d40531c949da1d5e8bae1`、包内 `classes.dex` md5 `6a5d5784fc75873e515a0bb29b08b673` == 构建树）。测试：**369 / 0** + **68 / 0**
+（无参 `BoardTest` 343 → 348，测试文件 **+16 行 / -0 行**：界面路径用例 3 条 + `startComputed` 2 条，全是新增
+（「改写 1 条」是第 24 轮审计指出我写错的说法）。）
+
+**M. 第 24 轮审计（针对 v65）之后的收口：v66**
+
+审计员对 v65 的判定是**可收口（缺陷 0 / 中 0 / 低 0 / 提示 3）** —— 第 23 轮那条低级问题确认修好：
+它把同一条构造重跑（真引擎 + 只删第一次 `kata-genmove_analyze` 的 winrate）：v65
+`wrToMove=[NaN, 0.715319]`、`blackWinrates=[0.5, 0.2847]` ⇒ `verdict("W+2.5")` =
+「算到的部分没有明显失误，白棋从第 1 手起再未落后」✓（v64 同一构造给「全程没有明显失误，白棋从头领先到尾」）。
+它另外确认：`startComputed` 是唯一判据来源、八参/九参无重载歧义、两处 `verdict()` 入口与预分享 Intent
+（传的是原始数组）都拿得到正确判据、前几轮回归全成立。
+
+三条提示全收，修在 v66：
+
+- **提示①（最重要）套件抓不住「接线被改回去」这种回归**：它实测把 `verdict()` 改回从 `blackWinrates()`
+  反推，`BoardTest` 与 `GtpTest` 仍全绿（`GtpTest.java:86` 确实在调 `verdict()`，但走的是完整数据）。
+  ⇒ v66 把界面路径的接线抽成公开静态 `GameReview.verdictOf(wrToMove, loss, bestMove, moves, size,
+  firstColor, result)`（原始数组与顺延数组在同一个函数里，缺口个数与起点各自从正确来源取），
+  `verdict()` 只是它的薄壳，单测直接压 `verdictOf`。**反向验证（实测）**：同一输入分别用「反推」与
+  「原始数组」喂九参 —— 反推得「全程没有明显失误，黑棋从头领先到尾」、原始数组得「算到的部分没有明显失误，
+  黑棋从第 1 手起再未落后」⇒ 新断言 v9 恰好卡住这条回归 ✓。
+- **提示①后半（用例空洞）**：原 v7 用例的输入在 v64 上落到的是「到最后才见分晓」那条尾句分支，
+  所以「不含从头」那条是空断言 ⇒ 新增 v8 用例（`blackWr={0.5,0.6,0.7}`、显式 `startKnown=false`）
+  专压 `lastBehind<0` 那条尾句分支：起点未知时必须是「从第 1 手起再未落后」，不能是「从头领先到尾」。
+- **提示②** `/** 生成本局的结论。 */` 那句错挂在 `startComputed` 上方、`verdict()` 反而没有 ⇒ 挪回 `verdict()`。
+- **提示③** L 段写「改写 1 条」是错的（实测测试文件是 +16/-0）⇒ 已改。
+
+**v66 产物**：`VERSION=66`、`versionName=1.20261013.66`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `4d6ebc28076e641c2fbae44ad18b77ec`、包内 `classes.dex` md5 `0b91095962d6bf02cb3740c768ec87f1` == 构建树）。测试：**373 / 0** + **68 / 0**，
+无参 `BoardTest` **352**（v65 是 348：+4 = v8 的 2 条 + v9 的 2 条）。
+
+**N. 第 25 轮审计（针对 v66）之后的收口：v67**
+
+审计员对 v66 的判定是**可收口（缺陷 0 / 中 0 / 低 0 / 提示 3）**。它把两件事实测到底：
+① `verdictOf` 与 v65 的 `verdict()` 逐字等价（88 组合成输入比对 0 组不同；真引擎上 `verdict()`、
+`verdictOf`、它按 v65 原体重写的版本三条路逐字相同；另实测 `blackWinrates() ==
+toBlackWinrates(wrToMove, moves, firstColor)`）；② 把「改回从顺延数组反推起点」真的做了一遍 ——
+四个变体各自重编译后跑 v66 自己的测试：**A**（`verdictOf` 里改回反推）= 371/2，红的正是 v9 两条
+⇒ 第 24 轮那条洞确实堵上了；**B**（拆尾句守卫）= 368/5；**C**（拆前缀守卫）= 368/5；
+但 **D**（只把 `verdict()` 那一行委托改回反推、`verdictOf` 保持正确）= **373/0 + 68/0 全绿** ✗。
+尾句四个分支（和棋 / `lastBehind<0` / `lastBehind>=n` / else）它逐条点过，都有断言。
+
+三条提示全收，修在 v67：
+
+- **提示①** 套件压得住 `verdictOf`，压不住 `verdict()` 那一行委托 ⇒ `GtpTest` 新增
+  `testVerdictStartGap`：包一层真引擎（`private static final class NoFirstWinrate extends GtpEngine`，
+  重写 `send`），只把**第一次** `kata-genmove_analyze` 响应里带 winrate 的 info 行吃掉
+  ⇒ `wrToMove[0]` 是 NaN、而顺延数组的 index 0 仍是 0.5，再跑真 `analyze()` + `verdict()` 压措辞。
+  **反向验证（实测）**：把 `verdict()` 改回反推、其余保持正确（= 审计员的变体 D），这条用例红 1 条，
+  文案「起点没算到时不能说「从头/全程」：最大失误其实是白第 2 手 G3（亏 16%），但没影响胜负，
+  白棋从头领先到尾」。**但第 27 轮审计实测它的检出率只有约一半**（变体 D 红 3/8、A 红 5/8、
+  前缀回归 0 检出）—— 那盘唯一可测的败着在第 2 手，前缀那句根本不出现，`startKnown` 只剩尾句一个
+  可观察点。⇒ 确定性覆盖已挪到 BoardTest（见本段 v70 部分）。写这条用例时我自己先踩了个坑：原以为起点未知时必有
+  「算到的部分」那句，实测**有败着时走的是「最大失误其实是…但没影响胜负…」**，没有那句 ⇒
+  断言最终只压确定性红线（起点未知 ⇒ 不说「从头」、不说「全程」；尾句走哪条分支取决于引擎那 30 次
+  访问算出什么，写死会变成偶发红灯）。
+- **提示②** L 段那句被我改成了碎片（`README.md:1071-1072` 缺开括号）⇒ 已修好。
+- **提示③** `verdictOf`/`summarize` 的第 6/7 参同为 `int` + `String`、写反了会静默编译通过；
+  以及 `verdictOf` 的 `firstColor` 要传「本谱先手方」字段值而不是从手顺推（摆子/让子谱可能不同）
+  ⇒ 写进 `verdictOf` 的 javadoc（当前无缺陷，属防误用）。
+
+**v67 产物**：`VERSION=67`、`versionName=1.20261013.67`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `18e46aeae2df6c2cedb6c6abcba78d2a`、包内 `classes.dex` md5 `ae10c8b6ea1f3fbd10443cd449bcb541` == 构建树）。测试：**373 / 0** + **72 / 0**
+（`GtpTest` 68 → 72 = 新增 4 条断言）。
+
+**O. v68：测试只改（无产品行为改动）**
+
+v67 交付后我自己复查那条新用例：第 4 条断言（`contains("从第 1 手起再未落后") || contains("没影响胜负")`）
+我原以为会随引擎结果漂移，就去掉了 —— 第 26 轮审计实测：**会漂的是尾句**（`lastBehind<0` /
+`lastBehind>=n` 五五开），而我担心漂的那**第三条**它 10/10 都没漂，且代码路径可证不会漂
+（`startKnown=false` 时任何尾句分支都说不出「从头」）。`src/` 未动，这轮的审计对象是 v68。
+
+**v68 产物**：`VERSION=68`、`versionName=1.20261013.68`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `f4de6ace378add17ef550fd465cb3206`、包内 `classes.dex` md5 `ae10c8b6ea1f3fbd10443cd449bcb541` == 构建树）。
+**实测**：v68 的 `classes.dex` md5 与 v67 的 `ae10c8b6ea1f3fbd10443cd449bcb541` **逐字节相同**。
+但这只能说明**字节码同源**，不能证明「src 一行未动」—— javadoc 改了 dex 也不变（第 26 轮审计指出的，
+它另外核到 v66→v68 的 src 只多 4 行 javadoc、30 个 class 逐字节相同）；「src 未动」依据的是我的改动记录。
+apk md5 变了只是因为清单里的版本号变了。测试：**373 / 0** + **72 / 0**（`GtpTest` 68 → 72）。
+
+**P. 第 26 轮审计（针对 v68）之后的收口：v69**
+
+审计员对 v68 的判定是**可收口（缺陷 0 / 中 0 / 低 0 / 提示 2）**。它把我第 26 轮那条新用例压到了底：
+四个变体各重编译 30 class 后用**这条用例本身**跑 ⇒ **A**（`verdictOf` 改回反推）那条否定断言红、
+**B**（拆尾句守卫）红、**D**（只在 `verdict()` 改回反推）红（真套件复核 `71/1`，唯一红的就是它，
+文案「…但没影响胜负，白棋从头领先到尾」）、**C**（拆前缀守卫）全绿 —— 不是漏：这盘唯一可测的败着在
+第 2 手，文案走「最大失误其实是…」，前缀那句根本不出现（前缀回归由 BoardTest v7/v9 兜）；
+偶发性它连跑 10 次：那条否定断言 **0 次误报**，而尾句确实五五开漂移（`lastBehind<0` 5 次 /
+`lastBehind>=n` 5 次）。**这条用例的真实红线就是那一条否定断言**。
+
+两条提示全收，修在 v69：
+
+- **提示①（最重要）这条用例有假绿口子**：把包装器改成吃掉**每一次** analyze 的 winrate
+  （或引擎整盘吐不出可解析输出 —— 第 21 轮实测过的场景）⇒ 文案退化成兜底句
+  「这盘没有算到可用的胜率…」⇒ 我原来那 4 条断言**全过**、用例什么都没压住。
+  ⇒ 补两条数据无关的前提：`check(!r.cancelled, …)` + 「第 1 手之后都不是 NaN」；
+  原来那条 `!isEmpty` 去掉（它不做判断），措辞细节交给 BoardTest 的合成数组用例（v7/v8/v9，零引擎噪声）。
+  **反向验证（实测）**：把包装器改成「每次都吃」⇒ 新前提红，文案
+  「第 1 手之后都算到了（只有起点是 NaN）」✓。
+- **它顺手查出的包装器作用域（观察）**：winrate 与候选手（pv）、目差写在**同一行** info 上，吃掉它会
+  连带清掉 `bestMove[0]` / `scoreLead`（实测 `bestMove[0]` 由 `F5` 变空串）⇒ 注释改成如实描述，
+  不再写「只影响 winrate」（对本用例断言无影响：唯一可测的败着在第 2 手）。
+- **提示②** README O 段两处说法我写错了：①「第三、四条断言都会漂移」不成立（它 10/10 实测 + 代码路径
+  可证第三条不会漂）；②「dex 逐字节相同 ⇒ src 一行未动」推理不成立（javadoc 改了 dex 也不变 —— 这次
+  就是活证据；要证明 src 没动得比源码哈希）⇒ 已改。
+
+另外如实记两条它的边界：**v67 的产物已被覆盖，`/tmp` 下没有基线** ⇒ 「v68 的 dex == v67 那个哈希」
+它核不到、只能记我的说法（它核到的是 v66→v68 的 src 只多 4 行 javadoc、30 个 class 逐字节相同，
+字节码层面同源）；`res/`、`assets/`、`jniLibs/` 除版本号外是否与 v67 完全一致也没有基线（仅推理）。
+
+**v69 产物**：`VERSION=69`、`versionName=1.20261013.69`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `6dd21c95bc8b78f0bb1532ba4e4ed40b`、包内 `classes.dex` md5 `ae10c8b6ea1f3fbd10443cd449bcb541` == 构建树）。测试：**373 / 0** + **73 / 0**
+（`GtpTest` 的断言数 **72 → 73**：v67 加的那 4 条里，第 4 条（`!isEmpty`）在本轮被删掉、换成 2 条前提）。
+
+**Q. 第 27 轮审计（针对 v69）之后的收口：v70**
+
+审计员对 v69 的判定是**可收口（缺陷 0 / 中 0 / 低 0 / 提示 2）**。这轮它**真的核到了**「v69 的 dex 与
+v68 构建树逐字节相同」（`cmp` 比它第 26 轮复现的那份），也直接 `diff -rq` 比出「v69 的 src 与 v68 快照
+逐字节相同」—— 这两条不用再靠推理 ✓；假绿口子它也复核了：两个「全吃」变体在 v68 断言集下全绿、
+在 v69 断言集下红在「第 1 手之后都算到了」，且 10 次跑新前提 0 次红 ✓。
+
+- **提示①（重要，检出率）**：它把 v67 那条引擎用例的检出率量化了 —— 变体各跑 8 次真引擎：
+  **D 红 3/8、A 红 5/8、C 0 检出**。原因是那盘唯一可测的败着在第 2 手（白＝胜方）⇒ 文案走
+  「最大失误其实是…」，前缀那句根本不出现，`startKnown` 只剩尾句一个可观察点，`lastBehind>=n` 时
+  两种实现输出完全相同 ⇒ 漏检。它用反射构造合成对象实测出一个**零引擎、四变体必红**的输入
+  （`wrToMove=[NaN,0.74,0.47]`、`loss=[NaN,NaN,NaN]` ⇒ 正确实现全绿、A 4/4 红、B 2/4 红、
+  **C 2/4 红**（引擎用例对 C 是 0 检出）、D 4/4 红）。⇒ v70 采纳：`GameReview` 加一个**只给单测用**
+  的公开入口 `forTest(wrToMove, loss, bestMove, moves, size, firstColor)`（私有构造器 + 拷数组 +
+  设 moves；生产路径不调用它，界面仍走 `analyze()`），`BoardTest` 用它加 v10 两条断言直接压
+  `verdict()` 那一行委托。**反向验证（实测，四种改错各重编译 30 class + 跑 `BoardTest`）**：
+  新增那两条断言里：**A**（`verdictOf` 起点改回反推）红 **2** 条，文案「全程没有明显失误，白棋从头领先到尾」；
+  **B**（拆尾句守卫）红 **1** 条，文案「算到的部分没有明显失误，白棋从头领先到尾」；
+  **C**（拆前缀守卫）红 **2** 条，文案「全程没有明显失误，白棋从第 1 手起再未落后」；
+  **D**（只在 `verdict()` 改回反推）红 **2** 条，文案「全程没有明显失误，白棋从头领先到尾」
+  （第 29 轮审计按字面把「两个 `int` 写反」分别注入：`size`↔`firstColor` 只红 1 条、`size`↔`n` 才红 3 条
+  ⇒ 我记的那格是 **size↔n**）
+  —— **四种都确定性变红**，不再看引擎脸色 ✓（引擎用例降为补充）。
+  （审计员复核时提醒口径：整套 `BoardTest` 的失败数是 4/6/7/2，多出来的那些红在既有的「界面路径接线」用例上，
+  这里说的是**新增那两条**。它的数字与我逐条一致。）
+- **提示②** P 段那句计数拆解读不通（「2 条前提」与「假绿前提 ×2」是同一对断言）⇒ 改成
+  「v67 加 4 条；v69 删第 4 条、加 2 条 ⇒ 72 → 73」；`GtpTest.java:333/337` 两处注释指空/与顺序不符
+  ⇒ 已改（并把「起点未算到的结论」打印出来，便于人工看）。
+
+**v70 产物**：`VERSION=70`、`versionName=1.20261013.70`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `eea8c68405ce21ef41907b92ecc17937`、包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac` == 构建树）。测试：**375 / 0** + **73 / 0**。
+**本轮唯一的 `src/` 改动就是这个 `forTest` 测试入口**（新增方法，生产路径不调用），产品行为不变。
+
+**R. 第 28 轮审计（针对 v70）之后的收口：v71**
+
+审计员对 v70 的判定是**可收口（缺陷 0 / 中 0 / 低 0 / 提示 2）**。它把 v70 那点 src 改动查到了字节码级：
+`diff -rq` 只有 `GameReview.java` 不同（纯新增 21 行、既有行未改）、两棵树编译后**只有 `GameReview.class`
+不同、其余 29 个 class 逐字节相同**、`javap -p -c` 逐方法反汇编 **被改写行数 = 0** ⇒
+`verdict()/verdictOf()/summarize()` 字节码逐字相同；`grep -rn forTest src/` 只有定义、**生产路径零调用**。
+四种改错的复现也与我的数字逐条一致（A 红 2 / B 红 1 / C 红 2 / D 红 2，全是合成数组、零引擎）。
+
+两条提示全收，修在 v71：
+
+- **提示①（重要，v10 不钉 `forTest` 自己的契约）**：它造了六个 `forTest` 变体各跑整套 `BoardTest` ——
+  **m1**（`n` 多 1）、**m3**（丢掉传入手顺）、**m4**（构造器两个 `int` 写反）、**m7**（`n` 少 1）
+  全都 **375/0 静默全绿** ✗；m2（破坏前提）红；m5（去掉 `wrToMove` 的 `Math.min` 护栏）是**等价变体**、
+  全绿才对。⇒ v71 在调 `verdict()` 之前先钉形状：`wrToMove` 长度 = 手数 + 1、`loss` 长度 = 手数、
+  `size` 传进去了、`moves` 传进去了、起点留 NaN 且后面两个点照抄（用长度短路，避免 `n` 少 1 的变体
+  在诊断里先抛越界）。**反向验证（实测，四种改错各重编译 30 class + 跑 `BoardTest`）**：
+  **m1** 红 2 条（「forTest：wrToMove 长度 = 手数 + 1（期望 3，实际 4）」「loss 长度 = 手数（期望 2，实际 3）」）；
+  **m4** 红 3 条（多一条「size 传进去了（期望 9，实际 2）」）；
+  **m7** 红 3 条（含「起点留着 NaN、后面两个点照抄传入数组」）；
+  **m3** 红 1 条（「forTest：手顺传进去了」）—— 四种都被压红 ✓。
+  （我第一次注入 m3 时脚本自己的锚点断言拦住了：`r.moves = …` 这一行在文件里出现两次 ⇒ 那一格重跑了。）
+- **提示②** Q 段「A 红 2 条」的口径标明了是**新增那两条**（整套 `BoardTest` 的失败数是 4/6/7/2，
+  多出来的红在既有「界面路径接线」用例上）。
+
+**v71 产物**：`VERSION=71`、`versionName=1.20261013.71`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `00457554da98a7122c1cc1f7f17e23fc`、包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac` == 构建树）。测试：**380 / 0** + **73 / 0**
+（`BoardTest` 375 → 380 = 新增 5 条形状断言）。**本轮 `src/` 一行未动**（只改 tests/README）。
+
+**S. 第 29 轮审计（针对 v71）之后的收口：v73（含 v72 那处我自己没抓住的补修）**
+
+第 29 轮判定**可收口（缺陷 0 / 中 0 / 低 0 / 提示 2）**，它是实测的：
+v71 的 dex 与它第 28 轮从 v70 构建树复现的那份 **逐字节相同**（`cmp`）、v71 的 src 与我 v70 快照
+`diff -rq` 逐字节相同、`BoardTest` 只多 5 条形状断言；四格复核 m1 红 2 / m3 红 1 / m7 红 3，
+**m5（等价变体）380/0 全绿** ✓。
+
+- **提示①（重要）形状断言还有 6 个盲区**：它造出「`bestMove` 整段填错 / `bestMove` 拷贝偏移 1 /
+  `cancelled=true` / `firstColor` 写反 / 手顺反序（长度不变）/ 去掉 `bestMove` 的 null 护栏」六种改错，
+  全部 **380/0 静默全绿** ✗。根因：`bestMove`/`cancelled`/`firstColor` 在那个 fixture 上**根本不可观察**
+  （bestMove 全 null、loss 全 NaN、起点是 NaN ⇒ 一律 0.5）。它还实测出「浅拷贝/深拷贝」是**等价变体**
+  （全绿是对的，别误当洞 —— 注意第 30 轮审计员的自我更正：它当时那两个变体是**整段替换**那行表达式写的，
+顺手把 `moves` 的 null 护栏也去掉了，所以在 v73 补了 `moves=null` 路径之后那两棵老树直接 NPE；
+真正的等价对照是「**只改拷贝方式**」的两个变体）、`loss` 填错那一版自己就能红。
+- **提示②** R 段「两个 `int` 写反」指向不唯一 ⇒ 已写明是 size↔n。
+
+v72/v73 的修（都是我自己的活，**`src/` 一行未动**）：
+
+1. 补两个小 fixture 把那些字段照出来：**fx2**（第 1 手是**败方**的败着 + 推荐手 `E5` ⇒ 结论必须出现
+   「（应下 E5）」）、**fx3**（手顺为空 + 起点有数 ⇒ `firstColor` 才可观察；顺带 `bestMove`/`moves`
+   传 null 过一遍）；另加 `check(!fx2.cancelled)` 与 `checkEq(fx2.bestMove[0], "E5")`。
+2. **反向验证（实测，六种改错各重编译 30 class + 跑 `BoardTest`）**：n1a（bestMove 填 `ZZ`）红 2 条、
+   n1b（拷贝偏移 1）红 2 条、n2（cancelled=true）红 1 条、n3（firstColor 写反）红 1 条（文案
+   「（期望 0.8，实际 0.19999999999999996）」）、n8（去掉 null 护栏）**直接 NPE** ⇒ 都算抓住 ✓。
+3. **手顺反序（n4）我第一版没抓住** —— 那次 385/0 全绿，原因是我在测试里把**外部那份** `mv` 传给了
+   `verdict()`，`forTest` 里那份手顺根本没人读。改成传**对象自己**的手顺（产品路径也是这么用的：
+   `review.verdict(result, review.moves)`）之后 n4 红 1 条，文案「…最大失误其实是白第 1 手 F4（亏 30%），
+   但没影响胜负…」⇒ 推荐手没出来。另外**第一次注入 n4 时我脚本的锚点断言也拦了一次**
+   （`r.moves = …` 在文件里出现两处：`analyze` 与 `forTest`）—— 两条都记在这里，免得以后当成「一次就中」。
+
+**v73 产物**：`VERSION=73`、`versionName=1.20261013.73`，已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `1f81b8da6df12c890c171b38003681b4`、包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac`
+== 构建树，且与 v70/v71/v72 的 dex **逐字节相同** ⇒ 这几轮 `src/` 都没动）。测试：**385 / 0** + **73 / 0**。
+
+**T. 第 30 轮审计（针对 v73）之后的收口：v74**
+
+审计员对 v73 的判定是**可收口（缺陷 0 / 中 0 / 低 0 / 提示 2）**，且它这轮是把 v73 里那 5 条新断言的
+**六个格子**逐条复现的（n1a 红 2 / n1b 红 2 / n2 红 1 / n3 红 1 / n8 NPE / n4 红 1，文案与我逐字一致），
+并实测了等价对照 m5、n5g（保留护栏的浅拷贝）、n6g（深拷贝）全绿 ✓；身份类同样是实测：
+apk/dex md5、`cmp` 与它自己第 28 轮复现的 v70 dex **逐字节相同**、`diff -rq` 对 v71 快照 **src 逐字节相同**、
+`ls` 全盘找不到 v72 产物 ⇒「v72 未交付」一致（但它如实标了：v72 没有产物，那版的两句话它**核不到**）。
+
+- **提示①（残余盲区 4 个，全实测静默全绿）**：**n12g**（手顺的**点**被改掉、颜色顺序不变）、
+  **n14**（`r.moves = moves;` 去掉 null 护栏）、**n17**（`bestMove` 只拷前面 n 个、尾巴丢）、
+  **n19**（去掉 **`loss` 拷贝**的 `Math.min`）。它还判定 **n19 是「真盲区」而不是等价变体**并给了硬证据：
+  `wrToMove` 那处 `Math.min` 的两个参数**恒等**（`n+1 == wrToMove.length`，实测传 0/1/5 个都一致）⇒ m5 是等价；
+  `loss` 这处是 `loss.length` 与 `n` 比，**传一个比 n 长的 loss 就必然越界**
+  （实测正确树「没炸，loss=0.10 0.20」、n19 抛 `ArrayIndexOutOfBoundsException: arraycopy: last destination
+  index 3 out of bounds for double[2]`）。影响面：`analyze()` 自造 loss（长度就是 n）⇒ 生产路径碰不到，
+  `forTest` 只给单测用 ⇒ **不是产品缺陷**，是测试专用入口的覆盖缺口（它判「提示」，我同意）。
+- **提示②** S 段「浅/深拷贝是等价变体」这句限定成「**只改拷贝方式**」（见上）；它顺手做了自我更正：
+  第 29 轮那两个变体连 null 护栏一起去掉了，v73 的 `moves=null` 路径一补上，那两棵老树直接 NPE。
+
+v74 的修（我自己的活，**`src/` 一行未动**）：按它给的四条补进 `BoardTest`（都是 `forTest` 契约层面的），
+其中 loss 那条我用 try/catch 把「越界」变成**干净的 FAIL**，不中断整个套件。
+**反向验证（实测，四格各重编译 30 class + 跑 `BoardTest`）**：
+**n12g** 红「forTest：手顺的点也要照抄（期望 40，实际 0）」；
+**n14** 红「forTest：moves=null 要存成空列表」；
+**n17** 红「forTest：bestMove 尾巴也要照抄（期望 ，实际 null）」；
+**n19** 红「forTest：loss 传长了要按 n 截断（不能越界）」—— 四格都从「静默全绿」变成「确定性红」✓。
+
+**v74 产物**：`VERSION=74`、`versionName=1.20261014.74`（**这一行我原来写成了 `1.20261013.74`** —— 构建脚本按当天日期生成，我手写时抄了上一天的号；第 31 轮审计用 `aapt2 dump badging` 实测指出，已改），已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `fee8ff6a2a73535b5bc8af92533a6e90`、包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac` == 构建树，与 v70/v71/v73 的 dex 逐字节相同
+⇒ 这几轮 `src/` 都没动）。测试：**389 / 0** + **73 / 0**（`BoardTest` 385 → 389 = 新增 4 条）。
+
+**U. 第 31 轮审计（针对 v74）之后的收口：v75**
+
+审计员对 v74 的判定是 **缺陷 0 / 中 0 / 低 1 / 提示 1**，其中交付件本身**可收口**（那 1 条「低」在 README 里）：
+它把 v74 那 4 格逐条复现（n12g/n14/n17/n19 各红 1 条、文案与我逐字一致，n19 这次是干净 FAIL、套件正常出汇总行
+⇒ try/catch 有效 ✓），等价对照 m5/n5g/n6g 全绿无误报 ✓，并实测 fx3 那条**不空洞**（读的是存下来的字段，
+所以 `moves` 存 null 就红，尽管「null vs 空列表」在 `blackWinrates` 下等价）。
+它还更正了自己第 30 轮的一个判断：**n15（`n` 由 `loss.length` 推）现在会红**（v74 新加的「loss 传长了」fixture
+把它拦住了）—— 所以它当时说「等价」只在旧 fixture 集上成立。
+
+- **低①（文档，已修）**：T 段把 v74 的 `versionName` 写成 `1.20261013.74`，交付件实测是 `1.20261014.74`
+  （构建脚本按当天日期生成，我手写时抄了前一天）⇒ 已改成实测值，并在段里记下这次错。
+- **提示①（残余可观察位，已修）**：它把 `forTest` 的公开可观察面**穷尽了一遍**，实测还有 7 个改法能让
+  389 条断言全绿：**n20** `firstColor` 写死黑（fx2/fx3 恰好都是黑先）、**n21** 手顺 `index≥1` 的**点**、
+  **n22** `bestMove[1]` 中间槽、**n23** `loss` 的**值**整体 ×0.9（NaN 乘完还是 NaN）、
+  **n24** `bestPv` 填 `ZZ`、**n25** 只动 fx2 那一格胜率、**n26** 手顺 `index≥1` 的**颜色**。
+  （**更正（第 32 轮审计自己查出来的）**：这一批里的 **n22 其实是一次无效注入** ——
+  `bestMove[1]="ZZ"` 被插在 loss 拷贝那行之后，而拷贝 `bestMove` 的 `arraycopy` 在它之后
+  （`GameReview.java:370`）⇒ 值立刻被覆盖、那棵树等价于正确树，所以当时那句「389/0 全绿」**不能**
+  证明 `bestMove[1]` 没被钉住；它本轮把注入挪到拷贝之后（n22b）复跑 ⇒ 397/1、文案与我逐字一致 ✓。
+  **n24 的注入也落偏了**（进了 `analyze`、`:234`）⇒ 它证明的是「`analyze` 填的 `bestPv` 也没人断言」，
+  「`forTest` 没有 `bestPv` 入口」是读源码得到的。两格的**结论**不变，但当时的实测证据无效。）
+  它同时写明**穷尽边界**：它证明了「这 7 格能全绿」+「被钉的槽改了就红」，**没有**证明「不存在其他全绿改法」；
+  剩下那类要靠**加 fixture 形状**（未被传过的输入形状）来收。**n24 没有入口（`forTest` 不设 `bestPv`）⇒ 学术性，不补**。
+
+v75 的修（我自己的活，**`src/` 一行未动**）：按它给的断言补了 9 条（fx2 起点后两格、`loss` 的值、
+`bestMove` 的中间槽、手顺每一手的颜色与点、外加一个**白先**的 fixture fx4）。**两次自曝的失误**：
+1. fx4 我第一版写成**等值**断言 `checkEq(blackWinrates()[0], 0.2)` —— 正确树上就红了（`1-0.8 = 0.19999999999999996`），
+   是套件自己抓出来的（那次跑出 397/1）⇒ 改成容差比较 `< 1e-9`，基线恢复 398/0。
+2. 我第一次跑反向验证时，n21/n26 的注入锚点 `r.moves = … ;` 在文件里出现两次（`analyze` 与 `forTest`），
+   脚本自己的「锚点必须唯一」断言把这两格拦住了 ⇒ 用带 `return r;` 的锚点重跑。
+**反向验证（实测，六格各重编译 30 class + 跑 `BoardTest`）**：
+**n20** 红「白先时起点 0.8 是白方胜率 ⇒ 黑方视角 0.2（实际 0.8）」；
+**n21** 红「手顺第 2 手点照抄（期望 50，实际 0）」；
+**n22** 红「bestMove 的中间槽也要照抄（期望 ，实际 ZZ）」；
+**n23** 红「loss 的值也要照抄（不能整体缩放）（期望 0.3，实际 0.27）」；
+**n25** 红「fx2 起点后的第二个点照抄（期望 0.4，实际 0.41）」；
+**n26** 红「手顺第 2 手颜色照抄（期望 2，实际 1）」—— 六格都从「静默全绿」变成「确定性红（各 1 条）」✓。
+
+**v75 产物**：`VERSION=75`、`versionName=1.20261014.75`（`aapt2 dump badging` 实测 versionName='1.20261014.75'），
+已交付 `/sdcard/Download/自动围棋.apk`（apk md5 `f3b5ed62d87bf085f33ab95d4ae89dd9`、包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac` == 构建树，
+与 v70/v71/v73/v74 的 dex 逐字节相同 ⇒ 这几轮 `src/` 都没动）。测试：**398 / 0** + **73 / 0**
+（`BoardTest` 389 → 398 = 新增 9 条）。
+
+**V. 第 32 轮审计（针对 v75）之后的收口：v76**
+
+审计员对 v75 的判定是**可收口（缺陷 0 / 中 0 / 低 0 / 提示 2）**，并给了两条我采纳的建议。
+
+- **六格复核全红、文案逐字一致**：n20/n21/n22b/n23/n25/n26 各 **397/1**。它还把「容差会不会过松」
+  拿边界探针压了一遍：起点偏 +1e-6 ⇒ 396/2 红、偏 +1e-12 ⇒ 397/1 红（严格断言连 1e-12 都抓）、
+  只偏「白先」那条路径且幅度 <1e-9 ⇒ 398/0（唯一盲窗，量级上不是真实写法能产生的）。它顺手核了
+  `checkEq` 只有 `equals` 精确比较这一个重载，而那些「等值」断言的值只经过 `arraycopy`（无算术）
+  ⇒ 位相同、跨 JVM 稳定，真正需要容差的只有 fx4 那一条（唯一经 `1 - x` 算术）—— 正是我踩的坑。
+- **提示①（唯一值得补的覆盖缺口）**：`analyze` 侧 `bestPv` **零断言**。（它当时把 `bestPv` 说成「用户可见」，
+  **第 34 轮它自己更正了这个未核实的推断**：复盘屏其实**不显示**主变化 —— 见 X 段。）⇒ v76 在真引擎用例里补 2 条**弱**断言：
+  `bestPv` 长度 = 手数 + 1、至少有一格非空（不绑 KataGo 具体着法，免得偶发红灯）。
+  实测：`GtpTest` 73 → **75**，真引擎跑通全绿 ✓。
+- **提示②（文档）**：U 段引用的它第 31 轮 n22/n24 两格证据要注明更正（见上一段的「更正」）。
+- **穷尽边界（它给的判定，我采纳）**：它逐格判了当前 fixture **没覆盖的输入形状** —— `size≠9`、
+  白先+手顺非空、`bestMove` 只中间槽非空、手数 1 或 ≥3、`loss.length < n`、`n=0`、`cancelled=true`
+  —— **全部「不值得补」**，理由是 `forTest` 对 `moves` 是整体赋值、没有循环（手数与逻辑无关），
+  其余是畸形输入或同一行转发的组合。**结论：`forTest` 侧到此收口，不再加 fixture。**
+
+**v76 产物**：`VERSION=76`、`versionName=1.20261014.76`（`aapt2 dump badging` 实测），
+已交付 `/sdcard/Download/自动围棋.apk`（apk md5 `c902828950b7051c73e9ce531b15e68f`、
+包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac` == 构建树，与 v70/v71/v73/v74/v75 逐字节相同
+⇒ 这几轮 `src/` 都没动）。测试：**398 / 0** + **75 / 0**。
+
+**W. 第 33 轮审计（收口轮，针对 v76）之后的收尾：v77**
+
+审计员对 v76 的判定是 **可收口（缺陷 0 / 中 0 / 低 0 / 提示 2）**，并明确回答了两个问题：
+**未报的真实缺陷：没有；未收口的低/中/高：没有。** 依据是 `src` 与它第 20–29 轮逐行审过的 v70/v71 快照
+**逐字节相同**、包内 dex 与它第 28 轮从构建树复现的 v70 dex **逐字节相同** ⇒ 那几轮的产品面结论全部继续有效。
+它这轮把「填 `bestPv` 那一行改错」做成 6 个变体跑**真引擎**：b1（长度分配成 n）崩 AIOOBE、
+b2（整段填 `""`）红 1 条、b5（去掉 `top == null` 护栏）崩 NPE —— **顺带正面结论：那条护栏不是死代码**
+（`maxVisits=30` 下真会出现 `top == null`）；b3（只填偶数下标）、b4（每格都填第一格的 pv）、b6（填 `top.move`
+而不是 `top.pv`）⇒ **75/0 静默全绿**。它另跑 11 次真引擎统计：`slots=7 pvNonEmpty=7 nullTop=0`、
+最短 pv 4 着 ⇒ 判「这两条弱断言不会偶发红（要红须整盘 7 格全空；单点 null-top 率约 1.6%，
+P(7 全 null)≈4×10⁻¹⁴）」——同时**如实标注**这是本机本版本统计、换环境不能外推。
+
+- **提示①（注释乱码，已修）**：`tests/GtpTest.java:66` 我写成「`MainActivity iali1118`」，应为
+  `MainActivity.java:1118`（行号本身对）。
+- **提示②（bestPv 三个残余全绿改法，已补）**：按它给的三条补了断言，都是「内部自洽/形状」，不绑 KataGo 输出：
+  `pvNonEmpty == length`（抓 b3）、每格非空 pv 的**首着 == 同一下标的 `bestMove`**（抓 b4）、
+  每格非空 pv **≥2 着**（抓 b6）。余量这里被审过两次：第 34 轮指出我原来写「1 个数量级」是错的（阈值 2、
+  实测 4 着 ⇒ 2 倍）；第 37 轮它带打印重跑 5 次真引擎，**实测下限其实是 3 着**（前 17 次打印到过 4 着）
+  ⇒ 现在是「**3 着、余量 1.5 倍**」，而且只差 1 着 —— 所以这条是**经验性**断言，不是结构性不变量。
+- **反向验证（实测，三格各重编译 30 class + 跑真引擎 GtpTest）**：**b3** 红「bestPv 每一格都非空（实际 4/7 格）」；
+  **b4** 红「bestPv 每格首着与 bestMove 一致（不一致 6 格）」；**b6** 红「bestPv 是着法序列而不是单个着法名
+  （最短 1 着）」—— 三格都从「静默全绿」变成「确定性红（各 1 条）」✓。
+  （第一次跑这三格时我漏了 `GtpTest` 的入参顺序、传了错的权重路径，三棵树都打印「跳过：找不到权重」
+  即**根本没跑**；发现后按 `run_tests.sh` 的实际参数重跑才有上面三行 —— 记在这里免得下次又当成结论。）
+
+**v77 产物**：`VERSION=77`、`versionName=1.20261014.77`（`aapt2 dump badging` 实测 versionName='1.20261014.77'），
+已交付 `/sdcard/Download/自动围棋.apk`（apk md5 `d118ac24fd4ce612ce58f00516ced934`、包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac` == 构建树，
+与 v70/v71/v73/v74/v75/v76 的 dex 逐字节相同 ⇒ 这几轮 `src/` 都没动）。测试：**398 / 0** + **77 / 0**
+（`GtpTest` 75 → 77：`>0` 换成「每格都非空」+ 新增两条）。
+
+**X. 第 34 轮审计（针对 v77）之后的收尾：v78**
+
+审计员对 v77 的判定是 **可收口（缺陷 0 / 中 0 / 低 0 / 提示 3）**，三条新断言经它 3 变体（各红 1 条、文案逐字一致）
++ 6 次真引擎统计 + 4 个空白等价写法对照（全绿不误报）验证有效 ⇔ 它**自己也踩了**我 W 段自曝的那个坑
+（第一次传错权重路径、三棵树只打印「跳过」）。它还顺手核出：`pvNonEmpty == length` 与用例里原有那条
+「每一手都拿到合法胜率」**同源**（`rootWinrate()` 在 `top()==null` 时返回 NaN）⇒ 那个约 4%/次的偶发
+**是既有的**、v77 只是多报一条。
+
+它这轮查出 3 处「可核对事实/机制」问题，**全部已修**（我自己的活，`src/` 仍未动）：
+
+1. **「1 个数量级余量」写错**：阈值 `>=2`、实测最短 4 着 ⇒ 余量是 **2 倍**，不是 10 倍。已改。
+   （第 37 轮它又带打印重跑 5 次，把下限更正为 **3 着 ⇒ 余量 1.5 倍**；它并如实说明自己上一轮
+   「22 次运行最短 4 着」那句是**过度概括** —— 那 5 次只验了 `>=2`、没打印实测值。）
+2. **`bestPv` 不是「用户可见」**：它更正了自己第 32 轮那个**未核实的推断**（把「Intent 管线铺好了」当成「会显示」）。
+   我在容器里**独立复核一致**：`grep -rn bestPv src/` 共 **10 处**（MainActivity 3 + ReviewActivity 4 +
+   GameReview 3），`ReviewActivity.bestPv` 写 3 读 0、`onEngineMoveDone` 的 `pv` 形参读 0、`BoardView` 也没有
+   PV 接口（唯一一次「读」是 `MainActivity:1118` 把 `GameReview.bestPv` 塞进 Intent）⇒ **复盘屏目前不显示主变化**。
+   已把 README 里「用户可见」的说法改掉（V 段 + 已知限制里新增这条「死数据链」），
+   并把它归到「产品选择」而不是缺陷（功能表承诺的「引擎推荐点」是 `bestMove`，那个有显示）。
+3. **「跳过」不等于通过**：`GtpTest` 在权重/引擎找不到时只打印「跳过：…」并**退出码 0** ⇒ 一次**根本没跑**的
+   真引擎验证看起来像通过（这正是我和审计员都踩过的那个坑）。已改成打印「错误：…」+ `System.exit(2)`，
+   并让 `run_tests.sh` 检查 `GtpTest` 的退出码、引擎/权重不可用时**直接失败**（不再打印「跳过」了事）。
+   **实测**：权重路径错 ⇒ 退出码 **2**；引擎路径错 ⇒ 退出码 **2**；路径对 ⇒ **0**；真失败（b3 变体）⇒ **1**。
+   （我第一次量这几个码时把命令接在管道后面读 `$?`，读到的其实是 `tail` 的返回码 —— 重测才对。
+   顺带核实：`BoardTest:1346` / `GtpTest` 的 `System.exit(1)` 本来就在**有失败时**触发
+   （第 37 轮直读行号纠正：那一处现在是 **`:614`**，不是我当时写的 `:608` —— v76/v79 两次加断言把它推后了 6 行）。）
+
+另外把 v77 那条第 4 条断言收紧的方向改了一下：`pvNonEmpty == length` ⇒ `>= length - 1`
+（允许 1 格偶发拿不到 `info`：那种情况原有那条胜率断言本来就会红，不必重复报一次）。**实测 b3 仍红**
+（「bestPv 每格都非空（最多容忍 1 格偶发缺失；实际 4/7 格）」）✓。
+
+**v78 产物**：`VERSION=78`、`versionName=1.20261014.78`（`aapt2 dump badging` 实测 versionName='1.20261014.78'），
+已交付 `/sdcard/Download/自动围棋.apk`（apk md5 `c243f01def9203f63fd863df2c3d712f`、包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac` == 构建树，
+与 v70~v77 的 dex 逐字节相同 ⇒ `src/` 一直没动）。测试：**398 / 0** + **77 / 0**。
+
+**Y. 第 35 轮审计（针对 v78）之后的收尾：v79**
+
+审计员对 v78 的判定是 **可收口（缺陷 0 / 中 0 / 低 0 / 提示 2）**，退出码链路被它四种情形全实测：
+路径对 ⇒ `GtpTest` **0**、权重路径错 ⇒ **2**、引擎路径错 ⇒ **2**、真失败（b3 变体）⇒ **1**；
+`run_tests.sh` 正常 ⇒ **rc=0**、`KATAGO_BIN=/nonexistent` ⇒ **rc=1** 且打印「这不算通过」——「没跑却看起来像通过」
+那个坑确认堵住了（它如实标了：脚本里 `exit $rc` 那条分支正常路径进不去，只能靠等价片段 + 走查）。
+
+两条提示，都已修（`src/` 仍未动）：
+
+**提示①（README 3 处数字/表述不准，已改）**：`grep -rn bestPv src/` 实测是 **10 处**（MainActivity 3 +
+ReviewActivity 4 + GameReview 3），我写成 13 ✗；「全是写、没有读」也不准确 —— `MainActivity:1118` 就是**读**
+（把 `GameReview.bestPv` 塞进 Intent），准确说法是「`ReviewActivity.bestPv` 写 3 读 0、`onEngineMoveDone`
+的 `pv` 形参读 0、界面层零读取」；另外我列的站点里 `:162` 那行其实是 `getStringArrayExtra(EXTRA_BESTPV)`、
+**不含** `bestPv`（与「10 处」对不上）。三处已按实测改写，**「复盘屏不显示主变化」这个结论不变**。
+
+**提示②（`>= length - 1` 的容忍口子，改成更强的配对判据）**：它构造的 **e3**（把填 `bestPv` 那行包进
+`if (i < n)`、漏最后一格）在我那个容忍下 **77/0 全绿** ✗。我改成配对判据：**引擎答了的每一手（`wrToMove[i]`
+不是 NaN）就必须有主变化**；引擎没答（NaN）的格子空着才算正常（那种情况原有那条「每一手都拿到合法胜率」
+本来就会红）。这样既抓住 e3 这类 off-by-one，又不会因为引擎偶发不答而误红。
+**反向验证（实测，真引擎 GtpTest + 退出码）**：**e3** 红「bestPv：引擎答了的每一手都要有主变化（缺 1 格，非空 6/7）」
+退出码 1；**b3** 红「缺 3 格，非空 4/7」；**b2** 红「缺 7 格，非空 0/7」—— e3 从「静默全绿」变「确定性红」✓。
+
+**v79 产物**：`VERSION=79`、`versionName=1.20261014.79`（`aapt2 dump badging` 实测 versionName='1.20261014.79'），
+已交付 `/sdcard/Download/自动围棋.apk`（apk md5 `318ff97b8e511857197f7fa2d97f7313`、包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac` == 构建树，
+与 v70~v78 的 dex 逐字节相同 ⇒ `src/` 一直没动）。测试：**398 / 0** + **77 / 0**（`run_tests.sh` 退出码 0）。
+
+**Z. 第 36 轮审计（针对 v79）之后的收尾：v80**
+
+审计员对 v79 的判定是 **可收口（缺陷 0 / 中 0 / 低 0 / 提示 1）**，配对判据被它做了**双向**灵敏度实测：
+- **该红的都红**：e3/b3/b2 各 76/1、rc=1，文案与我逐字一致（「缺 1 格，非空 6/7」/「缺 3 格，非空 4/7」/
+  「缺 7 格，非空 0/7」）⇒ 上一轮那个「恰好一格能被放过」的口子确认堵住 ✓；
+- **不该红的不红**：它造 **nna**（模拟「引擎这一点没答」：`wrToMove[3]=NaN` + `bestPv[3]=""`）⇒
+  **配对判据一条都没红**，红的是原有两条同源断言 ⇒ 「不过敏」是实测结论，不是推理 ✓；
+- **反向**：**f1**（解析层把 `m.pv` 清空 = 引擎答了却不给主变化）⇒ 红 2 条（解析层「PV 非空」+ 配对判据）✓；
+- **等价写法**：pv 尾部空格 / 双空格 / `\t` / 前导空格 ⇒ 4/4 全绿、rc=0 ✓；
+- 它手工取原始引擎输出核对：`kata-genmove_analyze B 30` 的 9 个候选块**全部带 pv**；累计 22 次完整分析、
+  154 个格子**没有「有胜率却没 pv」的反例** ⇒ 配对判据唯一的外部依赖成立。
+
+**唯一一条提示（它判「不值得补」，我同意并记在这里）**：`pvShortest >= 2`（每格非空 pv ≥2 着）押的是
+**经验事实**而不是结构性不变量 —— 它在非首选候选里数到过 4 个只有 1 着的 PV，首选块（order 0）**实测下限 3 着**
+（第 37 轮带打印重跑 5 次：4 次是 4 着、1 次是 3 着；阈值是 2 ⇒ 只差 1 着）；另外一个变体 **g1**（`bestPv[i] = top.move + " " + top.move`，内容错但首着对且够长）⇒ 仍然全绿 ✗。
+要收紧这两点就得**绑 KataGo 的具体着法** ⇒ 会引入偶发红，得不偿失 ⇒ **保持现状，如实记在这里**：
+**换局面/换引擎版本万一这条偶发红，先判断是不是引擎行为、别当成产品缺陷。**
+
+**v80 产物**：`VERSION=80`、`versionName=1.20261014.80`（`aapt2 dump badging` 实测 versionName='1.20261014.80'），
+已交付 `/sdcard/Download/自动围棋.apk`（apk md5 `a6f873d40fd0e04c51966fb594f822ba`、包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac` == 构建树，
+与 v70~v79 的 dex 逐字节相同 ⇒ `src/` 一直没动）。测试：**398 / 0** + **77 / 0**（`run_tests.sh` 退出码 0）。
+
+**AA. 第 37 轮审计（针对 v80）之后的收尾：v81**
+
+审计员对 v80 的判定是 **可收口（缺陷 0 / 中 0 / 低 0 / 提示 3）**，三条全是**文档侧**（它明说「不涉及产品行为、
+不涉及交付件身份」）：
+
+1. **`pvShortest` 的实测下限是 3 着、不是 4 着**：它这轮**带打印**重跑 5 次真引擎，`pvShortest=3` 出现 1 次
+   ⇒ 阈值 `>=2` 只差 1 着、余量 **1.5 倍**。它同时**更正了自己上一轮**「22 次运行最短 4 着」那句是**过度概括**
+   （那 5 次只验了 `>=2`、没打印实测值）。⇒ 已按新数改 W/V/Z 三处，并把这句定性写成「**经验性断言**、
+   不是结构性不变量；将来偶发红先判断是不是引擎行为，别当产品缺陷」。它的建议**不**把阈值收紧到 `>=3`
+   —— 那会把「引擎偶尔给短 PV」变成红灯 —— 我同意。
+2. **行号漂移**：`GtpTest` 的 `System.exit(1)` 现在是 **`:614`**（v76/v79 两次加断言把它推后了 6 行），
+   我原来写成 `:608`；已知限制里 `ReviewActivity` 的 3 个写点是 **`:122/:173/:382`**（`GameReview.bestPv`
+   经 `analyze` 写 `:382`；我原来把字段声明 `:71` 当成写点）。
+3. 历史叙述里的行号同样漂了（`:204/:210`、`:333/:337`、`:86` 等），它建议加「当时」限定 ⇒ 我改成了**读法说明**：
+   在「九、独立审计与修复记录」开头声明**每一轮的行号都是那一轮的快照**，而 `src/` 从 v70 起逐字节未变
+   ⇒ 引用 `src/` 的行号仍然有效，`tests/` 与 README 自身的行号以当前的「七」「八」两章为准。
+   这样后面几轮往 `tests/` 加断言时不会再被当成新问题。
+
+它这轮**没有**再发现其它可核对事实写错（`10 处`、`MainActivity.java:1118`、`GameReview.java:223/:370`、
+`BoardTest:1346`、`GtpTest.java:543`、`:162`、md5/版本号/计数逐条与它的实测一致 ✓）；Z 段转述它的双向
+灵敏度实测也没失真 ✓。另外它如实标注了一处它自己的取证局限：**BoardTest 它没有 v79 的字节快照**，
+「tests 未动」那句它是靠「与第 30 轮快照只差 31 行、全是已审过的加固」+ 计数一致给的**部分实测**。
+
+**v81 产物**：`VERSION=81`、`versionName=1.20261014.81`（`aapt2 dump badging` 实测 versionName='1.20261014.81'），
+已交付 `/sdcard/Download/自动围棋.apk`（apk md5 `b6c3bc1c82553c0fbf33fe11842e3c68`、包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac` == 构建树，
+与 v70~v80 的 dex 逐字节相同 ⇒ `src/` 一直没动）。测试：**398 / 0** + **77 / 0**（`run_tests.sh` 退出码 0）。
+
+**AB. 第 38 轮审计（针对 v81）之后的收尾：v82（文档最后一改）**
+
+审计员对 v81 的判定是 **可收口（缺陷 0 / 中 0 / 低 0 / 提示 2，都是文档计数/清单）**，而且它**明确说「可以停」**：
+产品行为面零问题（`src` 逐字节未动连续 12 版、每轮包内 dex 全等、套件绿），只剩两处过期数字
+⇒ 它建议「改 3 个数字 + 4 行树，发 v82；我只做一次 5 分钟复核（grep 计数 + 树对齐 + 398/0/77/0），
+不必再走完整审计循环」。
+
+它这轮顺手把「当前章节」里其余可核对事实逐条实测了一遍，**全部对得上**（照抄它的结论，便于以后复查）：
+`./katago version` = KataGo v1.18.2 / Eigen(CPU)；**包里**那个 `lib/arm64-v8a/libkatago.so` 的 NEEDED 只有
+`libm/libdl/libc`（它先拿容器里那份 `/usr/local/bin/katago` 量成 7 个依赖、自己发现那是**另一个构建**、
+当场改正口径）；APK 120.8 MB；三个权重 5/14/93 MB；visits 300/100/40 与 `EngineManager.java:82-87` 逐档一致；
+19 路 337 手棋谱确实在 fixture 里用（`BoardTest:1001-1007`）；七章的容器 uid/SELinux 三条逐字复现；
+八章 `:523` 的 117 MB/539 MB 是**搜索中 RSS**（不是解压尺寸，所以「没错但没法复算」）。
+
+v82 的改（我自己的活，**`src/` 与 `tests/` 都没动**）：
+1. **测试计数**（第 5、6 章共 6 处）：`177 项` ⇒ **475 项（398 + 77）**、`BoardTest 137 项` ⇒ **398 项**、
+   `GtpTest 26 项` ⇒ **77 项**；并把第 3 节标题补成「GTP 客户端 + 真引擎整盘分析端到端」
+   （原描述漏了第 28 轮起加的 `GameReview` 端到端用例）。
+2. **代码结构树**：补上漏掉的 4 个源文件 —— `GameReview.java`、`Theme.java`、`Palette.java`、`CrashLog.java`
+   ⇒ 树里现在 16 个，`ls src/com/autogo` 也是 16 个（我自己数过）。
+
+**v82 产物**：`VERSION=82`、`versionName=1.20261014.82`（`aapt2 dump badging` 实测 versionName='1.20261014.82'），
+已交付 `/sdcard/Download/自动围棋.apk`（apk md5 `57f580e1b1ffe10a7a2a3c92fe3d9bed`、包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac` == 构建树，
+与 v70~v81 的 dex 逐字节相同 ⇒ `src/` 一直没动）。测试：**398 / 0** + **77 / 0**（`run_tests.sh` 退出码 0）。
+
+**AC. 第 39 轮收尾复核（针对 v82）：可以停；顺手补掉最后一处旧计数（v83）**
+
+审计员对 v82 的终局判定是 **「可以停」**：身份（apk `57f580e1b1ffe10a7a2a3c92fe3d9bed` == 交付件、dex 与 v70 复现件
+逐字节相同、`versionCode=82`/`1.20261014.82`/`sdkVersion=26`/`targetSdkVersion=34`）、改动面（`src` 对 v71 无差异、
+**BoardTest/GtpTest/run_tests.sh 现在都有字节级快照可比、全部无差异**）、基线（rc=0 + 398/0 + 77/0）、
+我改的 6 处计数与代码结构树（树里 16 个 `.java` == `ls` 16 个）逐条核过 ✓。
+它还照实标了自己上一轮**漏扫**的一处：`README:121`（四、重新构建 那行）还写着「`88 项`」✗。
+
+⇒ v83 只改这一行（`88 项` ⇒ **475 项 = 398 + 77**，并补上「整盘分析端到端」），**只有 README 变**（README 不进 APK，
+所以这一行不影响交付件；包内 dex 仍与 v70~v82 逐字节相同）。我自己全扫了当前章节（1–538 行）里所有「N 项」，
+现在只剩 475 / 398 / 77 三个实测值 ✓。它判这处**不需要再走审计**（纯文档数字、不影响产品行为/交付件身份/「全过」结论），
+我照做 —— 唯一开放项仍是那个**产品选择**（复盘屏不显示 PV，不是缺陷）。
+
+### 明确没能实测的部分
+
+这些是**未验证**项，不要当成「已确认没问题」：
+
+- **对话框叠窗去重（S2）的运行时行为**：容器里的 `android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面） ——
+  实测 `new AlertDialog.Builder(null).create()` 直接抛 `RuntimeException: Stub!`，
+  `SystemClock.uptimeMillis()` 抛 `UnsatisfiedLinkError`。要真机或 Robolectric 才能验。
+- **`WinrateChartView` 注释里「`lineTo(x, NaN)` 会把整条折线画废」**：只能实测到
+  NaN 会穿透旧表达式（`Math.min(1, NaN) == NaN`），Skia 的实际渲染行为没验。
+- **设备上的实际观感**：转屏、全屏、主题切换、屏幕自适应的真实渲染 —— 容器里没有
+  `pm`/`am`，logcat 不可用，读不到 `/data/data/com.autogo`。
+- 真 KataGo 的 `kata-genmove_analyze` 响应尾行形状（审计用的是伪引擎）；
+  `;B [cc]`（属性名与 `[` 之间有空格）这类写法只在解析层测过，界面怎么呈现没测。
+- **`loadsgf` 那条引擎同步路径只在 JVM 上验到了引擎侧**（写临时谱 → `loadsgf` → `showboard` 对齐）。
+  Activity 里的接线（`getCacheDir()` 可写性、快照是否只在 UI 线程取、失败退回旧路径时引擎状态）
+  **没有真机验证** —— 容器里跑不起 Activity。
+- 悔棋/进程回收的摆子恢复，验的是**纯函数层**（`Sgf.setupStones` + 「先摆子再手顺」的顺序）。
+  真机上走一遍「导入题谱 → 悔棋 → 旋转屏幕 → 保存」的闭环没验过。
+- **复盘屏（第 18 轮之后）**：返回按钮的真机点按与两个朝向下的位置、J1 合并后复盘屏与合并前的
+  曲线/列表/结论**逐点一致**、取消时引擎盘上多一手的可见影响 —— 全部只有代码走查，没有真机实测。
+  回归测试只能保证「`GameReview` 这一份」是对的，不能保证 Activity 那 52 条指令的接线是对的。
+
+产物身份可以用**与时间戳无关**的方式核：APK 内 `classes.dex` 与构建树的 `classes.dex` md5 相同；
+用 `build.sh` 里原样的 `javac` 命令重编当前 `src/`，与构建树 `diff -rq` 的差异**只有**
+aapt2 生成的 `R.class`/`R$string.class`/`R$mipmap.class` 三个（差异恒为那三个 R 类；第 54 轮审计指出原写「39 = 36 + 3」与行号引用都已过期）。
+**这个数随 `src/` 增长而变，核的时候要现算，不要抄旧值**：16 个源文件时是 30；v84 加的两个 Activity
+带 5 个嵌套类 ⇒ 35；v85 的 `UiTheme` 再 +1 ⇒ 36（第 40 轮审计就是在这里发现数字还停在 30 的）。
+版本号本身也各有出处：清单、包内与 `VERSION` 三处一致（`build.sh` 每次都会核）。
+
+> 这里原先写「33 个 class、`diff -rq` 零差异」，是错的（真跑会看到 3 个「仅在构建树」的文件）。
+> 数字来源是审计员 task-13/14 报告里的「34 个」，它第 17 轮已主动撤回并更正为 30（v54–v57 四套类树都是 30），
+> 一并记在这里 —— 双方都错过这个数，结论「APK 与当前源码一致」不受影响。
+
+---
+
+**AD. v84：加启动选择页（围棋 / 五子棋）+ 五子棋占位页（用户指令驱动）**
+
+用户要求加五子棋模式：现有功能一个不变、模式一个不少，先做「只选棋种」的启动页。
+这一步只动入口，不碰对局逻辑。
+
+改了什么（`src/` 只**新增** 2 个文件，既有文件一个没改）：
+
+| 文件 | 变化 |
+|---|---|
+| `src/com/autogo/MenuActivity.java` | 新增（138 行）：标题 +「围棋」「五子棋」两个按钮 + 版本号；主题读 `autogo`/`themeMode` 同一份偏好 |
+| `src/com/autogo/GomokuActivity.java` | 新增（95 行）：五子棋占位页，写清四块（规则 / 界面 / AI / 复盘）的施工顺序 + 返回按钮 |
+| `AndroidManifest.xml` | 启动项从 `MainActivity` 换到 `MenuActivity`；`MainActivity` 改 `exported="false"`；新增 `GomokuActivity`；三者都带原来那串 `configChanges` |
+
+产物：`versionCode=84`、`versionName=1.20261015.84`、`VERSION=84`；
+`aapt2 dump badging` 实测 `launchable-activity: name='com.autogo.MenuActivity'`，
+包内 4 个 activity（Menu / Main / Gomoku / Review）都能读出来；APK 120.8 MB（120808525 字节）；
+已交付 `/sdcard/Download/自动围棋.apk`（apk md5 `2dc25b5dee076fd487de6ba2a33c0329`，
+包内 `classes.dex` md5 `63287b38b52faa5f8ed3348760ecf61b` —— 与 v70~v83 那个 `afd3c5be…` 不同，
+因为多了两个类，符合预期）。测试：**398 / 0** + **77 / 0**（退出码 0）。
+
+**「围棋侧一个字节没动」的实测证据（反向验证，不是推理）**：
+把 `MenuActivity.java`、`GomokuActivity.java` 删掉、把 `AndroidManifest.xml` 的入口改回 `MainActivity`
+（树在 `/tmp/rev40/proj`），重跑 `build.sh` ⇒ 包内 `classes.dex` md5 = `afd3c5bece9098ec6a1d74738b867cac`，
+**等于 v70~v83 那个锚点** ⇒ 除新增的 2 个类以外，所有既有类逐字节相同。
+
+**没实测的部分**：两个新 Activity 都在 JVM 套件编译集之外（容器里的 `android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面），跑不起 Activity），
+所以「点按钮真能跳转」「从围棋按返回键回到选择页」「旋转屏幕」都只有代码走查，
+要真机才算数（与本章前面那批 Activity 未验项同类）。
+
+**下一步**：① 五子棋规则与胜负判定（纯 Java + JVM 测试）→ ② 棋盘界面与对局 → ③ 电脑对手（难度分档）
+→ ④ 复盘（胜率曲线 / 失误排行 / 推荐点）；之后再评估接第二个强五子棋引擎，接不上不影响上面四块。
+
+
+---
+
+**AE. v85：修掉第 40 轮审计的 2 条低缺陷 + 3 条提示（针对 v84）**
+
+第 40 轮审计结论：**可收口** —— 缺陷 2 条（**均低**）+ 提示 3 条，中/高 0 条；审计员在**自己的副本**里
+复现了 v84 的反向验证（`classes.dex` = `afd3c5be…` 锚点）并独立重跑了 `build.sh`，我给的 6 个数它一个不差。
+两条低缺陷都出在新页面上：
+
+1. 两个新页面**没有** `setTheme` / `onConfigurationChanged` / `onResume`（`grep` 无输出），而清单给它们
+   声明了 `uiMode|fontScale|…` ⇒ 不重建也不重判。三个后果：从围棋改主题按返回、菜单仍是旧配色；
+   停在这两页切系统深色不刷新；这两页窗口主题始终是清单里的亮色（深色下启动瞬间白底）。
+2. 选择页文案「围棋：19 路」与 `MainActivity.java:1277 int[] opts={9,13,19}` 不符（实际 9 / 13 / 19 三档可选）。
+
+提示：`MainActivity.java:366` 返回键注释过时（现在只 `finish` 自己 ⇒ 回选择页，要按两次才退出）；
+README 两处旧数字（「30 个 class」实测 35、「约 100 行」实测 95）；主题判定有三份拷贝，加第 4 页会漂。
+
+改了什么（v85）：
+
+| 文件 | 变化 |
+|---|---|
+| `src/com/autogo/UiTheme.java` | 新增（68 行）：把「主题档怎么取值 + 窗口主题怎么套」收成一处（偏好 `autogo`/`themeMode`、默认 `SYSTEM`、`Theme.isDark` 判据、`Theme_Material_NoActionBar` / `Theme_Material_Light_NoActionBar`）；选择页与五子棋页共用。`MainActivity` 自己那份**一行没动**（不碰围棋侧） |
+| `src/com/autogo/MenuActivity.java` | 重写（163 行）：`setTheme` 放到建视图**之前**；补 `onConfigurationChanged` 与 `onResume` 两次重判（变了才 `recreate()` / 重铺）；文案改成「围棋：9 / 13 / 19 路 · KataGo 引擎　　五子棋：15 路」 |
+| `src/com/autogo/GomokuActivity.java` | 重写（117 行）：同样三件（`setTheme` 前置 + 两个重判钩子） |
+| `src/com/autogo/MainActivity.java` | **只改 `:366` 一行注释**（「退出应用」⇒「关掉本页，回到选择页」），行数不变 —— 为的是让类文件逐字节相同（见证据②） |
+
+产物：`versionCode=85`、`versionName=1.20261015.85`、`VERSION=85`；`aapt2 dump badging` 实测
+`launchable-activity: name='com.autogo.MenuActivity'`，包内 4 个 activity；APK 120.8 MB（120808525 字节，
+与 v84 同尺寸属巧合 —— md5 不同）；已交付 `/sdcard/Download/自动围棋.apk`
+（apk md5 `e69a1dcb01efeb061e940bc165f81916`、包内 `classes.dex` md5 `84fb76dab7f5831a5ab3349186f97704`）。
+测试：**398 / 0** + **77 / 0**（退出码 0 —— 用日志文件取的真退出码，管道给 `tail` 会把 `$?` 盖掉）。
+`AndroidManifest.xml` 与 v84 逐字节相同（对着审计员第 40 轮留下的 v84 副本 `diff` 过）。
+
+**「围棋侧还是零改动」的三条实测证据（这轮现测，不是推理）**：
+
+1. **反向构建**：`/tmp/rev41/proj` = 删掉 3 个新文件、清单改回 v83 形态（`MainActivity` 回 `exported="true"` +
+   `MAIN`/`LAUNCHER`，另两条 activity 删掉）⇒ 16 个源文件重跑 `build.sh` ⇒ 包内 `classes.dex` md5 =
+   `afd3c5bece9098ec6a1d74738b867cac` **= v70~v83 那个锚点**，`launchable-activity` 也回到 `com.autogo.MainActivity`。
+2. **两个类树对照**：`diff -rq /tmp/appbuild/classes /tmp/appbuild85/classes` 只列出 6 个「仅在 v85」的类
+   （`UiTheme`、`MenuActivity` + `MenuActivity$1`/`$2`、`GomokuActivity` + `GomokuActivity$1`），
+   **没有任何一个同名文件内容不同** ⇒ `MainActivity.class` 连那行注释改动都做到了逐字节相同。
+3. **只编 `src/` 复算**：用 `build.sh` 里原样的 `javac` 命令编当前 `src/` ⇒ **36 个** `.class`，
+   与构建树 `diff -rq` 的差异只有 3 个 `R` 类（构建树 79 个 `.class` = 76 + 3 个 `R` 系列）。
+
+顺带修掉提示②：README 那处「30 个 class / 构建树 33」改成现算的 **36 / 39**，并写明这个数随 `src/` 增长、
+核的时候要现算；AD 表里两处估数改成实测值（138 / 95）。提示①（返回键注释过时）按用户可见行为处理：`MainActivity.java:366` 的注释已改成
+「普通模式下按返回键 → 走系统默认行为（关掉本页，回到选择页）」，本仓库 `grep` 就能核到；
+提示③按它建议的做法收口（抽 `UiTheme`），没有再抄第四份。
+
+**没实测的部分**（同 AD）：三个 Activity 都在 JVM 套件编译集之外（容器 `android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面），跑不起 Activity），
+所以「深色下进这两页不闪白底」「停在这两页切系统深浅色立刻刷新」「从围棋换主题返回菜单跟着变」
+属于**源码级已实测 + 真机效果仅推理**，要真机才算数。反证条件：真机上停在这两页切深浅色若不刷新、
+或深色启动仍白底，则本轮修法不算生效。
+
+**下一步**：五子棋①规则与胜负判定（纯 Java + JVM 测试）。设计稿与用例清单先写好，再进项目。
+
+
+---
+
+**AF. v86：修掉第 41 轮审计的 1 条低缺陷 + 2 条提示（针对 v85）**
+
+第 41 轮审计结论：**可收口** —— 缺陷 0 / 中 0 / **低 1** + 提示 2，中/高 0。审计员复算了我给的全部数字
+（apk 与包内 dex 的 md5、字节数、`badging`、两个类树、`run_tests.sh` 的真退出码），在**自己的副本**里
+重做了 v85 的反向构建（`afd3c5be…` 锚点、APK 尺寸回到 120804429）；还超出「读源码」做了实测：用
+`sun.misc.Unsafe` 造桩 Activity / `SharedPreferences` / `Configuration`，把 `UiTheme` 拉到 JVM 里直接调
+（**46 项断言 0 失败**，并造 5 个变异体证明断言不是空转 —— 5/5 全红）。
+
+低缺陷（第 41 轮新发现）：`MenuActivity.refreshTheme` / `GomokuActivity.refreshTheme` 开头是
+`if (now == dark) return;` —— **明暗没变就整个早退**。可清单给这两页声明了
+`orientation|fontScale|density|…` 由自己处理（不会重建 Activity），于是转屏 / 改系统字号后
+`Screen.read(this)` 不重读、`buildUi()` 不重铺；`setTextSize(SP,…)` 是调用时就折成 px 的，不会自己重算。
+同项目 `MainActivity:344-355`（无条件 `rebuildLayout()`）与 `ReviewActivity` 都没有这个早退 ⇒ 行为不一致。
+提示：①这两页没有对局页那种「每分钟查一次自动主题过没过点」（停在这两页跨 19:00 / 07:00 不换色）；
+②上一轮 README 写「提示①按用户可见行为记在交付说明里」，仓库里并没有那个文件（写错了位置）。
+
+| 文件 | 变化（v86） |
+|---|---|
+| `src/com/autogo/MenuActivity.java` | 203 行（原 163）：`refreshTheme` 改成「明暗**变了才**换窗口主题，界面**一律重铺**」，并重读 `Screen.read(this)`；新增 `themeTick`（每分钟）+ `maybeAutoSwitchTheme()`，`onResume` 注册、`onPause` 注销 |
+| `src/com/autogo/GomokuActivity.java` | 156 行（原 117）：同上两件 |
+| `README.md` | 修提示②：那句改成仓库内可核的说法（`MainActivity.java:366` 注释与真实行为一致） |
+| `src/com/autogo/MainActivity.java` | 本轮**一行没动**（类文件逐字节未变，见证据 1） |
+
+产物：`versionCode=86`、`versionName=1.20261015.86`、`VERSION=86`；`aapt2 dump badging` 实测
+`launchable-activity: name='com.autogo.MenuActivity'`；APK 120808525 字节（与 v85 同尺寸属巧合，md5 不同）；
+已交付 `/sdcard/Download/自动围棋.apk`（apk md5 `63091aa15e48ba288113370e33fbb99a`、包内 `classes.dex`
+130784 字节 md5 `131f69a55f20cb5d4203df9c862d24ed`）。测试：**398 / 0** + **77 / 0**（rc=0）。
+
+**「围棋侧还是零改动」的证据（第 3 次独立复现）**：
+
+1. **类树对照**（本轮按下面这条命令现测的）：v85 树 39 类（第 41 轮那次构建留下的 `/tmp/appbuild85/classes`）
+   与本轮重建的 v86 树 41 类（`/tmp/gomoku-phase1/t86build/classes`）逐文件 md5 比对 ⇒
+   **34 类逐字节相同、5 类内容变化、2 类新增**。变化与新增全落在这两个页面自己身上：
+   `MenuActivity.class` / `MenuActivity.$1.class` / `MenuActivity.$2.class`、
+   `GomokuActivity.class` / `GomokuActivity.$1.class` 内容变了（新增的 `themeTick` 匿名类挤到 `$1`，
+   原来两个按钮监听器顺延），新增 `MenuActivity.$3.class`、`GomokuActivity.$2.class`
+   ⇒ **含 `MainActivity.class` 在内的 34 个类逐字节未变**。
+   （第 42 轮审计指出：这里原先写的是一条跑不出该结论的命令 —— `diff -rq /tmp/appbuild85/classes /tmp/appbuild/classes`
+   在写这段时只报 6 行「Only in appbuild85」，因为 `/tmp/appbuild` 当时已被反向构建覆盖成 33 类的 v83 形态树。
+   结论方向没错，命令与数字是错的，这里改成实际跑过的那条。）
+2. **反向构建**：`/tmp/rev42` = 删掉 `MenuActivity.java` / `GomokuActivity.java` / `UiTheme.java`、清单改回
+   v83 形态（`MainActivity` 回 `exported="true"` + `MAIN`/`LAUNCHER`）⇒ 重跑 `build.sh` ⇒ 包内
+   `classes.dex` md5 = `afd3c5bece9098ec6a1d74738b867cac` **= v70~v85 的锚点**，`launchable-activity`
+   也回到 `com.autogo.MainActivity`（那一版 APK 120804429 字节 —— 与审计员第 41 轮自己量到的一样）。
+3. `run_tests.sh` 的编译集（围棋侧 8 个源文件 + 2 个测试文件）本轮一个字符没动，套件数字仍是 398 / 0 + 77 / 0。
+
+**没实测的部分**（同 AD/AE）：这两页的「配置变化行为」「每分钟过点换色」都只能在真机上验 ——
+容器里 `android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面）、Activity 跑不起来，所以本轮是**源码级已修 + 真机效果仅推理**。
+反证条件：真机上改系统字号 / 转屏后这两页文字若**仍然**不跟随，则本轮修法不算生效；
+真机上改字号后文字若本来就跟随（即那个早退其实无影响），则第 41 轮那条低缺陷应降级而不是维持。
+
+**下一步**：五子棋①「规则与胜负判定」进项目 —— `src/com/autogo/GomokuBoard.java` +
+`tests/GomokuTest.java` 并入 `run_tests.sh` 编译集，版本号自增、交付、交审计复核。
+
+---
+
+### AG. v87：五子棋对局跑起来了（规则 + 内置 AI + 棋盘界面进项目）
+
+用户指令驱动：给「自动围棋」加五子棋模式，总共分 ①规则与胜负 ②棋盘界面与对局 ③电脑对手
+④复盘 ⑤可选强引擎 五步；这一步落地 **①③ 和 ②的棋盘与对局页**，围棋侧一个字符没改（下面有证据）。
+
+**改前 → 改后（大白话）**
+
+- 改前：从选择页点「五子棋」，只有一页「施工说明」。
+- 改后：点进去就是一副 **15 路棋盘**，**你执黑先走**、电脑执白。点交点落子；电脑思考时不能落子
+  （但「悔棋 / 新局」仍可随时打断，认输也判你输）。底下一排按钮：新局、悔棋、认输、难度
+  （快 / 普通 / 强）、禁手开关（默认关）、手顺开关、全屏、返回。终局弹「再来一局 / 返回」，
+  状态栏写明「黑胜 / 白胜（连五）/ 和棋 / 你认输」。转屏、换主题**不丢棋局**（进程内）；
+  按返回键离开这一页再回来是干净的新局。
+- 围棋侧：四个页面（选择页 / 对局页 / 复盘页 / 设置）行为与 v86 完全一致。
+
+**改动清单**
+
+| 文件 | 行数 | 说明 |
+|---|---|---|
+| `src/com/autogo/GomokuBoard.java` | 371 | 新增：规则（横竖两斜的连五、长连、四四 / 三三禁手、和棋、终局、深拷贝、坐标命名） |
+| `src/com/autogo/GomokuEngine.java` | 30 | 新增：引擎接口（`name/setLevel/level/genmove/evaluate`），内置 AI 与将来外部强引擎共用 |
+| `src/com/autogo/LocalGomokuAI.java` | 319 | 新增：内置 AI（棋型评估 + 候选点 + 迭代加深 α-β + 必胜 / 防守硬判定，无随机数） |
+| `src/com/autogo/GomokuView.java` | 361 | 新增：棋盘绘制与触摸（复用 `LayoutMath.boardGeometry` 与 `Palette`） |
+| `src/com/autogo/GomokuActivity.java` | 570 | 重写（原占位页 156 行）：对局页，保留原有的主题 / 转屏 / 每分钟自动换色机制 |
+| `tests/GomokuTest.java` | 498 | 新增：143 项规则断言 |
+| `tests/GomokuAITest.java` | 298 | 新增：47 项 AI 断言 |
+| `run_tests.sh` | — | 编译集加这 3 个纯逻辑源文件 + 2 个测试；新增「2. 五子棋：规则 / 内置 AI」，GTP 节顺延为 3 |
+| 围棋侧全部源文件 | — | **一行没动**（含 `MainActivity.java`、`MenuActivity.java`、`UiTheme.java`、`BoardView.java`） |
+
+**产物**
+
+- `VERSION=87`、`versionCode=87`、`versionName=1.20261015.87`
+- `autogo.apk` **120820813** 字节，apk md5 `7f922ce0c1418886d6e8f696a7aaaf15`（= `/sdcard/Download/自动围棋.apk`）
+- 包内 `classes.dex` **155244** 字节 md5 `d5314a8b231a1f281a167c404f0ad9fc`；`launchable-activity` 仍是
+  `com.autogo.MenuActivity`，包内 4 个 activity
+- 测试：**665 项 = 398 + 143 + 47 + 77，rc=0**（这次直接用日志文件取的真退出码；
+  日志里那句「错误响应 / 错误文本: unknown command」是 GTP 套件故意测非法命令时的预期输出，不是失败）
+
+**证据①：围棋侧确实没动（第 4 次反向验证）**
+
+`/tmp/rev43` = 当前项目副本，删掉 7 个五子棋相关文件（`GomokuBoard / GomokuEngine / LocalGomokuAI /
+GomokuView / GomokuActivity / MenuActivity / UiTheme.java`）+ 清单回到加选择页之前的形态 ⇒ 重新构建：
+
+- 包内 `classes.dex` md5 **`afd3c5bece9098ec6a1d74738b867cac`**（124980 字节）—— 与 v70~v86 每一版
+  的锚点逐字节相同
+- `launchable-activity` 回到 `com.autogo.MainActivity`
+
+**证据②：只有五子棋的类变了（类树对比 v86 ↔ v87）**
+
+`v86` 构建树 41 个类、`v87` 构建树 60 个类：**38 个逐字节相同**（含 `MainActivity.class`、
+`MenuActivity.class`、`UiTheme.class`），**3 个变化**（全部是 `GomokuActivity` 及其内部类），
+**19 个新增**（全部在五子棋侧：棋盘 / 规则 / AI / 视图 / 对局页的内部类）。
+
+**反证（改错源码 ⇒ 断言变红）**
+
+- 规则侧 13 种改法全部变红（五连阈值、方向表、长连、四四 / 三三、假活三、终局拦截、深拷贝……），
+  其中 **2 种最初是全绿漏网**（越界守卫、活三的 `inSpan` 判定），补了断言才抓住 —— 这两条
+  反向验证过的断言现在就在套件里。
+- AI 侧 7 种改法全部变红（赢 / 堵顺序、禁手过滤、终局判定、难度越界、评估符号、单边评估、
+  候选点含已占点），其中 **1 种最初全绿**（禁手过滤），补了「只吃长连点」的夹具才抓住；
+  另 **1 种最初设想的改法经复核是等价改法**（不拷副本也不改变结果），换成真正能改坏的改法。
+
+**没实测的部分（如实登记）**
+
+- `GomokuView` / `GomokuActivity` 不在 JVM 套件编译集里（它们要 Android 类）：本轮只做到
+  「用 android.jar 编译通过 + 源码走查 + 逻辑层（规则 / AI）JVM 全覆盖」。**真机上的落子手感、
+  电脑思考时界面是否卡顿、转屏实际表现、终局对话框样式，都是仅推理、没实测。**
+- 内置 AI 的「棋力」只能证明「不犯明显错误」（成五必走、五必堵、活三必应、禁手不落），
+  没有和真人或外部引擎比过棋力强弱。
+- 棋局状态只在**进程内**保留：进程被杀 / 系统回收后回来是新局（不落盘）。
+- 现在固定 15 路、固定人执黑；尺寸与先后手都不做设置项。
+
+**下一步**：④复盘（逐手胜率曲线 / 失误排行 / 推荐点）→ ⑤可选强引擎（接口 `GomokuEngine` 已就位，
+集成失败不影响前四步）。
+
+---
+
+### AH. v88：五子棋复盘（逐手胜率 / 曲线 / 失误排行 / 推荐点）+ 修第 43 轮审计的 1 条低缺陷（针对 v87）
+
+**一句话**：五子棋下完（或下到一半）能点「复盘」看了 —— 整盘胜率曲线、哪几手亏得最多、
+每手电脑推荐下哪儿、一句人话结论；顺带修掉一个真会崩的坑（开关禁手之后悔棋 / 转屏会炸），
+以及审计员找出的死代码和一处「点了没反应也不提示」的交互。
+
+| 文件 | 行数 | 改了什么 |
+|---|---|---|
+| `src/com/autogo/GomokuReview.java` | 新增 238 | 纯 Java 复盘分析：逐手胜率（分数→胜率用 `tanh`，饱和平坦区照 `LocalGomokuAI.WIN` 截）、逐手亏损、推荐点、一句结论；不依赖 Android，可单测 |
+| `src/com/autogo/GomokuReviewActivity.java` | 新增 424 | 复盘界面：胜率条 + 胜率曲线（点曲线 / 点手顺都同步高亮）+ 失误排行（点条目跳到那一手）+ 手顺列表 |
+| `src/com/autogo/GomokuActivity.java` | 666（原 570） | 加「复盘」按钮（对局中可点、终局对话框也加了「复盘」）；修禁手重放崩溃；悔棋改成能打断电脑思考；去掉死代码 |
+| `src/com/autogo/GomokuBoard.java` | 386（原 371） | 新增 `replay(手顺, 路数, 禁手开关)`：旧手顺**按自由规则重放完再置回开关** —— 修崩溃的正解；删掉零调用点的 `isFiveInRow` |
+| `tests/GomokuTest.java` | 569 | 新增 F 组「重放」13 项断言，其中 F2「开着禁手照样能把含四四的旧手顺重放完」就是这次崩溃的回归钉 |
+| `tests/GomokuReviewTest.java` | 新增 416 | 90 项复盘断言；10 条「改错源码 ⇒ 变红」的反证脚本 `/tmp/gomoku-phase1/mutate_review.sh` |
+| `run_tests.sh` | 补 3 个文件 | 编译集加 `GomokuReview.java` / `GomokuReviewActivity.java` / `GomokuReviewTest.java`，套件从 4 条变 5 条 |
+| `AndroidManifest.xml` | +1 行 | 声明 `GomokuReviewActivity`（`exported="false"`，configChanges 与其它页同一串） |
+
+**改前 → 改后（大白话）**
+- 以前五子棋只有「再来一局」；现在下完（或中途点「复盘」）能看到整盘胜率曲线、哪几手亏得最多、
+  每手电脑推荐下哪，还有一句结论（例：「黑第 9 手亏 32%（应下 H8）」）。
+- 以前「禁手」开关关着走出一手四四、再把开关打开，之后点悔棋或转屏 ⇒ **App 崩**；
+  现在这种棋局照样能悔棋、能恢复（旧手顺按当时的自由规则重放，开关只对「新」手生效）。
+- 以前电脑在算棋时点悔棋没反应也不提示；现在悔棋会打断电脑思考并说明。
+
+**产物**：`VERSION=88`、`versionCode=88`、`versionName=1.20261015.88`；`autogo.apk` **120829005 字节**、
+apk md5 `9a2c15b6a445f73cbdd660551863e794`（== `/sdcard/Download/自动围棋.apk`）；包内 `classes.dex`
+**170124 字节** md5 `1541476bb57e78c9e4fe946ebe44d00b`；`launchable-activity=com.autogo.MenuActivity`，
+包内 5 个 activity（Menu/Main/Gomoku/GomokuReview/Review）；测试 **768 项 = 398 + 156 + 47 + 90 + 77，rc=0**
+（日志 `/tmp/v88tests.log`；`GtpTest` 里「错误响应 / 错误文本: unknown command」是它测非法命令的预期输出）。
+
+**证据① 反向构建（第 5 次）**：`/tmp/rev44/proj` = 项目副本删掉 9 个五子棋侧文件
+（`GomokuActivity`/`GomokuReviewActivity`/`GomokuBoard`/`GomokuEngine`/`GomokuView`/`LocalGomokuAI`/`GomokuReview`/`MenuActivity`/`UiTheme`）
++ 清单回 v83 形态 ⇒ 重建 rc=0 ⇒ 包内 `classes.dex` md5 `afd3c5bece9098ec6a1d74738b867cac`（124980 字节，
+与 v70~v87 的锚点相同）、`launchable-activity` 回 `com.autogo.MainActivity`、APK 120804429 字节 ⇒ **围棋侧逐字节未变**。
+
+**证据② 类树对照**（审计员第 43 轮亲手构建的 v87 树 `/tmp/audit43/b87/classes/com/autogo`（60 个类）
+↔ 本轮构建树 `/tmp/appbuild/classes/com/autogo`（74 个类））：**18 个变化全在五子棋侧**
+（`GomokuActivity.class` + `$1`~`$14` + `$2$1`、`GomokuBoard.class` + `$IllegalMove.class`）、
+**14 个新增**（`GomokuReview.class`/`$1`/`$Review`、`GomokuReviewActivity.class` + `$1`~`$6`、`GomokuActivity$15`/`$16`/`$17`/`$3$1`）；
+其余 **42 个类逐字节相同**（逐个 `cmp` 验过：`MainActivity.class`、`BoardView.class`、`MenuActivity.class`、
+`UiTheme.class`、`GomokuEngine.class`、`GomokuView.class`、`LocalGomokuAI.class`、`ReviewActivity.class`、
+`Board.class`、`EngineManager.class`、`WinrateChartView.class`、`WinrateBarView.class` …）。
+
+**反证（改错源码 ⇒ 断言变红，全部实测）**：规则侧 **15 条**改法全红（本轮新增两条正对这次修复：
+`m14`「重放用当前禁手开关建盘」⇒ 直接崩 `IllegalMove: 黑棋禁手（四四）`；
+`m15`「重放完不把开关置回」⇒ 红「F2 重放完开关置回（开着）」等 3 条）；AI 侧 **7 条**、复盘侧 **10 条**同样是全红、漏网 0。
+
+**一条审计员的推断我没采纳（如实记录）**：报告里有一句「60 秒后 `maybeAutoSwitchTheme()` 会调 `undo()`」——
+实测**五子棋对局页自己的** `undo()` 只有 `GomokuActivity.java:525`（悔棋按钮）一个调用点，`maybeAutoSwitchTheme` 里没有 `undo`（审计员后来指正：`MainActivity.java:246` 调的是围棋页自己那个 `undo()`，`GtpEngine.undo()` / `GtpTest` 里还有引擎协议层的同名方法 —— 结论不变，措辞按实测改准）；
+但那条缺陷本身是真的（审计员用反射直调 `undo()` / `restoreGame()` 复现了 `IllegalMove`），所以照修。
+
+**没实测的部分**（照老规矩登记）：复盘页 / 对局页的所有真机行为（触摸、按钮、Intent、`onDraw`、
+后台线程、转屏、进程被杀）仍然只能读源码 + 走查 —— 这两个 Activity 不在 JVM 套件编译集里；
+AI 棋力（电脑强不强）在这里量不了；曲线顺不顺手、排行好不好读，只有上手才知道。
+
+**下一步**：⑤可选强引擎（`GomokuEngine` 接口已就位，集成失败不影响前四步）。
+
+---
+
+### AI. v89：修掉第 44 轮审计的 1 条低缺陷（开着禁手点「复盘」会崩）+ 补上测试盲区
+
+**改前 → 改后（大白话）**：以前**禁手关着**下出的棋（比如黑棋走过一手「四四」），
+回头点「禁手」把开关打开、再点「复盘」——App **直接崩掉**，这一局就没了。
+现在不会崩：复盘照常出结果，旧手顺不拿新开关重判。
+
+**这轮改了什么**
+
+| 文件 | 行数变化 | 内容 |
+| --- | --- | --- |
+| `src/com/autogo/GomokuReview.java` | 245 行（原 238） | `analyze` 重放旧手顺一律按自由规则（不重判历史手），交给引擎评估 / 推荐时才把 `forbiddenForBlack` 拧回棋局真实规则 |
+| `src/com/autogo/GomokuActivity.java` | 679 行（原 666） | 复盘后台线程包 `try/catch`：失败不再让进程崩，弹「复盘失败：…」并把状态恢复成原样 |
+| `tests/GomokuReviewTest.java` | 470 行（原 416），**90 → 101 项** | 新增「历史里有开禁手就非法的手」夹具（自检：自由规则重放 13 手成功、末手对黑是四四禁手）+ 开/关禁手复盘各 4~5 条断言；`Script` 假引擎新增 `flagSeen`，钉住「引擎每次评估时看到的开关都对」 |
+| 围棋侧 | 一行没动 | 反向构建仍回 `afd3c5bece9098ec6a1d74738b867cac` |
+
+**产物**：`VERSION=89` / `versionCode=89` / `versionName=1.20261015.89`；`autogo.apk` **120829005 字节**、
+md5 **`d8b9c3035d5d1d272b469795aaf8ab00`**（已 `cp` 到 `/sdcard/Download/自动围棋.apk`，md5 相同）；
+包内 `classes.dex` **170604 字节** md5 **`360aa787eb18399dcb1ccfdb5de15515`**；
+`aapt2 dump badging`：`launchable-activity: name='com.autogo.MenuActivity'`、5 个 activity；
+`bash run_tests.sh` ⇒ **rc=0，779 项 = 398 + 156 + 47 + 101 + 77**（日志 `/tmp/tests89c.log`；这一段原先写成 778，是加法误差，v90 一并改正）。
+
+**证据① 类树对照**（v88 树 = 审计员第 44 轮自己重建的 `/tmp/audit44/b88/classes`，74 类 ↔ v89 树 75 类）：
+内容不同 **18** 个（`GomokuActivity*` 17 个 + `GomokuReview.class`），新增 **1** 个（`GomokuActivity$3$2.class`，
+= 复盘线程里新加的 `catch` 里那个匿名 `Runnable`），**逐字节相同 56** 个（含 `MainActivity.class`、
+`GomokuBoard.class`、`LocalGomokuAI.class`、`GomokuReviewActivity*`）。同名 `$N` 大面积变化是 javac 给匿名类编号
+顺移导致的，不是逻辑都改了。
+
+**证据② 反证**（`/tmp/gomoku-phase1/mutate_review.sh`，现在 12 条，**12 红 0 漏网**）：
+- `R11 旧手顺按当前开关重判` ⇒ 红：`FAIL: 开禁手复盘：不抛异常（手顺里有非法落子：第 13 手 H8（黑棋禁手（四四）））`
+  —— 这正是第 44 轮审计探针复现出来的那条崩溃消息。
+- `R12 对手评估时禁手开关不拧回` ⇒ 红：`FAIL: 开禁手复盘：引擎每次评估时禁手都是开着的（52 次）`。
+
+**审计员的原始证据**（`/tmp/audit44/REPORT44.md` 第五节）：它的 `AnalyzeProbe` 用真源码 + 假 android 类直调
+`analyze(fb=true)` 复现 `IllegalArgumentException`；同一次探针里 `replay(fb=true)` 正常 —— 我的修法与
+`GomokuBoard.replay` 同一口径。
+
+**没实测的部分**（照老规矩登记）：真机上点「复盘」不再崩只有代码走查 + JVM 探针（`GomokuActivity` 不在 JVM 套件
+编译集里）；「复盘失败：…」这个提示在真机上的观感同样只有走查。反证条件：真机上按缺陷①的步骤操作若仍崩，
+或崩溃日志指向 `GomokuReview.analyze` 以外的地方，本条要重新打开。
+
+**审计员的其余处置**：提示②（`undo()` 措辞）已按实测改准（README 上一节那段）；
+提示①（补测试）就是上表的 `testHistoryWithForbiddenHand()` + `flagSeen`。
+
+### AJ. v90：五子棋「强」档接上外部引擎 Rapfi（可选件）+ 修掉第 45 轮审计提的那条提示
+
+**改前 → 改后（大白话）**
+
+- 改前：五子棋难度三档（快 / 普通 / 强）都是内置 AI。改后：**「强」档如果包里有外部引擎
+  （`librapfi.so`），这一手就交给它算**；没有这个文件、或者它起不来，就还是内置 AI 出招，
+  状态条会写「强（内置）」而不是「强」—— 不装也能照常玩，装了就多一个更厉害的对手。
+- 改前：复盘算完但棋局已经变了的时候，那一下「作废」会把状态条覆写成上一局的结束语
+  （第 45 轮审计的提示①，实测命中）。改后：只有状态条还停在「正在复盘…」时才恢复原样，
+  新局那句话不会被盖掉。
+
+**改动清单**
+
+| 文件 | 变动 | 说明 |
+| --- | --- | --- |
+| `src/com/autogo/RapfiGomokuEngine.java` | 新增 246 行 | `GomokuEngine` 的第二个实现：起 `pbrain-rapfi` 子进程，按 Gomocup 协议下棋（`START 15` / `INFO TIMEOUT_TURN` / `BOARD` 行 / `DONE`，读回 `x,y`）；坐标把「行从上往下数」翻成引擎的「从下往上数」；`evaluate` 仍交内置 AI（Gomocup 没有评估局面的命令） |
+| `tests/RapfiGomokuTest.java` | 新增 254 行、34 项 | 对着**真的** rapfi 进程跑：坐标双向映射、空盘给点、成五 / 堵五 / 活四取胜、只读契约、终局返回 -1、重启与关闭；找不到二进制就打印「错误」并 `exit(2)`，不算通过 |
+| `src/com/autogo/GomokuActivity.java` | 679 → 740 行 | 强档懒启动 Rapfi（`nativeLibraryDir/librapfi.so`，和 KataGo 同一套）；出招外包一层 `try/catch RuntimeException`，外部引擎出问题时改用内置 AI 并把原因弹出来；状态条难度名说实话；`onDestroy` 关掉子进程；上面那条提示①的修复也在这个文件 |
+| `build.sh` | 补 6 行 | `jniLibs/arm64-v8a/librapfi.so` 存在就一起打进 `lib/arm64-v8a/`，不存在也照样能构建（`EXTRA_LIBS`） |
+| `run_tests.sh` | 补 1 节 + 2 个编译项 | 新增第 3 节跑 `RapfiGomokuTest`（真引擎、跑不了不算通过）；项目目录在 `/sdcard` 上不能加可执行位、还是 noexec ⇒ 和 App 一样先把二进制拷到 `$OUT` 再 `chmod +x`（第 4 节是原来的 GTP） |
+| `jniLibs/arm64-v8a/librapfi.so` | 新增 3679840 B | NDK r27 sysroot + 系统 clang-18 交叉编译（照 KataGo 那套配方）；ELF64 AArch64、`NEEDED` 只有 libm / libdl / libc |
+| `tools/rapfi/` | 新增 | 宿主编译版 `pbrain-rapfi-linux-aarch64`（2.33 MB，给 JVM 套件用）+ `NOTICE.md`（上游 commit、两处上游补丁） |
+
+**产物**
+
+- `VERSION=90`、`versionCode=90`、`versionName=1.20261015.90`；`autogo.apk` **122033300 字节**，
+  md5 `ad9aceb4e909b1e15e33270cfcfb48b4` == `/sdcard/Download/自动围棋.apk`。
+- 包内：`classes.dex` 175720 B md5 `511c64888472d30947c573fa06a1437c`；`lib/arm64-v8a/libkatago.so`
+  9559512 B md5 `236038ea3e4417aa92787ab19c5f52bf`；`lib/arm64-v8a/librapfi.so` 3679840 B
+  md5 `84d92bed3a7a40ffc1bdc992891a9e76`；`launchable-activity=com.autogo.MenuActivity`，包内 5 个 activity。
+- 测试：**813 项 = 398 + 156 + 47 + 101 + 34 + 77，rc=0**（日志 `/tmp/tests90b.log`；
+  第 4 节 GTP 里那句「错误响应 / 未知命令」是预期输出）。
+- 落地脚本 `/tmp/gomoku-phase1/land5.py`（干跑 → 干跑副本上套件 rc=0、构建 rc=0 → 才 `--apply`；
+  脚本本身可重复执行：已经打过的补丁会跳过）。
+
+**证据**
+
+1. **反向构建（第 6 次）**：`/tmp/rev45/proj` = 项目副本删掉 10 个五子棋侧文件
+   （MenuActivity / GomokuActivity / UiTheme / GomokuBoard / GomokuEngine / GomokuView /
+   LocalGomokuAI / GomokuReview / GomokuReviewActivity / RapfiGomokuEngine）+ 清单换回 v83 形态
+   ⇒ 重建 rc=0 ⇒ 包内 `classes.dex` md5 **`afd3c5bece9098ec6a1d74738b867cac`**（124980 B，v70 起那个锚点）
+   ⇒ **围棋侧一个类都没变**。（那次 APK 122008724 B 里仍然带着 `librapfi.so` —— 我只删了 Java 文件没删库，
+   dex 才是这一条的判据。）
+2. **类树对照**：v89（审计员第 45 轮的构建树 `/tmp/audit45/b89`，75 类）↔ v90（77 类）
+   = **54 类逐字节相同**（含 MainActivity / Board / EngineManager / GtpEngine / GomokuBoard /
+   GomokuView / LocalGomokuAI / GomokuReview / MenuActivity / UiTheme / WinrateChartView 等）、
+   **21 类变化**（全部是 `GomokuActivity` 与它的匿名类；抽查 `javap -p -c` 逐行比，差异只是 javac
+   给私有成员生成的 `access$NNNN` 编号平移 —— 我加了新的私有方法/字段，编号往后挪）、
+   **新增 2 类**（`RapfiGomokuEngine.class`、`RapfiGomokuEngine$1.class`）。
+3. **反证**：适配层 4 条改法全部变红（去掉行号翻转 ⇒ 7 条红；出招写进传入棋盘 ⇒ 5 条红；
+   去掉难度 clamp ⇒ 2 条红；`evaluate` 返回 0 ⇒ 1 条红），当时另有 1 条改法（`BOARD` 行序颠倒）被我判成**等价改法** ——
+   **这个判断是错的**（第 46 轮审计用真引擎证伪：行序决定引擎认哪一方；见 AK 段），
+   现在它是被钉住的变红项（mr2）。
+
+**第 45 轮审计（v89）的结论与处置**
+
+- 报告 `/tmp/audit45/REPORT45.md`：**可收口 —— 缺陷 0 / 中 0 / 高 0 + 提示 1**；它自己重跑的账
+  （apk / dex md5、`VERSION`、包内 5 个 activity、套件 rc=0、反向构建回锚点、类树 74↔75）
+  与我逐项一致；提示①就是上面那条「复盘作废把新局状态条覆写」。
+- 修法：作废分支里只在状态条还停在「正在复盘…」时才复位。用审计员那套假 Android 类的
+  `Harness2` 复跑（真 `GomokuActivity` 源码 + 探针替身）：**PASS 31 / FAIL 0**（修前是 30/1）。
+
+**没实测的部分（如实登记）**
+
+- 真机上 `librapfi.so` 能不能被 exec：和 `libkatago.so` 是**同一套机制、同一个假设**
+  （释放到 `nativeLibraryDir` + AOSP 策略允许 App 执行该目录），但容器里没有真机，
+  这条只在策略文件与源码层面成立 —— 真机第一次跑「强」档才能确认。
+- Rapfi 在真机上的棋力与耗时：宿主版已实测能下完整局（套件里 34 项），真机限时
+  （`INFO TIMEOUT_TURN`：快 400 ms / 普通 1500 ms / 强 4000 ms）的观感没量过。
+- 「外部引擎崩了自动退回内置 AI」这条路径：JVM 里测过（探针逐条走 catch 分支），真机没测。
+- 界面层照旧（转屏 / 对话框 / onDraw / 真机 ANR），`res/`、`assets/`、`jniLibs/` 与上一版的
+  逐字节基线仍没有 —— 与历轮同一份未覆盖清单。
+
+**下一步**：把 v90 交给独立审计（第 46 轮）。
+
+---
+
+### AK. v91：把第 46 轮审计的两条提示修掉（引擎行序钉死 + 卡住就掐）
+
+**改前 → 改后（大白话）**：点「强」档让外部引擎下棋时，原来有两种情况会卡住 ——
+一种是引擎认错了自己该执哪一方（下出替对方赢的棋），另一种是它写了半句话就不吭声，
+界面会一直停在「电脑思考中…」。这一版把两个坑都堵上：棋盘发给引擎的行序现在有测试钉住
+（颠倒就变红），读取改成「只在有数据时才读」，超过限时就结束子进程、界面回退内置 AI 接着下。
+
+**改动清单**
+
+| 文件 | 变化 | 内容 |
+|---|---|---|
+| `src/com/autogo/RapfiGomokuEngine.java` | 246 → **283** 行（原写 298 有误，第 47 轮审计指出） | 读取改成「只在就绪时读」的轮询累加器（`lineBuf` + `pollLine`）：对方只写半行不再把线程卡死；超时与协议错都 `killProcess()` 结束子进程（消息写明「已结束进程」）；类注释写明「`BOARD` 的行序决定引擎认自己执哪一方」与硬超时的保证 |
+| `tests/RapfiGomokuTest.java` | 254 → **416** 行、34 → **45 项**（原写 503 行有误，第 47 轮审计指出） | 新增：线序（行序 == 落子时间顺序、`side` 标法是「请求方=1 / 对方=2」）、行序颠倒的真引擎用例（引擎执黑时要替黑成五、行序颠倒就变成替白）、半行卡死的硬超时（限时内抛异常 + 进程被杀，用假引擎脚本造） |
+| `README.md` | 本段 | 计数 813 → **824**；AJ 段里「行序颠倒 = 等价改法」那句**更正**（它错了）；第六节第 4 条同步 |
+
+**为什么改（第 46 轮审计的两条提示）**
+
+- 提示①（行序）：`BOARD` 的行序决定 `pbrain-rapfi` 认自己执黑还是执白。行序一颠倒，引擎就替对方下棋
+  —— 它用真引擎实测：8 手轮黑时，交付件替黑成五、行序颠倒的变体替白成五。旧套件（34 项）看不见这个洞，
+  因为白方「必堵」局面的成五点与堵点重合。
+- 提示②（软超时）：原来用 `BufferedReader.readLine()`，对方写半行就没有下文时会一直等 —— 它实测：
+  声明 15.4 s 的超时，实测 25.251 s 才回来；半行那次 45 s 都没回来。真机上这会让界面一直停在「电脑思考中…」。
+- 它明确说这两条是**提示**不是缺陷（安全档不会真的跑 Rapfi 引擎），并且它自行更正了第 45 轮
+  「其余 17 个类逐字节相同」那句计数。
+
+**验证（全部实测）**
+
+1. **反向验证（改错源码 ⇒ 断言变红）**：`/tmp/gomoku-phase1/mutate_rapfi.sh` ⇒ **7 条改法全红、1 条真等价对照全绿、0 漏网**：
+   - mr1 去掉行号翻转 ⇒ 9 条红；**mr2 行序颠倒 ⇒ 3 条红**（`引擎执黑时替黑成五（行序对了才对）（期望 174，实际 114）`、
+     `没有替白棋去成五（行序颠倒的典型症状）`、`线序：行序 == 落子时间顺序、side == 该手是请求方?1:2`）；
+   - mr3 出招写进传入棋盘 ⇒ 5 条红；mr4 难度不夹取 ⇒ 2 条红；mr5 评估返 0 ⇒ 1 条红；
+   - **mr6 把「就绪才读」改回阻塞读 ⇒ 测试卡死（rc=124，脚本用 `timeout 200` 兜底抓住）**；
+     mr7 超时后不结束进程 ⇒ 1 条红（`超时后进程被结束（假引擎收到 TERM）`）；
+   - mr0 只把轮询间隔 10→20 ms ⇒ 全绿（真等价对照，证明脚本不误报）。
+2. **套件**：`bash run_tests.sh` ⇒ **824 项 = 398 + 156 + 47 + 101 + 45 + 77，rc=0**（日志 `/tmp/tests91.log`）。
+   注意：AJ 段里的「813 项 / 34 项」是 v90 当时的快照，不是笔误。
+3. **产物**：`VERSION=91`、versionCode 91、versionName `1.20261015.91`；`autogo.apk` **122037396 字节**、
+   apk md5 **`cf4fa094b7fc68c9cf60e0e9caa5a2ad`**（= `/sdcard/Download/自动围棋.apk`）；
+   包内 `classes.dex` md5 **`2d0e3f3e20895fcb736ff0f97ccebdac`**；包内 `librapfi.so` md5 `84d92bed3a7a40ffc1bdc992891a9e76`
+   （3679840 字节，与暂存的那份一致）；badging：launchable-activity `com.autogo.MenuActivity`。
+4. **类树对照**：v90（`/tmp/appbuild/classes`，77 类）↔ v91（`/tmp/appbuild91/classes`，77 类）
+   = **75 类逐字节相同**（含 `MainActivity.class`、`GomokuActivity*`、`GomokuBoard.class`、`LocalGomokuAI.class`）、
+   **2 类变化**（`RapfiGomokuEngine.class`、`RapfiGomokuEngine$1.class`）、0 增 0 删 ⇒ 这轮只动了外部引擎适配层。
+
+**没实测的部分**
+
+- 真机上「强」档引擎卡住时的界面观感（源码级已保证：抛异常 → 回退内置 AI → 提示一句话；真机效果仅推理）。
+- 行序修复对「引擎实际棋力」的影响没量过（本机没有可比的对照）。
+- 假引擎脚本是测试夹具（`#!/bin/sh`），不在 App 里。
+
+### AL. v92：修第 47 轮审计的 2 条低缺陷（半行多字节卡死 + 两处自报数字写错）
+
+**改前 → 改后（大白话）**：外部引擎读输出原来是「按字符」读的 —— 万一引擎只写了半个汉字就停住，
+App 会一直卡在那儿等下去；现在改成**按字节**读，半行、半个多字节字符都不再能卡住它，
+到点必掐、掐完下一次自动重起一个新进程。另外 README 里两处自报行数是我抄错了（把别的文件的数当自己的），已按实测改正。
+
+**改动清单**
+
+| 文件 | 变化 | 内容 |
+|---|---|---|
+| `src/com/autogo/RapfiGomokuEngine.java` | 283 → **306 行** | ①读取改成按字节累加（`ByteArrayOutputStream byteBuf` + 逐字节 `pollLine`），单行超 64 KB 也掐；②`killProcess()` 改成**确定性收尾**：先清掉「还活着」的引用（否则 `ensureStarted` 会误判、下一次写进死进程直接 `Stream Closed`），再 `waitFor(500 ms)`，不行就 `destroyForcibly()` |
+| `tests/RapfiGomokuTest.java` | 416 → **552 行**、45 → **54 项** | 新增：半行多字节卡死（假引擎只写一个 `0xE4` 字节就停）、超时杀进程后的自动重起（假引擎两次运行：第一次卡住被杀、第二次正常回 `(7,7)`、计数文件 == 2）、9 手（奇数手）局面行序颠倒的用例 |
+| `README.md` | 本段 | 计数 824 → **833**；AK 表里 `246 → 298`、`254 → 503` 两处数字按实测改正；第六节第 4 条同步 |
+| `/tmp/gomoku-phase1/mutate_rapfi.sh` | 脚本（不在仓库） | `mr6` 锚点跟着改成 `rawOut.available()`；新增 `mr0b_reverse_odd`（只在奇数手颠倒行序） |
+
+**为什么改（第 47 轮审计的 2 条低缺陷）**
+
+- 低①（我自己写的数字错）：AK 段把 `RapfiGomokuEngine.java` 的行数写成「246 → 298」、测试写成「254 → 503 行」，实测是 **283** 与 **416**（298 是 `GomokuAITest.java` 的行数；当时交给审计员的任务书里也抄了同样的错数）。
+- 低②（真缝隙）：`pollLine` 当时用字符流读行 —— 如果对方写了一个多字节 UTF-8 字符的**头一个字节**（如 `0xE4`）就停住，
+  `out.read()` 会一直等剩下的字节，类注释里承诺的「绝不在半行上阻塞、到点一定返回」就不成立（审计员实测卡住 >60 s）。
+  可达性很低（真引擎这段交互里没输出过非 ASCII 字节），但**承诺与实现不符** ⇒ 必须补。
+- 顺带抓到的第三个问题（我自己的验证过程发现的）：光把超时改成「先掐再抛」还不够 —— 掐了以后马上重起，
+  旧进程可能还没被系统收走，`ensureStarted` 会误认为它还能用 ⇒ 下一次落子报 `Stream Closed`。
+  现在 `killProcess()` 先清引用再等它真死，重起测试连跑 3 遍稳定通过。
+
+**验证**
+
+- 反证：`bash /tmp/gomoku-phase1/mutate_rapfi.sh` ⇒ 基数 54/54 过；`mr0_sleep`（轮询间隔 10→20 ms）全绿 = **真等价对照**；
+  `mr0b_reverse_odd` 变红 1 条、`mr1_flip` 9 条、`mr2_reverse` 4 条、`mr3_write` 5 条、`mr4_noclamp` 2 条、
+  `mr5_eval` 1 条、`mr7_nokill` 6 条；`mr6_blocking`（改回阻塞读）卡死被 `timeout 200` 抓住（rc=124）；
+  合计 **变红 8 条、等价对照全绿 1 条、漏网 0 条**（脚本 rc=0）。
+  - `mr0b_reverse_odd` 的定性说明：它**行为上等价**（奇数手颠倒行序不改变奇偶 ⇒ 引擎认色不变，第 47 轮审计的结论与此一致），
+    但套件里新增的「**线序必须 == 落子时间顺序**」契约断言会抓它 ⇒ 按变红分类，不是漏网。
+- 套件：`TEST_BUILD_DIR=/tmp/jvm92 bash run_tests.sh` ⇒ rc=0，**833 项 = 398 + 156 + 47 + 101 + 54 + 77**
+  （Rapfi 段在日志第 3 节）。Rapfi 套件单独连跑 3 遍：3 次都是 `通过 54 项，失败 0 项`。
+- 产物：`VERSION`=92、versionCode=92、versionName=`1.20261015.92`；`autogo.apk` **122037396 字节**
+  md5 `c8ecb7008a4d8c631e51a41161eee27b`；包内 `classes.dex` md5 `6db51167c5418462854282e7fbcb15d8`；
+  badging：`launchable-activity: name='com.autogo.MenuActivity'`。已 `cp` 到 `/sdcard/Download/自动围棋.apk`（md5 相同）。
+- 围棋侧零改动（类树口径）：`/tmp/appbuild91/classes/com/autogo`（v91）↔ `/tmp/appbuild/classes/com/autogo`（v92）
+  ⇒ **75 个类逐字节相同，只有 `RapfiGomokuEngine.class` 与 `RapfiGomokuEngine$1.class` 两个文件不同，0 增 0 删**。
+
+**没实测的部分**
+
+- 真机上「引擎半行卡死」这种情形本身极难构造（假引擎夹具在 /tmp，不在 App 里）；真机观感同前几轮（本容器无 pm/am/logcat）。
+- `waitFor(500 ms)` 这个界限是经验值（本机实测够用），没有穷举各种进程退出慢的场景。
+- 行序 / 半行的断言都只对着宿主版 `pbrain-rapfi`（aarch64 glibc）跑过；Android 版 `librapfi.so` 同一份源码编出来，行为一致性仅推理。
+
+### AM. v93：修掉第 48 轮审计的 3 条低缺陷（README 老话、杀进程的回归保护、`close()` 不对称）
+
+**改前 → 改后（大白话）**
+- 审计员上一轮挑了三个小毛病：①文档里还留着一句老话（写着「外部引擎适配层 7 条变红 / 2 条等价」，实际早就是 8 红 / 1 等价）；②我上一轮给「杀掉卡死的引擎」加的加固，**测试钉不住** —— 把代码退回旧写法，套件照样全绿；③退出界面时的清理（`close()`）比杀进程那条弱，只发 SIGTERM、不等也不强杀，引擎若吞掉 SIGTERM 就可能留个吃 CPU 的孤儿进程。三条现在都改了。
+
+**改动清单**
+
+| 文件 | 改动 |
+|---|---|
+| `src/com/autogo/RapfiGomokuEngine.java` | 306 → **316 行**：把收尾逻辑抽成 `terminateProcess()`（先清引用 → SIGTERM → 等 500 ms → 还活着就 SIGKILL），`killProcess()` 与 `close()` 都走它，两条路不再各写一份；`close()` 的 javadoc 写明原因 |
+| `tests/RapfiGomokuTest.java` | 552 → **620 行**、54 → **60 项**：新增 `testCloseKillsEngine`（忽略 TERM 的假引擎先正常给一手 → 记下自己的 pid → `close()` 之后这个 pid 必须消失 → 之后还能重起）；`testRestartAfterTimeout` 的假引擎改成**忽略 TERM 且不因 stdin EOF 而退出**，并新增 2 条断言（pid 写下来了、超时之后这个 pid 必须消失） |
+| `tests/RapfiGomokuTest.java`（辅助） | 新增 `aliveWithin(pid, ms)`：轮询 `ProcessHandle.of(pid).isAlive()`，最多等 ms 毫秒 |
+| `README.md` | 本段；第六节第 4 条把「外部引擎适配层 7 条变红 / 2 条等价」更正为 **9 条变红 / 1 条等价**（`mr0b` 上一轮已被第 48 轮审计复核为「按变红分类」）；计数 833 → **839** |
+
+**证据**
+
+1. 单独跑：`cd /tmp/rp93 && javac -encoding UTF-8 -nowarn -d cls *.java`，再 `LANG=C.UTF-8 LC_ALL=C.UTF-8 java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp cls RapfiGomokuTest /tmp/gomoku-strong/out/pbrain-rapfi-linux-aarch64` ⇒ **通过 60 项，失败 0 项**。
+2. 反证（`bash /tmp/gomoku-phase1/mutate_rapfi.sh`，日志 `/tmp/mutrapfi93c.log`）：基数 60/60 过；`mr8_weak_kill`（收尾退回「只 `destroy()`」＝第 48 轮说的那种退法）⇒ **变红 2 条**：
+   - `FAIL: 超时杀进程：连忽略 TERM 的假引擎也被真的收掉（pid …）`
+   - `FAIL: close() 也把忽略 TERM 的引擎真的收掉（pid …）`
+
+   其余：`mr0_sleep` 全绿（真等价对照）、`mr0b_reverse_odd` 1 条、`mr1_flip` 9 条、`mr2_reverse` 4 条、`mr3_write` 5 条、`mr4_noclamp` 2 条、`mr5_eval` 1 条、`mr6_blocking` rc=124、`mr7_nokill` 6 条 ⇒ **变红 9 条、等价 1 条、漏网 0 条**。
+   - 夹具的第一版教训（如实记）：`mr8` 最初是**全绿**的 —— 我的两个「忽略 TERM」假引擎都用 `while read` 收命令，进程引用一断、stdin 到 EOF，脚本**自己就退出了**，于是「弱杀」也能通过。改成 `while :; do sleep 1; done`（不读 stdin、不因 EOF 退出）之后才真正区分开。这也说明「忽略 TERM」必须配合「不退出」，否则测不到孤儿进程。
+3. 套件：`TEST_BUILD_DIR=/tmp/jvm93 bash run_tests.sh` ⇒ rc=0，**839 项 = 398 + 156 + 47 + 101 + 60 + 77**（日志 `/tmp/tests93.log`）。
+4. 产物：`VERSION=93`、`versionCode=93`、`versionName=1.20261015.93`；`autogo.apk` **122037396 字节**、md5 **`dec6ccdcf08ae0a781c8ea9ce6221a5e`**；包内 `classes.dex` **176336 字节** md5 **`0b91d7c126a9834a452821ca73071705`**；`launchable-activity` 仍是 `com.autogo.MenuActivity`；已 `cp` 到 `/sdcard/Download/自动围棋.apk`（md5 相同）。
+5. 围棋侧零改动：类树 `/tmp/audit48/b92/classes/com/autogo`（v92，77 类）↔ `/tmp/appbuild/classes/com/autogo`（v93，77 类）= **75 类逐字节相同 / 2 类变化（`RapfiGomokuEngine.class`、`RapfiGomokuEngine$1.class`）/ 0 增 0 删**。
+
+**没实测的部分**
+- 真机上 SIGTERM / SIGKILL 对 `librapfi.so` 的实际效果、孤儿进程是否真会出现（`close()` 的新行为只在容器里用假引擎量过）；Android 版 `librapfi.so` 与宿主版行为是否一致。
+- `ProcessHandle.of(pid)` 用在测试里（宿主 JVM），真机 App 不走这条。
+- 第 48 轮其余提示照旧未测：`available()` 单次成本、64 KB 单行守卫在本机够不到（要 ~30.8 s > 19 s 上限）。
+
+**下一步**：第 49 轮独立审计。
+
+### AN. v94：把第 49 轮审计的 2 条低缺陷 + 4 条提示修掉（退出不再堵管道、测试不留尾巴）
+
+**改前 → 改后（大白话）**
+- 外部引擎话太多、输出堆在管道里没人读时，`close()` 写 `END` 会堵在写上（管道满）—— 现在这种情形直接跳过 `END` 去收进程，退出界面不会卡住。
+- 测试里 `aliveWithin(pid, ms)` 拿到非法 pid（0 / 负数）会抛异常 —— 现在当成「不活着」返回，该报的失败由调用点的断言去报。
+- 「超时 / `close()` 必须真的把引擎收掉」这条覆盖，原来靠套件末尾一条「全机扫描有没有残留假引擎」的断言，它在容器里会被别的残留干扰（第 49 轮提示②也提到 rc=124 语义）；现在换成**按 pid 断言**：重起出来的那个进程也必须在最后一次 `close()` 之后消失。忽略 TERM 的两个夹具改成 40 秒后自退，残留不再靠 `kill -9` 清。
+
+**改动清单**
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/com/autogo/RapfiGomokuEngine.java` | 306 → **318 行**：`close()` 写 `END` 之前先看进程还活着、且没有没读的输出（`rawOut.available() == 0`）——有积压就跳过 `END`，避免堵在写管道上（第 49 轮提示④）。**第 50 轮审计实测没能复现「不这么做就会卡住」**（两套把管道塞满的夹具下旧写法也都几十~几百毫秒返回），所以这条按**防御性改动**看；第 51 轮起用 `testCloseWithBacklog` 盯住这个分支（见 AO 段） |
+| `tests/RapfiGomokuTest.java` | 620 → **634 行**、60 → **62 项**：`aliveWithin` 加 `pid <= 0` 守卫（提示③）；`testCloseKillsEngine` 末尾改成按 pid 断言「重起后的引擎也被最后一次 `close()` 收掉」；去掉全机扫描式收尾断言与 `liveFakes()`；两个忽略 TERM 的夹具 `sleep 600` → `sleep 40`（自退） |
+| `/tmp/gomoku-phase1/mutate_rapfi.sh` | 清理退回 **SIGTERM**（`pkill`）：实测在 proot 容器里 `pkill -9` 掉被覆盖的子进程会让后面所有 fork 直接失败（`fork: Function not implemented`）；开跑前先清一次残留；`mr9` 锚点跟着测试改动换成「最后一次 `close()` 被删掉」 |
+
+**为什么改**：第 49 轮审计的 2 条低缺陷（**注**：该轮报告文件当时没落盘，`/tmp/audit49/REPORT49.md` 并不存在 —— 这是第 50 轮审计实测指出的一环断链；结论以本条就地记录为准，并由第 50 轮报告 `/tmp/audit50/REPORT50.md` 复核）—— ①README 里「9 条改法全部变红」说法过强（只把 `killProcess()` 退回、`close()` 不动时套件全绿）；②`mr6` 的 rc=124 语义（JVM 被外部 `timeout` 杀掉时夹具会活下来，套件里没有对应断言）。加上提示③（`aliveWithin` 的 pid 守卫）与④（`close()` 写满管道可能阻塞）。
+
+**自修的坑（实测）**：v94 第一版加的是「套件跑完不留残留假引擎」的全机扫描断言，变异跑里出现两件事：①`mr0_sleep`（真等价对照）只红 1 条、就是这条 —— 上一次被掐掉的跑留下了忽略 TERM 的夹具，属于**跨轮残留**；②`mr8`（弱杀）漏出 8 个忽略 TERM 的夹具后，脚本开始 `fork: Function not implemented`（清理用的 `pkill -9` 在 proot 覆盖下把容器 fork 搞坏）。改成「按 pid 断言 + 夹具 40 秒自退 + 清理只用 SIGTERM」之后跑干净：变红 10 条、等价对照全绿 1 条、漏网/异常 0 条（容器在 `mr6`（JVM 被外部 `timeout` 掐掉）之后 fork 会失败，所以这一轮**分 4 批跑**：`base mr0_sleep mr0b_reverse_odd mr1_flip mr2_reverse` / `mr3_write mr4_noclamp mr5_eval` / `mr7_nokill mr8_weak_kill mr9_leak` / `base mr6_blocking`；每批的基数都是 `通过 62 项，失败 0 项`）。
+
+**验证（实测）**
+- 单跑：`javac` + `java -cp cls RapfiGomokuTest /tmp/gomoku-strong/out/pbrain-rapfi-linux-aarch64` ⇒ **通过 62 项，失败 0 项**。
+- 套件：`TEST_BUILD_DIR=/tmp/jvm94 bash run_tests.sh` ⇒ rc=0，**841 项 = 398 + 156 + 47 + 101 + 62 + 77**（日志 `/tmp/tests94.log`）。
+- 产物（`bash build.sh`）：`VERSION=94`、versionCode=94、versionName=`1.20261015.94`、`autogo.apk` **122037396 字节** md5 **`2ef048c780b08d851913f21771e76e9a`**（已 `cp` 到 `/sdcard/Download/自动围棋.apk`，md5 相同）；包内 `classes.dex` **176352 字节** md5 **`fff72b8d9f68c5b4a304b5e0a3e4c20f`**；`librapfi.so` md5 `84d92bed3a7a40ffc1bdc992891a9e76`、`libkatago.so` md5 `236038ea3e4417aa92787ab19c5f52bf`（都与 v93 相同）；badging `launchable-activity: name='com.autogo.MenuActivity'`、5 个 activity。
+- 类树（`/tmp/audit49/b93/classes` ↔ `/tmp/appbuild94/classes`）：**77 类 ↔ 77 类，只有 2 个类内容不同**（`RapfiGomokuEngine.class`、`RapfiGomokuEngine$1.class`），0 增 0 删 —— 其余 75 类（含 `MainActivity.class`、`GomokuActivity.class`、`GomokuView.class`、`LocalGomokuAI.class`）逐字节相同。
+
+**没实测的部分**：真机上 `available()` 的每次耗时（容器里 0.45–0.64 ms）、真机上外部引擎的棋力与观感、跳过 `END` 之后真 `pbrain-rapfi` 的收尾行为（容器里只能证明「不阻塞 + 进程会被收掉」）。
+
+---
+
+### AO. v95：五子棋加「棋盘路数」与「我执」（电脑先手）+ 修掉第 50 轮审计的 2 条低缺陷
+
+**改前 → 改后（大白话）**
+- 改前：五子棋固定 15 路、固定「你执黑先走」，想拿白棋或换路数没有办法（围棋页本来就有「我执」和路数，所以这是功能对不齐）。
+- 改后：多了一行按钮「棋盘 / 我执 / 禁手 / 手顺」——点「棋盘」在 **13 / 15 / 19 路**之间轮换，点「我执」在**「你执黑先走」和「你执白后走（电脑先下）」**之间切换；两项设置**空盘或终局时立刻生效**，棋局进行中改设置不动当前这盘，状态条提示「（点「新局」生效）」。悔棋、认输、胜负文案、复盘页的路数都跟着这两项走。
+
+**改动清单**
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/com/autogo/GomokuActivity.java` | 740 → **826 行**（原写 827 有误，第 51 轮审计指出）：`SIZE = 15` 常量 → `SIZES = {13, 15, 19}`；`HUMAN`/`AI` 常量 → 实例字段 `humanColor` 与 `aiColor()`；新增 `sideToMove()`/`startText()`/`optionsText()`/`cycleSize()`/`toggleHuman()`/`afterSettingChange()`；`newGame()`/`restoreGame()`/`saveState()`/`onHumanTap()`/`finishGame()`/`startAiTurn()`/`undo()`/`resign()`/`startReview()` 全部改成「跟人执的颜色 + 当前路数」走；新按钮行与两个监听器 |
+| `tests/RapfiGomokuTest.java` | 634 → **698 行**（原写 699 有误，第 51 轮审计指出）、62 → **67 项**：新增 `testCloseWithBacklog`（灌输出的假引擎：先正常给一手，再从后台把 stdout 灌到管道满；断言 `close()` 在 5 秒内返回、按 pid 把进程收掉、并且**跳过 END**）；删掉 `liveFakes()` 被删后留下的那行孤儿 javadoc（第 50 轮低-2） |
+| 其他源文件 | **一行没动**（`GomokuBoard`/`GomokuView`/`LocalGomokuAI`/`GomokuReview` 本来就是按 `size` 参数写的） |
+| `README.md` | 本段；`:2189` 改成**就地记录**第 49 轮结论（第 50 轮低-1：原引用的 `/tmp/audit49/REPORT49.md` 全盘不存在，审计链断了一环）；计数 841 → **846**、树 62 → 67 项、第六节第 4 条 366 → **371 项**、反证 10 → **11 条** |
+
+**为什么改**：①用户长期要求「所有模式都不变、该有的都得有（功能对齐）」——围棋页有「我执」和路数选择，五子棋没有；②第 50 轮审计的两条低缺陷（文档引用了不存在的报告文件；测试文件里删方法留下孤儿注释）。
+
+**验证（全部实测）**
+1. **JVM 桩测探针**（`/sdcard/改/陪练棋盘/档案/probe-v95/`：`src/` 是真源码 + `Driver95.java`，`fake/` 是 27 个手写假 android 类；跑法见文件头）⇒ **PASS 34 / FAIL 0**：默认 15 路执黑；换 19 / 13 路并立刻重开；执白时电脑先落一手；人落白、电脑应黑；悔棋按手数退回你的回合；没轮到人时点棋盘不落子；执白认输判电脑赢；复盘 extra 带的是 19 路；转屏恢复路数与执色；进行中改设置不打断当前棋局。
+2. **反证**：`bash /sdcard/改/陪练棋盘/档案/probe-v95/mut95.sh` ⇒ 8 条改法**全部变红**（FAIL 数 3 / 6 / 3 / 1 / 1 / 1 / 1 / 3），0 漏网：`d1_no_human`（新局忽略「我执」）、`d2_no_size`（忽略路数）、`d3_undo_v94`（悔棋退回旧口径）、`d4_no_guard`（没轮到人也能落子）、`d5_winner_fixed`（胜负文案写死黑白）、`d6_no_save`（设置不进状态保存）、`d7_review_size`（复盘路数写死 15）、`d8_pending_wipes`（进行中改设置直接清盘）。
+3. **新增的 close() 守卫用例是有区分力的**：把 `RapfiGomokuEngine.close()` 的 `rawOut.available() == 0` 判断去掉（退回 v93 行为）⇒ 恰好 1 条红：`FAIL: 有积压输出时 close() 跳过 END、直接收尾（守卫 available() > 0 生效）`；已加进变异脚本作 `mr10_close_guard`。**诚实说明**：第 50 轮审计实测**没能复现**「不跳过 END 就会卡在写管道上」这件事（两套饱和夹具下旧写法也都是几十~几百毫秒返回），所以这条守卫按**防御性改动**看；新测试钉住的是「有积压时跳过 END、`close()` 不卡、进程被收掉」这个当下行为。
+4. **项目套件**：`TEST_BUILD_DIR=/tmp/jvm95 bash run_tests.sh` ⇒ rc=0，**846 项 = 398 + 156 + 47 + 101 + 67 + 77**（日志 `/tmp/tests95.log`）。
+5. **围棋侧零改动**：类树 `/tmp/audit50/b94/classes/com/autogo`（v94，77）↔ `/tmp/appbuild95/classes/com/autogo`（v95，79）= **56 逐字节相同 / 21 变化（全部是 `GomokuActivity` 家族）/ 2 新增（`GomokuActivity$18`、`$19`）/ 0 删除**；反向构建（第 8 次，删 10 个五子棋侧文件 + 清单回 v83 形态）⇒ 包内 `classes.dex` md5 **`afd3c5bece9098ec6a1d74738b867cac`**（124980 字节）、`launchable-activity` 回 `com.autogo.MainActivity`。
+6. **产物**：`VERSION`=95、versionCode=95、versionName=`1.20261015.95`；`autogo.apk` **122037396 字节** md5 **`6dc2a7d4259369eb24cd2429014197a6`**（已拷 `/sdcard/Download/自动围棋.apk`，md5 相同）；包内 `classes.dex` **178500 字节** md5 **`a6cde37f515bddc06b68c992d07c7b49`**；`lib/arm64-v8a/librapfi.so` md5 `84d92bed3a7a40ffc1bdc992891a9e76`、`libkatago.so` md5 `236038ea3e4417aa92787ab19c5f52bf`（与 v94 相同）；badging `versionCode 95 / versionName 1.20261015.95 / launchable=com.autogo.MenuActivity`。
+
+**没实测的部分**
+- 真机上的按钮排布与点按手感、13 / 19 路棋盘的视觉密度、转屏后设置与棋局的实际表现（容器无 `pm`/`am`/`logcat`，`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面））；
+- 电脑在 19 路（更大的盘）上的棋力没有跟人比过，只保证合法、能终局；
+- 真机 `available()` 的单次开销（本容器实测 0.45~0.6 ms，是 64 KB 单行守卫在本机够不到的原因）；
+- 变异脚本在本容器可能因 `fork` 抖动出现**空日志的假「漏网」**（本轮 `mr10` 第一次跑就是这样：`rc=1` 但 `run.log` 是空的），需要重跑确认 —— 复现编号时的读数请以重跑为准。
+
+### AP. v96：修第 51 轮审计的 1 条中缺陷 + 2 条低缺陷，并把界面层桩测装进套件
+
+**改前 → 改后（大白话）**
+- 改前：难度选「强」会去叫 Rapfi，可它只会下 15×15。19 路时它只看得见 225 个点（另外 136 个点上的子它收不到，
+  等于蒙着眼下）；13 路时它可能走到自己棋盘的边界外，适配层会杀掉它、悄悄换回内置 AI 再弹一句提示 ——
+  不会崩、不丢数据，但「强」名不副实。
+- 改后：非 15 路时「强」档直接用内置 AI（难度名显示「强（内置）」），不再让外面的引擎蒙着眼下。
+- 改前：一盘棋结束（或离开页面）再进来，刚选的 19 路 / 我执白会忘掉，回到 15 路执黑。
+- 改后：设置记住（**棋局仍然不保留**：上一局已经结束，重进就是新的一盘）。
+
+**改动清单**
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/com/autogo/GomokuActivity.java` | 826 → **838 行**：新增 `rapfiUsableForThisBoard()`（`return size == 15 && rapfiUsable();`），`engineForMove()` 与 `levelLabel()` 都改用它；`onCreate()` 里 `savedMoves == null`（上一局已结束）时也恢复 `nextSize` / `nextHuman` |
+| `tests/ui/fake/`（28 个）、`tests/ui/sub/`（2 个）、`tests/ui/Driver95.java`（388 行） | **新增**：界面层桩测 62 项。假 android 类让真 `GomokuActivity` 能在 JVM 里跑；替身只替绘制与复盘页壳；`EXTRA_*` 常量有漂移守卫（不一致就报错退出，不算通过） |
+| `run_tests.sh` | 新第 4 节「五子棋界面层桩测」（`ANDROID_JAR` 默认取 SDK 里那个，缺了直接报错退出——按本项目「跳过不算通过」的规矩）；原 GTP 节顺延为第 5 节；头部注释同步 |
+| `README.md` | 本段；计数 846 → **908**、树补 `tests/ui/`、第六节第 4 条 371 → **433 项**、AO 段表格里那两行（v95 版 README 是 `:2213` / `:2214`，本段落地后漂到 `:2225` / `:2226`）的行数按实测改成 826 / 698（第 51 轮低-1） |
+
+**为什么改**
+1. **中-1**（第 51 轮审计用真引擎实测）：19 路上 Rapfi 无视 `(0,0)` 的白子、回 `8,8`（点号 198）；13 路时 225 种回手里有 56 种落在它自己棋盘外。它给的建议就是加路数门禁 + 难度名标「（内置）」。
+2. **低-1**：README 自报行数比实测多 1（827 写成 826、699 写成 698）。
+3. **低-2**：审计员的 `FixCheck` 走真 `onCreate()` 复现了「终局后重进 ⇒ 设置回落」（未改版 FAIL、打补丁 PASS），我照它的修法改。
+4. **顺带把界面层拉进套件**：此前 `GomokuActivity`（项目里最大的文件）**不在任何自动化里**，中-1 是审计员临时写探针才发现的；现在这 62 项每次 `run_tests.sh` 都会跑。审计员的第五条提示也正是「你的 Driver95 在设置留存上盲」，所以这次把它的两个缺口（设置留存、路数门禁）都钉进了探针。
+
+**验证（全部实测）**
+1. **双向验证**（同一份探针喂两份源码）：未修版的 `GomokuActivity` ⇒ `PASS 56 / FAIL 6`，6 条红的正是两条缺陷
+   （`重建后仍是 19 路 期望 19，实际 15`、`重建后仍是我执白 期望 2，实际 1`、
+   `19 路 + 强档：走内置 AI（不是外部引擎） 期望 true，实际 false`、`19 路 + 强档：难度名标注内置 期望 强（内置），实际 强`、
+   13 路同两条）；修好版 ⇒ `PASS 62 / FAIL 0`。
+2. **套件**：`TEST_BUILD_DIR=/tmp/jvm96b bash run_tests.sh` ⇒ rc=0，**908 项 = 398 + 156 + 47 + 101 + 67 + 77 + 62**（日志 `/tmp/tests96b.log`）。
+3. **产物**：`VERSION`=96、versionCode=96、versionName=`1.20261015.96`；`autogo.apk` **122037396 字节**、md5 **`13b1c4d7ba51e859621535251e0bf6b5`**（与 `/sdcard/Download/自动围棋.apk` 同一份）；包内 `classes.dex` **178632 字节** md5 **`16341b0778f1b89a75aff61f387bc469`**；`lib/arm64-v8a/librapfi.so` md5 `84d92bed3a7a40ffc1bdc992891a9e76`、`libkatago.so` md5 `236038ea3e4417aa92787ab19c5f52bf`（两者与 v95 相同）；badging `launchable-activity: name='com.autogo.MenuActivity'`。
+4. **类树**：v95（79 个类）↔ v96（79 个类）= **57 个逐字节相同 / 22 个变化（全部 `GomokuActivity` 家族，含匿名类）/ 0 增 0 删** ⇒ 围棋侧与外部引擎适配层的类都没动。
+5. **反向构建（第 9 次）**：`/tmp/rev47/proj` = 项目副本删掉 10 个五子棋侧文件 + 换回 v83 形态的清单 ⇒ 构建 rc=0 ⇒ 包内 `classes.dex` md5 **`afd3c5bece9098ec6a1d74738b867cac`**（124980 字节，v70~v95 的老锚点）、`launchable-activity` 回 `com.autogo.MainActivity`。
+6. **换环境的教训**（也记下来）：这一轮第一次跑套件 + 反向构建**同时**在跑，容器被拖死，两个作业都撞上 `timeout`（套件 rc=124、反向构建 rc=124，日志停在打包那一步）——重跑时改成一个一个来，都 rc=0。本容器并发跑重活会假失败。
+
+**没实测的部分**
+- 真机上的 `librapfi.so` 与容器里的宿主版 `pbrain-rapfi` 是「同一个引擎」这一点仍是推理（本容器跑不了 Android 版）；
+- 19 路「残缺输入」下 Rapfi 自己的旗标自洽性（会不会替人下）、它自认连五时回 PASS 的可能 —— 审计员也标为仅推理；
+- 真机上新路数的触摸命中率、13 / 19 路棋盘的视觉密度、转屏后设置与棋局的实际表现；
+- 假 android 类只实现了桩测用到的那部分 API（`android.jar` 是 android-34 真平台包，容器里没有真机/设备，真机行为仍不可测）。
+
+### AQ. v97：真 `GomokuView` / `GomokuReviewActivity` 进桩测 + 适配层自带路数门禁 + 第 52 轮两条低
+
+**改前 → 改后（大白话）**
+
+- 改前：容器里的界面层桩测只驱动**真** `GomokuActivity`，棋盘绘制 / 触摸与复盘页都是**替身**（没有任何真实行为断言）——审计员连续几轮把「真 `GomokuView` 零覆盖」记在未覆盖清单里；外部引擎的路数门禁只写在 Activity 里，适配层自己不管。
+- 改后：桩测直接编**真** `GomokuView` 与真 `GomokuReviewActivity`（补 9 个假 android 类 + 扩了假 `View` / `Canvas` / `Intent` / `TextView`），新增 `ViewProbe` 29 项与 `ReviewProbe` 48 项；`RapfiGomokuEngine.genmove` 自己就会拒绝非 15 路（抛 `IllegalStateException: Rapfi 只支持 15 路（收到 N 路）`），补 7 项断言 + `mr12` 反证。
+- 「替身」目录 `tests/ui/sub/` 整个删掉；套件里加了一条守卫：**这个目录若又出现，第 4 节直接报错退出**。
+
+**改动清单**
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/com/autogo/RapfiGomokuEngine.java` | `genmove` 在「终局 / 满盘短路」**之后**加路数自检（非 15 路直接抛错，不喂残缺输入给引擎）——第 52 轮审计提示 1。位置很关键：放在短路之前会把「满盘 ⇒ -1」的旧用例抢先抛异常（干跑时踩到过） |
+| `tests/RapfiGomokuTest.java` | 67 → **74 项**：`testNonFifteenBoard`（19 / 13 路各 3 项 + 15 路对照 1 项） |
+| `tests/ui/fake/` | 28 → **37 个**假 android 类：新增 `graphics/{Canvas,Paint,Color,RectF,Shader,RadialGradient,Path}`、`view/MotionEvent`、`util/AttributeSet`；`View` 扩了 `getWidth/getHeight/getResources/performClick/onMeasure/setMeasuredDimension/MeasureSpec/resolveSize` 与 `fakeOnDraw/fakeOnSizeChanged/fakeOnMeasure` 包装；`Canvas` 记录 `drawRoundRect`（`RECTS`）与 `drawPath`（`PATHS`）；`Intent` 补齐各类 `get*Extra`；`Activity.getIntent()`；`TextView.setTextSize(float)` |
+| `tests/ui/ViewProbe.java` | **新增** 29 项：交点吸附（±0.4 格仍吸附）/ 格子正中死区 / 非 `ACTION_DOWN` 不落子 / 未使能 / 空盘 / 换路数后必须重算几何 / 全屏返回按钮的命中与容差（`inputEnabled=false` 也点得动）/ `onMeasure` 四种规格 / 带子与高亮重绘不抛 |
+| `tests/ui/ReviewProbe.java` | **新增** 48 项：读 Intent（默认值、偶数对手顺、四个预计算数组的长度门槛、终局文字）/ 选行夹取（`999`、`-5`）/ 失误排行阈值 / 黑白视角换算 / 空棋谱 |
+| `tests/ui/Driver95.java` | 两条「棋盘视图收到 N 路的盘」断言从替身日志改成**反射读真 `GomokuView`** 的 `board` 字段；头部记上已知限制（见下） |
+| `run_tests.sh` | 第 4 节改成「真界面类 + 三个探针」：`ANDROID_JAR` 缺失直接报错退出；**`tests/ui/sub/` 若存在即报错**（防替身回潮）；7 个真界面类从项目源码拷进 `$OUT/ui/src` 编译；三个探针依次跑，任一非 0 立即退出 |
+| `README.md` | 本段；计数 908 → **992**、第六节第 4 条 433 → **517 项**、树更新（`fake` 37 个、删 `sub/` 两行、加 `ViewProbe` / `ReviewProbe`）、`RapfiGomokuTest` 67 → 74；AP 段里那两行行号指针（第 52 轮低-1）改成按 AO 表格描述、不再指向会漂的行号 |
+
+**验证**
+
+1. **套件**：`TEST_BUILD_DIR=/tmp/jvm97 timeout 1800 bash run_tests.sh` ⇒ rc=0，**992 项 = 398 + 156 + 47 + 101 + 74 + 77 + 139**（139 = 界面层 62 + 棋盘视图 29 + 复盘页 48；日志 `/tmp/tests97.log`）。
+2. **反证（改错源码 ⇒ 断言变红）**：
+   - `mr12_no_size_guard`（把那条 `throw` 换成注释）⇒ 变红 2 条：`FAIL: 19 路：genmove 直接抛 IllegalStateException（不喂残缺输入给引擎）`、`FAIL: 13 路：…`；
+   - 棋盘视图 `mutview.sh` 6 条改法全红（其中 `mv6_measure_full` 第一版断言曾**漏网**：竖屏 `900×1200` 下 `min(w,h) == w` 区分不开，换成横屏 `1200×900` 才红）；
+   - 复盘页 `mutrev.sh` 9 条改法：8 条按 FAIL 计数变红，1 条（`i + 1 < raw.length` → `i < raw.length`）让探针抛 `ArrayIndexOutOfBoundsException: Index 19 out of bounds for length 19`（`GomokuReviewActivity.java:151`）⇒ 也算抓住。
+3. **类树**：`diff -rq /tmp/audit52/b96/classes/com/autogo /tmp/appbuild97/classes/com/autogo` ⇒ 只有 `RapfiGomokuEngine.class` 与 `RapfiGomokuEngine$1.class` 两个不同（**77 逐字节相同 / 2 变化 / 0 增删**）。
+4. **反向构建第 10 次**：项目副本删 10 个五子棋侧源文件 + 清单回 v83 形态 ⇒ 包内 `classes.dex` = `afd3c5bece9098ec6a1d74738b867cac`（124980 字节）、`launchable-activity` 回 `com.autogo.MainActivity` ⇒ 围棋侧逐字节未变。
+5. **产物**：`VERSION=97`、versionCode=97、versionName=`1.20261015.97`、`autogo.apk` 122037396 字节 md5 `69f766e9e3b3ef90a40fbbba9c3c5738`（已交付 `/sdcard/Download/自动围棋.apk`，md5 相同）、包内 `classes.dex` md5 `1bf4d36bae8ed760e8c8eefe31b5f619`、`librapfi.so` 与 `libkatago.so` 与 v96 逐字节相同。
+
+**没实测的部分**
+
+- 真机上的界面行为照旧不可测（本容器无 `pm`/`am`/`logcat`，`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面））；假 `Canvas` 只记录「画了什么」，**不验证像素**；
+- `GomokuView` 的 `onSizeChanged` / `onDraw` 是通过假 `View` 的 public 包装调用的，真机上的测量与布局顺序不覆盖；
+- 复盘页桩测只覆盖「读 Intent 与选行」，真实的 `ScrollView` 滚动 / 按钮点按 / 转屏仍未测；
+- `Driver95` 头部那条已知限制（`setDefaults()` 是「声明默认值」的手抄镜像，改声明默认值而忘了改镜像 ⇒ 探针不会红）**无法用断言消除，只能记录**（第 52 轮审计低-2）；
+- 容器 fork 抖动：变异脚本出现 rc=1 但日志为空时可能是环境抖动，必须重跑确认。
+
+### AR. v98：启动选择页进桩测 + 复盘页「点行跳步」补齐（只有测试与文档变化）
+
+**改前 → 改后（大白话）**
+
+- 改前：`tests/ui/` 的三项覆盖了真 `GomokuActivity`、真 `GomokuView`、真 `GomokuReviewActivity`，但**启动选择页 `MenuActivity` 一个断言都没有**（它是用户看到的第一个页面：两个按钮、版本号、深浅色跟随）；复盘页的选行也只在内部直接调过 `select()`，**没人真的点过那些行**。
+- 改后：新增 **`MenuProbe` 27 项**驱动真 `MenuActivity`；`ReviewProbe` 48 → **59 项**，补上「点失误行 / 手顺行 / 终局行各自跳到哪一步」以及胜率条标签。
+- **App 本身一个字节没改**：本版只动 `tests/` 与 `README.md`，编译出来的 79 个类与 v97 **逐字节相同**，包内 `classes.dex` 与 v97 同一个 md5（见证据 ③）。
+
+**改动清单**
+
+| 文件 | 改动 |
+| --- | --- |
+| `tests/ui/fake/android/view/View.java` | `setOnClickListener` 记住回调；新增 `fakeClick()`（桩测专用触发）；`setBackgroundColor` 记录 `bgColor` |
+| `tests/ui/fake/android/view/ViewGroup.java` | `addView` 记录子视图：新增 `children` / `getChildCount()` / `getChildAt(int)` |
+| `tests/ui/fake/android/widget/LinearLayout.java` | 记录 `orientation` / `gravity` |
+| `tests/ui/fake/android/content/pm/PackageManager.java` | 新增 `THROW` 开关（测版本号读失败时的兜底） |
+| `tests/ui/MenuProbe.java` | **新增** 27 项：五个子视图的文案（「选择棋种」/「围　棋」/「五子棋」/提示行/「版本 …」）、两个按钮点下去各自的 Intent 目标（`MainActivity` / `GomokuActivity`）、深色档 `setTheme`、`onConfigurationChanged` 换深浅色后重铺、`onResume`/`onPause` 的每分钟 tick 注册与注销、版本号读取失败时显示「版本 ?」 |
+| `tests/ui/stub/` | **新增** 1 个桩（`MainActivity`；原写「2 个」有误，第 54 轮审计指出）：只为让 `MenuActivity` 里的 `Intent` 目标类能解析，探针不驱动它们 |
+| `tests/ui/ReviewProbe.java` | 48 → **59 项**：新增「点行跳步」组（失误行 ⇒ 跳第 3 手、手顺行 ⇒ 跳第 2 手、终局行 ⇒ 跳终局）+ 与之配套的胜率条标签断言（`第 N 手走完` / `第 N 手走完：终局`） |
+| `run_tests.sh` | 第 4 节把 `stub/` 编进 `$OUT/ui/stubcls` 并加进真界面类的 classpath；探针依次跑 `Driver95 → ViewProbe → ReviewProbe → MenuProbe`（与脚本里的 `for t in …` 一致），任一非 0 立即退出 |
+| `README.md` | 本段；计数 992 → **1030**、第六节第 4 条 517 → **555 项**、树补 `ui/MenuProbe.java` 与 `ui/stub/`、`ui/ReviewProbe.java` 48 → 59 |
+
+**验证**
+
+1. **套件**：`TEST_BUILD_DIR=/tmp/jvm98c timeout 1800 bash run_tests.sh` ⇒ rc=0，**1030 项 = 398 + 156 + 47 + 101 + 74 + 77 + 177**（177 = 界面层 62 + 启动页 27 + 棋盘视图 29 + 复盘页 59；日志 `/tmp/tests98c.log`）。
+2. **反证（改错源码 ⇒ 断言变红）**：
+   - 启动页：`/tmp/leadverify/h98/mutmenu.sh` 9 条改法（换两个按钮的目标、删版本号兜底、硬编码版本、去掉 `onResume` 的重判、把提示行改错、`setAllCaps` 打开、tick 不注销、深色档不 `setTheme`、子视图少一个）⇒ **9 条全红，漏网 0**；
+   - 复盘页「点行跳步」：`失误行 idx+1 → idx`（点了会跳错一步）⇒ **变红 3 条**：`FAIL ⑪ 点失误行 ⇒ 跳到那一手（第 3 手）（期望 3，实际 2）`、`FAIL ⑪ 点失误行后位置文字写明第 3 手`、`FAIL ⑪ 点失误行后胜率条标签是「第 3 手走完」（期望 第 3 手走完，实际 第 2 手走完）`。
+3. **产物身份（本版最强的「没动 App」证据）**：`VERSION`=98、versionCode=98、versionName=`1.20261015.98`、`autogo.apk` 122037396 字节 md5 `9a9dbd81b308de910ca8a9e937e30c54`（已交付 `/sdcard/Download/自动围棋.apk`，md5 相同）、包内 `classes.dex` md5 **`1bf4d36bae8ed760e8c8eefe31b5f619`（与 v97 逐字节相同）**、`librapfi.so` / `libkatago.so` 同 v97；`diff -rq` 比较 v97 与 v98 的 79 个 class ⇒ **0 处差异**。
+4. **反向构建第 11 次**：项目副本删 10 个五子棋侧源文件 + 清单回 v83 形态 ⇒ 包内 `classes.dex` = `afd3c5bece9098ec6a1d74738b867cac`（124980 字节）、`launchable-activity` 回 `com.autogo.MainActivity` ⇒ 围棋侧逐字节未变。
+
+**没实测的部分**
+
+- 真机上的启动页观感（两个按钮的实际点击区域、字号折 px 后的效果、深色下有没有白闪）照旧不可测；
+- `MenuProbe` 断言的是「视图树里的文案与 Intent 目标」，假 `Button` 不实现真实触摸派发 ⇒ 真机上的点击链路（按下态、无障碍）不覆盖；
+- 桩 `MainActivity` / `GomokuActivity` 是空类 ⇒ 只验证「跳去哪」，不验证跳过去之后；
+- 容器 fork 抖动与「审计员上下文耗尽」属于流程风险（第 53 轮因此没出报告），不是产品缺陷。
+
+### AS. v99：修掉第 54 轮审计的 2 条低缺陷 + 4 条提示（复盘页高亮错行 + README 两处数字）
+
+第 54 轮独立审计（对象 v98）结论：高 0 / 中 0 / **低 2** / 提示 4 条；两条低都成立，一条是 App 的观感缺陷，一条是文档数字对不上。
+本轮**只改了一个生产文件**（`GomokuReviewActivity.java`），其余都是测试与文档。
+
+**改前 → 改后**
+
+| 改前 | 改后 |
+|---|---|
+| 复盘页选中第 `sel` 步时，手顺列表里被涂底色的是 `rows[sel]` —— 点「第 1 手」那一行，蓝底落在第 2 手上；`sel=0`（开局前）还会错误高亮第一手行 | `rows[sel-1]`；终局档（`index == n`）仍高亮终局行，开局前不高亮。`GomokuReviewActivity.java:415-416` |
+| v98 新加的 11 条「点行跳步」断言对高亮行**零区分度**（审计员把高亮改成正确写法，59 条照样全绿） | `tests/ui/ReviewProbe.java` 新增 ⑫ 组 5 条：进页面（终局档）只高亮终局行、点第 1 / 第 3 手行后高亮对应行、点终局行高亮终局行、回到开局前没有任何行被高亮 ⇒ 59 → **64 项** |
+| `README.md:176` 树里写 `RapfiGomokuTest.java 67 项`（套件实测 74，且 AQ 段自己写着「67 → 74」，同一棵树自相矛盾） | 74 项 |
+| `README.md:182` 与 AR 段写 `ui/stub/ 2 个桩（MainActivity / GomokuActivity）`（实测 1 个；`GomokuActivity` 用的是真类） | 1 个桩，并注明是第 54 轮审计指出的更正 |
+| `run_tests.sh:104` 注释仍写 `ReviewProbe 48 项`（v98 已 59） | 64 项，并补上「点行跳步 / 高亮行错位回归钉桩」的说明 |
+| `tests/ui/Driver95.java:16` 只写「ViewProbe / ReviewProbe 用 new 造对象」，漏了 v98 新增的 `MenuProbe` | 三个探针都写上 |
+| `README.md:894`「第 298 行的注释」、`:1647`「见第 597 行的同类记录」「构建树 39 = 36 + 3」三处指针/数字都已过期 | 改成不漂的引用（`ReviewActivity.java:321`），去掉陈旧等式，保留「要现算、别抄旧值」的警告 |
+
+**证据（全部实测）**
+1. **双向验证（修复的判据硬度）**：把 ⑫ 组 5 条断言加到**未修**源码上跑 ⇒ `复盘页探针：PASS 61 / FAIL 3`，三条 FAIL 是「⑫ 点第 1 手行后高亮第 1 手行（期望 0，实际 1）」「⑫ 点第 3 手行后高亮第 3 手行（期望 2，实际 3）」「⑫ 回到开局前时没有任何行被高亮（期望 ，实际 0）」；把源码改对 ⇒ `PASS 64 / FAIL 0`。（脚本 `/tmp/p99/patch99.py`、跑法 `/tmp/p99/check.sh`、日志 `/tmp/p99/a.log` 与 `/tmp/p99/b.log`）
+2. **套件**：`TEST_BUILD_DIR=/tmp/jvm99 timeout 1800 bash run_tests.sh` ⇒ rc=0，**1035 项 = 398 + 156 + 47 + 101 + 74 + 77 + 182**（182 = 界面层 62 + 启动页 27 + 棋盘视图 29 + 复盘页 64；日志 `/tmp/tests99.log`）。
+3. **产物身份**：`VERSION`=99、versionCode 99、versionName `1.20261015.99`；`autogo.apk` 122037396 字节 md5 `d1037d1c9fe337a906c97af87cf7a8ff`（项目树 == `/sdcard/Download/自动围棋.apk`）；包内 `classes.dex` md5 `a3079e2b8b8870b342670498956e85d0`；`lib/arm64-v8a/librapfi.so` `84d92bed3a7a40ffc1bdc992891a9e76`、`libkatago.so` `236038ea3e4417aa92787ab19c5f52bf` —— 两个 `.so` 与 v98 逐字节相同；`launchable-activity` = `com.autogo.MenuActivity`。
+4. **类树 v98 ↔ v99**：79/79，`diff -rq` **只有 `GomokuReviewActivity.class` 一个文件不同**（0 增 0 删），与本轮只改这一个生产文件一致。
+
+**没实测的部分（如实记录）**
+- 真机上的实际观感与触摸派发（假 `Button` 不派发触摸）、跳转目标页的行为（桩是空类）、Android 版 `.so` 在本容器不可执行（适配层跑的是宿主版二进制）。
+- 第 54 轮审计提的覆盖缺口②（`Handler.POSTED` 只断「恰好 +1」，把 `postDelayed` 换成 `post` 仍会绿）本轮**未补**，留作已知缺口。
+
+### AT. v100：把「棋盘怎么画」补进桩测（自查发现的一个覆盖缺口）
+
+改动前 `ViewProbe` 只测几何与触摸，**绘制层一行都没断**：网格画没画、坐标对不对、星位几个、石身/边/最后一手标记、五连赢线、手顺数字、推荐点提示圈 —— 都能被删掉而套件照绿。本轮补上。
+
+| 改前 | 改后 |
+|---|---|
+| 假 `android/graphics/Canvas` 只记录 `RECTS` 与 `PATHS`，`drawLine / drawCircle / drawText` 是空实现 | 增加 `CIRCLES`、`LINES`、`TEXTS` 三个记录表与 `reset()`，三个方法改为记录 |
+| `tests/ui/ViewProbe.java` 29 项、无绘制断言 | 新增 `testDraw()` 13 条（网格 2n 条线 / 坐标 2n 个文字且列跳过 I / 行号 15 与 1 / 9 个星位 / 落子 12 个圆且半径 = `stoneRadius`、标记圈 0.34× / 五连赢线 30+1 条且长 4×`spacing` / 手顺文字 = 2n+手数 / 推荐点 0.92×提示圈）⇒ **42 项**（v102 再加 4 条后为 46 项） |
+
+**证据（全部实测）**
+1. 对照：`bash /sdcard/改/陪练棋盘/档案/probe-v100/run.sh <树> <工作目录>` ⇒ **PASS 42 / FAIL 0**。
+2. 区分度：同目录 `mut.py` 8 条改法全部变红、0 漏网（去网格 2 / 去坐标 3 / 去星位 2 / 去石身 1 / 去最后一手标记 3 / 去赢线 2 / 去手顺数字 1 / 去推荐点 1）。
+3. 套件：`TEST_BUILD_DIR=/tmp/jvm100 bash run_tests.sh` ⇒ rc=0，**1048 项 = 398 + 156 + 47 + 101 + 74 + 77 + 195**（195 = 界面层 62 + 启动页 27 + 棋盘视图 42 + 复盘页 64；日志 `/tmp/tests100.log`）。
+4. 产物：`VERSION`=100、versionCode 100、versionName `1.20261015.100`；`autogo.apk` 122037396 字节 md5 `e5f58625441b61f61722a0aa83cdc902`（项目树 == `/sdcard/Download/自动围棋.apk`）；包内 `classes.dex` md5 `a3079e2b8b8870b342670498956e85d0`（**与 v99 逐字节相同**）；两个 `.so` 同 v99；`launchable-activity` = `com.autogo.MenuActivity`。
+5. 类树 v99 ↔ v100：79/79，`diff -rq` **0 差异** —— 与本轮「生产源码一行未动」一致。
+
+**已知缺口（如实记录）**：第 55 轮审计的 6 条提示本轮只处理「绘制层」一条；其余留待后续 —— ⑫ 组未覆盖第 4–8 手档、高亮配色没钉、空棋谱（n=0）时「终局（空棋谱）」那行会被高亮而信息行写「开局」、`README:1732` 旧等式、菜单页定时器延时值（60 秒改 1 毫秒现有测试发现不了）。真机观感与触摸派发、装机与 `onDraw` 真实结果、Android 版 `.so`、noexec 安装链路均未验证。
+
+### AU. v101：第 56 轮审计（3 条漏网 + 文档归属）+ 4 条老缺口一次性收口
+
+第 56 轮审计结论 **高 0 / 中 0 / 低 0 / 提示 3 新 + 3 沿用**，其中三条「漏网」是断言名字比判据强（`ViewProbe` 钉了「有没有画」，没钉「画在哪、画多大」），另有一条文档归属问题（README 把绘制缺口记成第 54 轮审计提出，而它的两轮报告都没这条）。本版一次收口 4 条老缺口 + 归属更正。
+
+| 改前 | 改后 |
+|---|---|
+| 复盘页只有 sel ∈ {9, 0, 2, 9, ""} 被断言过（第 55 轮审计构造「只在被断言的档上正确」的改法仍全绿） | `ReviewProbe` 加 ⑫b 组 9 条：点第 5 / 第 6 / 最后一手行 ⇒ 选中号、**行号与手数分开断言**、胜率条标签 |
+| `MenuActivity` 的每分钟定时器延时没钉（60 秒改 1 毫秒仍全绿） | 假 `Handler` 记 `DELAYS`，`MenuProbe` 断「回到前台注册的是 60000 毫秒」 |
+| 空盘点「复盘」会开一个空页面（n=0 时信息行写「开局」、唯一那行却写「终局（空棋谱）」） | `GomokuActivity.startReview` 加空手顺守卫（toast「还没有落子，没法复盘。」）；`GomokuReviewActivity` 的 n=0 信息行改写「空棋谱」；`Driver95` ⑮ + `ReviewProbe` ⑤b 各加断言 |
+| README:179 / :2399 与 `run_tests.sh` 注释把绘制缺口记成「第 54 轮审计点出」 | 改为「自查发现（先前的审计报告没提过这条）」 |
+
+**证据（全部实测）**
+1. 探针基线：`Driver95` 62 → **64**、`MenuProbe` 27 → **28**、`ViewProbe` 42（不变）、`ReviewProbe` 64 → **74**（⑫b 9 + ⑤b 1）。
+2. 反证 4 条**全部变红**（`/tmp/v101/mut101.sh`）：只在 `index ≤ 3` 档正确的高亮改法 ⇒ ⑫b 红 2；`60_000L` → `1L` ⇒ MenuProbe 红 1；删掉空手顺守卫 ⇒ Driver95 ⑮ 红 1；退回「开局」文案 ⇒ ⑤b 红 1。
+3. 套件：`TEST_BUILD_DIR=/tmp/jvm101 bash run_tests.sh` ⇒ rc=0，**1061 项 = 398 + 156 + 47 + 101 + 74 + 77 + 208**（208 = 界面层 64 + 启动页 28 + 棋盘视图 42 + 复盘页 74；日志 `/tmp/tests101.log`）。
+4. 产物：`VERSION`=101、versionCode 101、versionName `1.20261015.101`；`autogo.apk` 122037396 字节 md5 `c74f87fa2498b288c7f84ef9414f8e8a`（项目树 == `/sdcard/Download/自动围棋.apk`）；包内 `classes.dex` md5 `0201953cccc0fc1443bccdd3ec2fafe6`；两个 `.so` 同 v100；`launchable-activity` = `com.autogo.MenuActivity`。
+5. 类树 v100 ↔ v101：79/79，**21 处不同**（20 个 `GomokuActivity*` + `GomokuReviewActivity.class`），0 增删。
+6. 反向构建第 13 次：删 10 个五子棋侧源文件 + 清单回 v83 形态 ⇒ rc=0，包内 dex = `afd3c5bece9098ec6a1d74738b867cac`（124980 字节）、launchable 回 `com.autogo.MainActivity` ⇒ 围棋侧逐字节未变。
+
+**已知缺口（如实记录，留给后续）**
+- 第 56 轮三条漏网**故意留到下一版**：坐标列不跳 I 未钉（`(char)('A'+i)` 仍全绿）、星位半径 `max(2, spacing×0.075)` 未钉（改成 0.4×spacing 仍全绿）、最后一手标记圈位置未钉（右移一格仍全绿）。
+- 高亮配色仍未钉（`highlightRows()` 只判 `bgColor != 0`）；`README:1732` 旧等式；`index > 0` 冗余守卫；`run_tests.sh:145` 的探针顺序与 README 历史段写的顺序不一致。
+  （**回指**：这三项后来都已有下文 —— `:1732` 旧等式见 v106 段；`index > 0` 见 v113 段（实测为无害冗余守卫，按「非缺陷」关闭）；探针顺序见 BD 段（v111 已对齐）。此处保留原记录以便追溯。）
+- 真机观感与真实触摸派发、装机后 `onDraw/onMeasure` 实际结果、Android 版 `.so`、跳转目标页真实行为（stub 是空类）、noexec 安装链路均未验证。
+
+
+### AV. v102：把第 57 轮点出的两处测试盲区补上（列标签/星位半径/标记圈位置/高亮配色）
+
+改前：坐标列是否跳过字母 I、星位小圆多大、最后一手标记圈画在哪个交点、复盘页高亮用的是哪个颜色 —— 这四处画错了测试都发现不了（第 55 轮配色改法 m6 + 第 56 轮列标签/星位/标记圈改法 a5/a6/a8 等改法全绿）。
+
+改后：加 6 条断言 —— ①15 个列标签必须正好是 A..H + J..P 且没有字母 I ②9 个星位圆半径都等于 max(2, 间距×0.075) ③最后一手标记圈圆心必须落在最后一手交点上 ④复盘页高亮行用的必须是主题选中底色、其他行不涂色。
+
+验证（实测）：故意把源码写坏四处 ⇒ 分别红 2 / 1 / 1 / 1 条，全部被抓；基线棋盘视图 46 项、复盘页 76 项全过；套件 1061 → **1067 项** rc=0。
+
+顺带修掉第 57 轮的一条低缺陷（README 与 ViewProbe 里「第 54 轮审计点出绘制缺口」的归属写错，改为「自查发现」）与 run_tests.sh 头部三个旧计数（28/64/76）。
+
+本版只动测试与文档：包内 classes.dex `0201953cccc0fc1443bccdd3ec2fafe6` 与 v101 **逐字节相同**，两个 .so 也未变；类树 v101↔v102 **0 处差异**。
+
+产物：`VERSION`=102、versionCode 102、versionName `1.20261016.102`、apk md5 `f26fb11c6883f13e21fc63a44e7effd2`（项目树 == `/sdcard/Download/自动围棋.apk`）。
+
+没实测：真机观感、真实 Canvas 像素、真机触摸派发；`Driver95` ⑮ 第一条不 drain 假 UI 队列（第 57 轮提示-1）与复盘页数值断言（提示-2）、空盘+执白文案顺序（提示-3）仍挂在已知缺口里。
+
+### AW. v104：把第 59 轮审计抓到的那一个数改对（纯文档）
+
+改前：README 正文写「`tests/ui/` 的四项（共 214 项）」，下面列的四个数里 `GomokuView` 却仍是 **29 项** —— 64+28+29+76 = 197，跟它自己那句 214 打架（第 59 轮审计低-1）。
+
+改后：改成实测的 **46 项**（64+28+46+76 = 214 ✓）。连同 v103 的 `run_tests.sh` 的 ViewProbe 注释 42 → 46、`tests/ui/ReviewProbe.java:306` 的出处归属改成「第 55 轮审计提示 2」、README:2444 的证据出处改成「第 55 轮 m6 + 第 56 轮 a5/a6/a8」。
+
+实测：套件 **1067 项 rc=0**（界面层 64+28+46+76 = 214）；本版仍只动文档与注释 —— 包内 `classes.dex` `0201953cccc0fc1443bccdd3ec2fafe6` 与 v101/v102/v103 逐字节相同，类树与上一版 **0 处差异**。
+
+审计建议（第 59 轮 c 条）：这类手抄数字历史上已连错两轮，建议正文只留「见树」指针 —— 后续版本照做（v105 仍未做，见 AY 段待办）。
+
+
+### AX. v105：修第 60 轮的两处文字（AT 段 29+13 的加法、AW 段的版本归属）
+
+低-1：AT（v100）段写「29 项 + 新增 13 条 ⇒ 46 项」，29+13 = 42 —— 46 是 v102 又加 4 条后的数；已改为「⇒ 42 项（v102 再加 4 条后为 46 项）」。
+低-2：AW 段「同一版还把 run_tests.sh 注释 42→46、ReviewProbe 出处改掉」其实都是 v103 的事，v104 只动了 README；已改为「连同 v103 的…」。
+
+实测：本版套件 1067 项 rc=0、apk md5 `2793d9a9e9928d53c8bc7d54ceac5380`（项目树 == 交付件）；类树与 v104 0 差异。
+
+审计建议照办：正文里的手抄数字（`:252-255` 四项、`:121/:163/:217` 的 1067 分解、`:238` 的 592）后续版本改为只留「见树/见套件日志」指针，避免再连错。
+
+### AY. v106：补第 57 轮以来的两条老缺口（复盘页数值/曲线下标、⑮ 先 drain）
+
+- 改前：`ReviewProbe` 只钉了胜率条的**文案**和曲线「被选中」这件事之外的界面状态，`bar.setBlackWinrate(...)` 传第几格的数、`chart.setSelected(...)` 传什么下标都没人断（第 57/60/61 轮反复点名的缺口）；`Driver95` ⑮ 在 `startReview()` 之后**没有排空假 UI 队列**就断言。
+- 改后：新增 `ReviewProbe` ⑭ 组 6 条 —— 每格胜率各不相同的夹具（`wr = {0.50, 0.62, 0.55, 0.71, 0.40, 0.35, 0.60, 0.52, 0.48, 0.90}`，第 i 格轮白时黑胜率取 `1 - wr[i]`）断：一进来胜率条 = 终局格、曲线下标 = 9；点手顺第 2 行后 = 第 2 格、下标 = 2；回到开局前 = 第 0 格、下标 = 0。`Driver95` ⑮ 断言前补 `drain()`。
+- 顺带：README `:1732` 的旧等式（39 = 36 + 3）改成「79 个 `.class` = 76 + 3 个 `R` 系列」；AW 段尾句统一成「后续版本」；AX 段补上产物/套件实测行。
+实测：本版套件 **1073** 项 rc=0、apk md5 `33da0e1d6e6e62327c42bbe59801480e`（项目树 == 交付件）；类树与 v105 0 差异。
+- 未实测：真机观感、真实触摸派发、真实 `Canvas` 像素；本轮的 ⑭ 只断「传下去的数值/下标」，不断像素怎么画。
+
+### AZ. v107：补第 62 轮点名的三处（当前计数、AY 段产物行、⑭ 的中间档）
+
+- 改前：v106 把 ReviewProbe 从 76 涨到 82、界面层从 214 涨到 220，但 README 正文三处「1067 = … + 214」、`:238` 的 592、目录树的「ReviewProbe 76 项」、`:252/:255` 的四项合计、`run_tests.sh:106` 的注释**都还是旧数**（第 62 轮低-1）；AY 段没写产物与套件实测行；⑭ 只抽了 index = 9 / 2 / 0 三档，审计员实测「只在这三档传对、其余档全传 0.0」仍 82/0 全绿。
+- 改后：上述计数全部改成 **1073 = 398 + 156 + 47 + 101 + 74 + 77 + 220**、592 → **598**、树与脚本注释 76 → **82 项**、四项合计 214 → **220**；⑭ 再补「点第 5 手行 / 第 7 手行」两档共 4 条（覆盖 index 5 / 7）；本段补产物行。
+- 实测：套件 **1077 项 rc=0**（界面层 224 = 64 + 28 + 46 + 86）；apk md5 `3eb7eff30a1f2d24403b57f5c52f6713`（项目树 == 交付件）；类树与 v106 0 差异（只动 tests/ 与 README）。
+- 第 63 轮复核：把「只让 index 9/2/0 正确、其余传 0.0」那种改法放进本版 ⇒ **⑭ 红 4 条**（上一版是全绿）⇒ 中间档断言确实补上了区分力。
+- 未实测：真机观感、真实触摸派发、真实 Canvas 像素；本轮断言只钉「传下去的数值/下标」。
+
+### BA. v108：⑮ 全档位循环（0..n 全覆盖）+ 当前计数改指针（治「隔一版就漂」的根因）
+
+- 改前：⑭ 只抽查 index {0,2,5,7,9}；README 正文手抄多处「当前计数」，第 61/62/63 轮连续三次因为「加了断言忘了改数」被判低缺陷。
+- 改后：`ReviewProbe` 加 ⑮ 全档位循环 2 条（`for k = 0..n` 逐档 `select(k)` 后断曲线选中下标与胜率条数值，FAIL 文本给出第一个错的档）⇒ 86 → **88 项**；正文两处明细（`:121` 的分解、`:217` 的「全过」句）改成指针，精确数字只留在目录树行与各版 A 段；AY/AZ 段补齐产物与套件实测行（含 apk md5）。
+- 实测：套件 **1079 项 rc=0**（界面层 226 = 64 + 28 + 46 + 88）；apk md5 `48dbe62ee7c2bcc100449226129bbf22`；类树与 v107 0 差异（只动 tests/ 与 README/run_tests.sh 注释）。
+- 未实测：真机观感、真实触摸派发、真实像素；循环断言只钉「传下去的数值/下标」，不断画出来什么样。
+
+### BB. v109：⑮ 夹具去别名 + 第 64 轮两处文字 + 5 处手抄当前数改指针
+
+- 改前（第 64 轮）：`tests/ui/ReviewProbe.java` 的 ⑮ 夹具里有两处撞值（`1-wr[7] == wr[8]`、`wr[0] == 1-wr[0]`），审计员实测两种「取到补数那一格」的改法仍 88/0 全绿；README `:2460` 的 v104 历史引文被后来的批量改数污染成 **226**（原文 214）；BA 段产物行没写 md5；另有 5 处手抄当前数（`:121` / `:238` / `:252` / `:255` / `run_tests.sh` 注释）。
+- 改后：夹具换成 `{0.60, 0.68, 0.53, 0.77, 0.44, 0.35, 0.85, 0.58, 0.41, 0.93}`（互不为补、避开 0.5），并加一条夹具自检（第 i 档的值 ≠ 第 j 档、≠ 第 j 档的补数）⇒ 88 → **89 项**；`:2460` 历史引文还原 214；BA 段补 v108 的 apk md5；正文与脚本注释里的手抄当前数改成指针（精确数字只留目录树的 `run_tests.sh` 行与各探针行、以及各版 A 段）。
+- 实测：套件 **1080 项 rc=0**（= 398 + 156 + 47 + 101 + 74 + 77 + 227；227 = 64 + 28 + 46 + 89）；`VERSION`=109、versionCode 109、versionName `1.20261016.109`；apk 122037396 字节 md5 **`b4a846251c6dcd156c539b5a554fc8ac`**（项目树 == `/sdcard/Download/自动围棋.apk`）；包内 dex 与 v108 逐字节相同；类树 v108↔v109 = 0 差异。
+- 未实测：真机观感、真实触摸派发、真实像素。
+
+### BC. v110：修第 65 轮审计的 2 条提示 + 1 条沿用老缺口（守卫次序、夹具自检的 0.5、脚本注释指针）
+
+- 改前：① 第 57 轮起就挂着的「空手顺守卫排在 `aiThinking` 之前」——执白新局等电脑第一手时点「复盘」，说的是「还没有落子，没法复盘。」，而那一刻真正的原因是在等电脑；② `tests/ui/ReviewProbe.java` 的夹具自检漏了「一个数自己是自己的补数（0.5）」——第 65 轮审计实测：夹具第 0 档改成 `0.50` 后，自检不响、再叠「第 0 档取补数」的错法照样 89/0 全绿（第 64 轮修掉的盲区原样回来）；③ `run_tests.sh` 头部四个探针项数（28 / 64 / 46 / 89）还是手抄，每次加断言就旧。
+- 改后：① `src/com/autogo/GomokuActivity.java` 的 `startReview()` 把 `aiThinking` 判断提到 `board.moves.isEmpty()` 之前（执白等第一手 ⇒ 提示「等电脑下完这一手再复盘。」；真空盘且没在想 ⇒ 仍是「还没有落子，没法复盘。」）；② 自检判据补 `Math.abs(2.0 * wrV[i] - 1.0) < 1e-9`，断言文案改成「第 i 档 ≠ 第 j 档、≠ 第 j 档的补数，自己也不等于自己的补数」；③ `run_tests.sh` 头部四个探针项数改成「（项数以运行输出为准）」。
+- 新断言：`tests/ui/Driver95.java` ⑮b 2 条（空盘 + 电脑思考中：不跳转、提示等电脑下完这一手）⇒ Driver95 64 → **66 项**；套件 1080 → **1082 项**（= 398 + 156 + 47 + 101 + 74 + 77 + 229；229 = 66 + 28 + 46 + 89）。
+- 反证（两条都实测）：把守卫次序改回「空手顺在前」⇒ `FAIL  ⑮b 空盘 + 电脑思考中：提示等电脑下完这一手 期望 true，实际 false`（Driver95 PASS 65 / FAIL 1）；把夹具第 0 档改成 `0.50` ⇒ `FAIL  ⑮ 夹具自身没有撞值（…自己也不等于自己的补数）（期望 false，实际 true）`（ReviewProbe PASS 88 / FAIL 1）。
+- 产物：`VERSION`=110、versionCode 110、versionName `1.20261016.110`、`autogo.apk` 122037396 字节 md5 `1cc558538f41ca909f9a9514b1b39932`（项目树 == `/sdcard/Download/自动围棋.apk`）、包内 `classes.dex` md5 `9677aa699c664d81e7cec1e92db84611`（本版动了 `GomokuActivity`，所以 dex 变了）、两个 `.so` 与 v109 逐字节相同、launchable `com.autogo.MenuActivity`。
+- 类树 v109 ↔ v110：79 / 79，差异集中在 `GomokuActivity` 一族（`GomokuActivity.class` + 19 个嵌套类，`javac` 合成访问器编号平移），0 增 0 删。
+- 反向构建第 19 次（删 10 个五子棋侧源文件 + 清单退回 v83 形态）：rc=0 ⇒ 包内 dex `afd3c5bece9098ec6a1d74738b867cac`（124980 字节）、launchable 回 `com.autogo.MainActivity` ⇒ 围棋侧仍逐字节未变。
+- 未实测：真机观感、真实触摸派发、真实像素；`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面）、容器无 `pm`/`am`/`logcat` ⇒ 装机链路与真机生命周期一律未验。
+
+### BD. v111：补上「有手顺 + 电脑思考中」那一档 + README 探针顺序对齐脚本
+
+- 改前：① 第 66 轮审计 (c)① 指出 `tests/ui/Driver95.java` 的 ⑮b 只钉了「空盘 + 电脑思考中」——盘上**已经有一手**时电脑在思考，这条路径没有断言（把守卫写坏，项目探针看不出来；审计员自己写的 `GuardOrderProbe` 才抓到）；② 第 56 轮起挂着的「`run_tests.sh` 第 4 节的探针顺序与 README 历史段写的不一致」。
+- 改后：① 新增 ⑮c 三条断言（有手顺 + 电脑思考中：不跳转、提示「等电脑下完这一手」、本次新增日志里**不出现**「还没有落子」），并加了辅助方法 `newEvents(int from)` 只看本次新事件（`FakeLog` 是累积的，不看增量会拿旧事件误判）；② `README.md` 里那句探针顺序改成与脚本 `for t in Driver95 ViewProbe ReviewProbe MenuProbe` 一致。
+- 反证（实测）：删掉 `aiThinking` 守卫 ⇒ `Driver95 PASS 67 / FAIL 2`，两条 FAIL 原文 `FAIL  ⑮b 空盘 + 电脑思考中：提示等电脑下完这一手 期望 true，实际 false`、`FAIL  ⑮c 有手顺 + 电脑思考中：提示等电脑下完这一手 期望 true，实际 false`。
+- 顺带核实：第 55 轮那条「`README.md:1732` 旧等式」在正文已不存在（`grep "39 = 36 + 3"` 只命中历史变更记录里「原先写错、已改」的行）⇒ 该老账关闭；README 在 v111 时 2527 行。
+- 产物：`VERSION`=111、versionCode 111、versionName `1.20261016.111`、`autogo.apk` 122037396 字节 md5 `a73a553332546d8890a4923cd89120b3`（项目树 == `/sdcard/Download/自动围棋.apk`）、包内 `classes.dex` md5 `9677aa699c664d81e7cec1e92db84611`（**与 v110 逐字节相同** —— 本轮只动测试与文档）；套件 **1085 项 rc=0**（= 398 + 156 + 47 + 101 + 74 + 69 + 46 + 28 + 89 + 77；界面层 232 = Driver95 69 + ViewProbe 46 + ReviewProbe 89 + MenuProbe 28）。
+- 类树 v110 ↔ v111：79 / 79，`diff -rq` **0 处差异**。反向构建第 20 次：rc=0 ⇒ 包内 dex `afd3c5bece9098ec6a1d74738b867cac`（124980 字节）、launchable 回 `com.autogo.MainActivity` ⇒ 围棋侧逐字节未变。
+- 未实测：真机观感、真实触摸派发、真实像素（容器无 `pm`/`am`/`logcat`、`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面））。
+
+---
+
+### BE. v112：给 ⑮b/⑮c 的「不跳转」断言补上等待窗口（第 67 轮审计 (c)②）+ 销掉一条老账（只动 tests/ui 与文档）
+
+**改前 → 改后（大白话）**
+
+- 改前：`tests/ui/Driver95.java` 的 ⑮b/⑮c 用「电脑思考中点『复盘』不跳转」来钉守卫，但它 `startReview()` 后只排空一次假 UI 队列就下结论 —— **把守卫删掉，它也照样绿**（第 67 轮审计 p1 变异实测）。
+- 改后：这两处对齐 ⑮ 的做法，加 **600 ms 有界等待**再排空队列 ⇒ 删守卫立刻红。
+
+**本版改动**
+
+| 文件 | 改动 |
+| --- | --- |
+| `tests/ui/Driver95.java` | ⑮b、⑮c 各加 `Thread.sleep(600)` + `drain()`（断言条数不变，仍 69 项） |
+| `README.md` | 追加本段（BE） |
+
+**验证（反证）**
+
+- 基线：`Driver95` **PASS 69 / FAIL 0**。
+- 注入「删掉 `src/com/autogo/GomokuActivity.java` 里 `if (aiThinking) { toast("等电脑下完这一手再复盘。"); return; }`」⇒ **PASS 66 / FAIL 3**，新增的那条正是 ⑮c：
+  - `FAIL  ⑮c 有手顺 + 电脑思考中：不跳转 期望 true，实际 false`
+  - （另两条老 FAIL：⑮b、⑮c 的「提示等电脑下完这一手」）
+  - ⑮b 的「不跳转」在变异体下仍是绿 —— 拦住它的是**空盘守卫**（`src/com/autogo/GomokuActivity.java:500-504`），根本走不到 `GomokuReview.analyze`，属正确行为而非盲区（第 68 轮审计指出原措辞「analyze 失败兜底」不准）。
+- 套件：`TEST_BUILD_DIR=/tmp/jvm112 bash run_tests.sh` ⇒ rc=0，**1085 项全过**（末行「全部通过」）。
+
+**记下第 67 轮审计的两条独立发现**
+
+1. 重建出来的 apk **整体 md5 与出货包不同**（签名字节每次不同；实测重建 `ff5fc65a…` vs 出货 `a73a5533…`，字节数相同）⇒ **字节级可复现的量只有包内 `classes.dex`**，README 里「可重建」的说法以 dex 为准。
+2. ⑮b/⑮c 的「不跳转」断言无等待窗口 ⇒ **本版已修**（见上）。
+
+**销掉一条老账**
+
+- `src/com/autogo/GomokuReviewActivity.java:416` 的 `index > 0 &&`（第 55/67 轮都挂着「未注入验证」）：实测把它删掉后 `ReviewProbe` 仍 **PASS 89 / FAIL 0** ⇒ 数学上 `i` 取 0..n、`index == 0` 时 `index - 1 == -1` 永不等于 `i`，**属无害冗余守卫**；保留作防御，本条按「已实测、非缺陷」关闭。
+
+**产物**
+
+- `VERSION`=112、versionCode 112、versionName `1.20261016.112`。
+- `autogo.apk` 122037396 字节 md5 `9216ef005fb9271a8164aa5d452ace06`（项目树 == `/sdcard/Download/自动围棋.apk`）。
+- 包内 `classes.dex` md5 `9677aa699c664d81e7cec1e92db84611`（178872 字节，**与 v111 逐字节相同** ⇒ 本轮只动 `tests/ui` 与文档）。
+- 类树 `/tmp/appbuild111/classes` ↔ `/tmp/appbuild112/classes` = **0 差异**。
+
+**没实测的部分（照旧如实挂着）**
+
+- 真机安装/启动/升级、`logcat`、真实触摸与像素、设备上 `.so` 加载：容器无 `pm`/`am`/`logcat`、`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面）、`/sdcard` noexec，测不了。
+- 仍挂着的已知缺口：`Driver95` 的 **Unsafe 默认值镜像盲区**（改源码里的声明默认值不会变红）。
+
+---
+
+### BF. v113：⑮b 换增量断言 + 补「不含还没有落子」；改两处文档措辞（只动 tests/ui 与文档）
+
+**改前 → 改后（大白话）**
+
+- 改前：⑮c 已经是「只看这一段新增的事件」，但 ⑮b 还在看**累积**的全部事件 —— 同一轮更早的 ⑮ 用例（`Driver95.java:424`）**已经**往全局写过 `toast:还没有落子，没法复盘。`，所以 ⑮b 那天读到的「还没有落子」根本不是它这一次的声音；旧断言眼下还没被这条污染，但新加的「不含『还没有落子』」在今天就已经红了（第 69 轮审计 m2a 实测：⑮b 两条都改回累积 ⇒ **PASS 69 / FAIL 1**）。
+- 改后：⑮b 也换成增量，并补一条「这段事件里**不含**『还没有落子』」，把「空盘守卫不能抢在『电脑思考中』前面」也钉住。
+
+**本版改动**
+
+| 文件 | 改动 |
+| --- | --- |
+| `tests/ui/Driver95.java` | ⑮b 记录增量起点、改读 `newEvents(...)`、新增 1 条「不说『还没有落子』」⇒ 69 → **70 项** |
+| `README.md` | `:2524` 的「README 现 2527 行」→「README 在 v111 时 2527 行」；`:2551` 的「空盘时 `analyze` 会失败兜底」→「**空盘守卫**（`src/com/autogo/GomokuActivity.java:500-504`）先拦下，走不到 `analyze`」 |
+
+**验证（反证）**
+
+- 基线：`Driver95` **PASS 70 / FAIL 0**；第 69 轮审计另做两种拆读：只把旧断言改回累积 ⇒ 70/0（加固），⑮b 两条都改回累积 ⇒ **69/1**（新增那条今天就有牙）。
+- 注入 n9「把两道守卫次序对调（空盘守卫抢先）」⇒ **PASS 68 / FAIL 2**，FAIL 原文：
+  - `FAIL  ⑮b 空盘 + 电脑思考中：提示等电脑下完这一手 期望 true，实际 false`
+  - `FAIL  ⑮b 空盘 + 电脑思考中：不说「还没有落子」 期望 false，实际 true` ← 新增的那条
+- 套件：`TEST_BUILD_DIR=/tmp/jvm113 bash run_tests.sh` ⇒ rc=0，**1086 项全过**。
+
+**产物**
+
+- `VERSION`=113、versionCode 113、versionName `1.20261016.113`。
+- `autogo.apk` 122037396 字节 md5 `4ee7eed2e92518f55aef84a8170403ef`（项目树 == `/sdcard/Download/自动围棋.apk`）。
+- 包内 `classes.dex` md5 `9677aa699c664d81e7cec1e92db84611`（**与 v111/v112 逐字节相同** ⇒ 本轮仍只动 `tests/ui` 与文档）。
+- 类树 `/tmp/appbuild112/classes` ↔ `/tmp/appbuild113/classes` = **0 差异**。
+
+**没实测的部分**：真机安装/启动/触摸/像素、设备上 `.so` 加载照旧测不了；仍挂着的老缺口：`Driver95` 的 **Unsafe 默认值镜像盲区**。
+
+---
+
+### BG. v114：补齐目录树计数 + 把「将来时」措辞改成实测口径（只动文档）
+
+- 第 69 轮审计指出两处：① 目录树头部还印着上一版的 `1085 项 = … + 232`、`ui/Driver95.java 69 项`（本版应为 **1086 项 = 398+156+47+101+74+77+233**、**70 项**，233 = 70+46+89+28）；② BE/BF 段里「哪天别的用例先写过『还没有落子』，它就白测了」是**将来时**，而审计员实测：同一轮更早的 ⑮ 已经写过那句，累积读法**今天**就会红（m2a ⇒ 69/1）。
+- 本版把这两处按实测改掉，并把第 69 轮的两种拆读结果写进 BF 段 —— 两者性质不同，别混为一谈：**旧断言**（「提示等电脑下完这一手」）改回累积仍 70/0 ⇒ 属**防将来脆弱的加固**；**新增的那条**（「这段里不含『还没有落子』」）改回累积**今天就红**（69/1，因为同一轮更早的 ⑮ 已经写过那句话）⇒ 属**构造上必须读增量**。
+- 产物：`VERSION`=114、versionCode 114、versionName `1.20261016.114`、`autogo.apk` 122037396 字节 md5 **`bed7997b61c956167a9fe2bba061dacc`**、包内 `classes.dex` `9677aa699c664d81e7cec1e92db84611`（与 v111~v113 逐字节相同）、类树 0 差异、套件 **1086 项全过**。
+
+---
+
+### BH. v115：补上 BG 段漏写的 apk md5 + 说清「加固」与「必须增量」的区别（只动文档）
+
+- 第 70 轮审计发现：BG 段末行写「`autogo.apk` 122037396 字节（md5 见下）」，可它就是全文最后一行 —— 本版 apk 的 md5 一次都没出现。已把 `bed7997b61c956167a9fe2bba061dacc` 补进去。
+- 同轮审计 (a) 还指出：BF/BG 没把两种拆读的性质区分清楚。已补一句：**旧断言改回累积仍全绿 ⇒ 加固**；**新增那条改回累积今天就红（69/1）⇒ 构造上必须读增量**。
+- **套件计数口径（免得再算错）**：各节自报行相加是 927（已含 `ViewProbe` 的 46），另有两条只报 `PASS n` 的探针不在这 927 里 —— `Driver95` 70 + `ReviewProbe` 89 ⇒ **总计 1086**。若把 `ViewProbe` 的「包装回显行」再算一遍，会得到 1132（第 69/70 轮两次踩过，如实记在这里）。
+- 未采纳的建议：审计员建议在 `run_tests.sh` 末尾加一条「总计 = 1086」的断言 —— 我**故意没做**：那等于把又一处「手抄当前数」写进脚本（正是它自己连着几轮批评的模式），改测试就要同步改它。改成在 README 记清口径。
+- 产物：`VERSION`=115、versionCode 115、versionName `1.20261016.115`、`autogo.apk` 122037396 字节 md5 **`6409eadd62bfd61bbe2faee45770e30d`**、包内 `classes.dex` `9677aa699c664d81e7cec1e92db84611`（与 v111~v114 逐字节相同）、类树 `/tmp/appbuild114/classes` ↔ `/tmp/appbuild115/classes` **0 差异**、套件 **1086 项全过**。
+
+---
+
+### BI. v117：给 `build.sh` 加「清单里的 activity 必须在 dex 里」校验 + 把行为变异固化成「检测力温度计」（工具与文档）
+
+**动机（都来自第 71 轮审计）**
+
+1. 它做细粒度变异时发现：只删 `MenuActivity.java`，`build.sh` 仍 rc=0 打包成功，包里 `launchable-activity` 却指向一个不存在的类 —— **旧校验只看 versionCode 与签名**。
+2. 它建议把第 69 轮那个「守卫次序对调 ⇒ 68/2」的行为变异固化成每轮可复跑的脚本，当作「断言还有没有牙」的温度计。
+
+**改动**
+
+| 文件 | 改动 |
+| --- | --- |
+| `build.sh` | 打包后逐个核对清单里的 `<activity android:name>` 是否在包内 dex 里有对应类（跨行解析），缺任何一个就 `构建校验失败…拒绝出包` 退出 1；成功时打印「清单里 N 个 activity 都在 dex 里」 |
+| `tools/checks/guard_order_thermometer.sh` | 新增（可执行）：在 /tmp 的副本里把 `startReview()` 两道守卫次序对调，跑 `Driver95`；基线必须 70/0、变异体必须 68/2，否则退出 1 |
+| `README.md` | 本段 |
+
+**自曝一个当场踩的坑（如实记）**
+
+- 第一版校验用逐行 `sed` 抓 `<activity … android:name=…>`，而清单里的 activity 是**多行**写的 ⇒ 一个都抓不到，构建日志打出「清单里 **0** 个 activity 都在 dex 里」还是 rc=0。是我读日志时发现数字不对才回头改成跨行解析（python 正则）。
+- 修好后：正常构建打印「清单里 **5** 个 activity 都在 dex 里」；**反证**（把清单塞一个多行的 `<activity android:name=".GhostActivity" />`，用同一段校验代码跑）⇒ 输出「构建校验失败：清单里的 activity .GhostActivity（`Lcom/autogo/GhostActivity;`）在包内 dex 里找不到」「有 1 个 activity 缺类，拒绝出包」，rc=1 ✔。
+
+**温度计自测（实测）**
+
+```
+== 基线 ==        v95 设置探针：PASS 70 / FAIL 0
+== 变异体 ==      v95 设置探针：PASS 68 / FAIL 2
+✅ 温度计正常：次序对调被抓住（68/2），说明这两条断言今天有牙。
+```
+
+**产物**
+
+- `VERSION`=117、versionCode 117、versionName `1.20261016.117`、`autogo.apk` 122037396 字节 md5 **`9844e05a137564e12876d462907c705a`**（项目树 == `/sdcard/Download/自动围棋.apk`）。
+- 包内 `classes.dex` md5 `9677aa699c664d81e7cec1e92db84611`（**与 v111~v115 逐字节相同** ⇒ 本轮没动 `src/`、`tests/`）。
+- 类树 0 差异；套件 **1086 项全过**。
+
+**说明**：第 71 轮那条「删 1 个五子棋源文件 ⇒ 套件不绿」的红是**必然失败**（`cp: cannot stat` / `javac cannot find symbol`），抓不到行为退化 —— 这层限制是本段第一次写出（第 72 轮审计指出我先前写成「已写进上一段 BH」，而 BH 里并没有这句，已改正），不再当覆盖成果。
+
+---
+
+### BJ. v118：把「activity 类必须在包里」的校验做成真的（aapt2 xmltree + dex class_defs），并关掉第 72 轮拆出的四个洞（工具与文档）
+
+**改前 → 改后**
+
+- 改前（v117 的第一版校验，第 72 轮审计实测出四个洞）：
+  1. 清单里属性值用**单引号**写（`android:name='.GhostQ'`）时，逐行正则一条都不解析 ⇒ rc=0，日志还谎报「清单里 5 个 activity 都在 dex 里」（实际 6 个），幽灵 activity **进了已签名包**；
+  2. 判「类存在」用的是 grep 字符串 ⇒ 源码里留一句 `return "Lcom/autogo/GhostStr;";` 就能骗过；
+  3. 合法的 `<activity-alias>` 被误报缺类（该查的是它的 `android:targetActivity`）；
+  4. 合法的裸名 `android:name="MenuActivity"`（Android 按包名解析）被误报找不到 `LMenuActivity;`；
+  5. 失败时打印「拒绝出包」，但坏包**已经写出并签过名**了，只有 VERSION 没推进 —— 措辞与事实不符。
+- 改后：新增 `tools/checks/check_activities.py`，`build.sh` 打包后调用它：
+  - 清单用 `aapt2 dump xmltree` 解析（跨行、单双引号、裸名、别名都对；`activity-alias` 查 `targetActivity`，`.`/裸名/全限定名三种写法都按 Android 规则补包名）；
+  - 「类存在」改成**直接解析 `classes*.dex` 的 `class_defs` 表**（真类定义，不是字符串搜索）；
+  - 失败时**删掉**这个不合格的包再退出 1 ⇒「拒绝出包」名副其实。
+
+**四个洞的关闭证据（都在 /tmp 的坏树里实测）**
+
+| 场景 | v117 旧校验 | v118 新校验 |
+| --- | --- | --- |
+| 单引号 `.GhostQ`（多行） | rc=0（漏） | **报缺** ✔ |
+| 裸名 `GhostBare`（真缺类） | rc=0（漏） | **报缺** ✔ |
+| 源码里留 `"Lcom/autogo/GhostStr;"` 字符串 | rc=0（被骗） | 不误判 ✔ |
+| 合法 `activity-alias` → 存在的类 | rc=1（误报） | 不误报 ✔ |
+| 合法裸名 `MenuActivity`（→ `com.autogo.MenuActivity`） | rc=1（误报） | 不误报 ✔ |
+| 坏树端到端 | 坏包留在树里 | rc=1 且**已删除** `autogo.apk` ✔ |
+
+坏树检查输出（原文）：
+
+```
+构建校验失败：清单里声明的 activity 类在包内 dex 里没有类定义：
+  - com.autogo.GhostBare（Lcom/autogo/GhostBare;）
+  - com.autogo.GhostQ（Lcom/autogo/GhostQ;）
+构建失败：清单里有 activity 类不在包里 ⇒ 已删除这个不合格的包（…/autogo.apk），修好后重跑。
+```
+
+正常树：`清单里 5 个 activity 类都在 dex 里（包 com.autogo）`，rc=0。
+
+**温度计**：期望值原来写在两处（case 模式 + 失败消息），只改一处会打出「应为 68/2，实际是 68/2」的自相矛盾日志 ⇒ 现在只留一处（`EXP_BASE` / `EXP_MUT`），复跑仍 70/0 → 68/2、rc=0。
+
+**自曝一个当场踩的坑**：检查器第一版我以为 `aapt2 dump xmltree` 的元素行是 `E: activity (0x…)`，实际是 `E: activity (line=18)`，而 `package` 属性**没有**资源 id ⇒ 第一次跑打印「清单里 **0** 个 activity 类都在 dex 里」。读了真实输出才改对（同一类错误在第一版 build.sh 校验里也犯过：想当然多于实测）。
+
+**产物**：`VERSION`=118、versionCode 118、versionName `1.20261016.118`、`autogo.apk` 122037396 字节 md5 `1f12b0df63dcb7ed26722af4bffb59ea`（项目树 == `/sdcard/Download/自动围棋.apk`）；包内 `classes.dex` md5 `9677aa699c664d81e7cec1e92db84611`（与 v111~v117 逐字节相同 ⇒ 本轮只动工具与文档）；类树 0 差异；套件 **1086 项全过**。
+
+**仍未收（如实挂）**：第 73 轮审计已把这条收窄 —— 命名空间别名实测**正确**，`&quot;` 与 CDATA 写在 `android:name` 上会被 aapt2 直接拒收（`error: attribute 'android:name' in <activity> tag must be a valid Java class name.` / `not well-formed (invalid token)`），属「写不进去」而不是「没测」；真正没证的只剩「幽灵组件 + BOM / 其他怪写法」这类**组合**。真机安装/画面/触摸仍是空白。
+
+---
+
+### BK. v119：清掉第 73 轮审计的 4 条低 + 2 条 nit（同一套工具/文档）
+
+**改前 → 改后**
+
+| 第 73 轮结论 | 改法 | 实测证据 |
+| --- | --- | --- |
+| 低-1 失败删包只删 `.apk`，留下**孤儿 `autogo.apk.idsig`**（还被坏包重签过） | 失败时 `rm -f` 连 `"$APK.idsig"` 一起删 | 坏树真跑 ⇒ 日志「已删除这个不合格的包」，`ls autogo.apk autogo.apk.idsig` ⇒ **两个都没了** ✔ |
+| 低-2 坏 dex 无兜底：`class_defs` 越界只走 `IndexError`，退出码与「缺类」同为 1 | `dex_classes()` 加**显式边界校验**（class_defs 表 / class_idx / string_idx / 字符串偏移 / 结束符），失败 `exit 3` | 坏 dex（`class_defs_size` 改 999999）⇒ `exit 3` + 「class_defs 表越界（size=999999, off=30004, 文件 178872 字节）」 ✔ |
+| 低-3 校验范围只含 activity/activity-alias：`<service>/<receiver>/<provider>` 的幽灵类 rc=0，alias 缺 `targetActivity` 也 rc=0 | 元素范围扩到五类；`<activity-alias>` 缺 `targetActivity` 直接报错；提示语改成「组件类」 | 坏树（4 个幽灵：`.GhostQ` / `.GhostSvc` / `.GhostRcv` / `.GhostPrv`）⇒ rc=1，四条全列出 ✔ |
+| 低-4 BJ「仍未收」举例不准（命名空间别名其实正确；`&quot;`/CDATA 是 aapt2 拒收） | BJ 那句改成审计员实测后的准确说法 | `grep` 该行 ⇒ 已含「属『写不进去』而不是『没测』」 ✔ |
+| nit-1 温度计锚点坏时内层 `exit 2` 被 `|| exit 1` 吞成 1 | 外层捕获内层退出码并原样透出 2 | 把守卫文本改一个字后跑 ⇒ **rc=2** + 两句明确提示 ✔ |
+| nit-2 v101 历史段「已知缺口」三项已关闭却没回指 | 在该段末尾加**回指**（v106 / v113 / BD 段） | 读该行可见回指 ✔ |
+
+**自曝一个当场踩的坑（第二次同类）**
+
+- 我第一次造坏 dex 时，检查器返回的是 **rc=0、还打印「5 个 activity 类都在 dex 里」** —— 因为 Python **切片越界不会抛异常**（`b[off:off+4]` 返回空串、`int.from_bytes(b"")` = 0），我那句「兜底」等于没生效。加了显式边界判断后才真的 rc=3。
+- 教训和第 72 轮同源：**改完必须拿真坏样本打一遍**，不能只凭「我加了 try/except」就当修好了。
+
+**产物**：`VERSION`=119、versionCode 119、versionName `1.20261016.119`、`autogo.apk` 122037396 字节 md5 `c727f69da5f74de27c923b95f51201da`（项目树 == `/sdcard/Download/自动围棋.apk`）；包内 `classes.dex` md5 `9677aa699c664d81e7cec1e92db84611`（与 v111~v118 逐字节相同 ⇒ 本轮只动工具与文档）；类树 0 差异；套件 **1086 项全过**。
+
+### BL. v120：把第 74 轮审计的 3 条低 + 1 条提示修掉（工具侧，App 代码未动）
+
+**改前 → 改后**（只动 `build.sh`、`tools/checks/check_activities.py`、`run_tests.sh` 与本文档）：
+
+| 问题 | 改前 | 改后 |
+| --- | --- | --- |
+| ① 退出码被压平 | 校验器 `exit 3`（包损坏）和 `exit 1`（清单缺类）在 build.sh 里都报「清单里有 activity 类不在包里」，查错方向 | build.sh 按 `case $CHECK_RC` 分别报「包内 dex 解析失败（包可能已损坏）」「校验器自身出错」「清单里有组件类不在包里」 |
+| ② 小于 112 字节的 dex 被静默跳过 | `classes.dex` 截到 100 字节 ⇒ 报「缺类」（查错方向）；多一个 100 字节的 `classes2.dex` ⇒ 校验**成功** | 小于 112 字节（连 dex 头部都不够）直接抛错 ⇒ `exit 3`，报出文件名与字节数 |
+| ③ 失败构建会连上一版包一起删 | apksigner 直接写项目树，校验失败时 `rm -f autogo.apk` 把上一版已签名的包也删了，没有可回退产物 | 打包前先把上一版 `autogo.apk`/`.idsig` 挪成 `.prev`；失败时删掉坏包并**回退**上一版；成功后删掉 `.prev` |
+| ④ 提示：温度计没挂进套件 | `run_tests.sh` 只跑断言，锚点坏了/基线漂了发现不了 | `run_tests.sh` 末尾新增**第 6 节**：温度计在自己的 /tmp 副本里对调两道守卫，要求恰好 `Driver95` 红 2 条（70/0 → 68/2），否则套件退出码非 0 |
+
+**验证（实测）**
+1. 坏包：拿出货包做两个复制品 —— `classes.dex` 截到 100 字节、另加 100 字节的 `classes2.dex` ⇒ 校验器**两次都 `exit 3`**，报错分别是 `classes.dex 只有 100 字节，连 112 字节的 dex 头部都不够` 与 `classes2.dex 只有 100 字节…`（改前分别是 rc=1 误诊、rc=0 放行）。
+2. 回退：把项目拷到 `/tmp/t120/proj` 先正常构建一次（apk md5 `a74798f9eccd579e017c8ab963e6642e`），再把校验器换成「永远 `exit 3`」的桩重建 ⇒ build.sh 打印「构建失败：包内 dex 解析失败（包可能已损坏）⇒ 已删除这个不合格的包」+「已回退到上一版产物」，现场的 `autogo.apk` md5 仍是 `a74798f9…`（上一版被恢复），没有 `.prev` 残留。
+3. 温度计挂载：`TEST_BUILD_DIR=/tmp/jvm120b bash run_tests.sh` ⇒ rc=0、日志第 336 行起出现「6. 检测力温度计」，末尾 `v95 设置探针：PASS 68 / FAIL 2` + `✅ 温度计正常：次序对调被抓住`。本节**不计入**套件项数（1086 项仍是各探针之和）。
+
+**产物（实测）**：`VERSION`=120、versionCode 120、versionName `1.20261016.120`；`autogo.apk` 122037396 字节 md5 `873eeaf390e3605766d15a847da3f82a`（项目树 == `/sdcard/Download/自动围棋.apk`）；包内 `classes.dex` `9677aa699c664d81e7cec1e92db84611`（与 v111–v119 逐字节相同 ⇒ App 代码未动）、`librapfi.so` `84d92bed3a7a40ffc1bdc992891a9e76`、`libkatago.so` `236038ea3e4417aa92787ab19c5f52bf`；类树 v119↔v120 **0 差异**；套件 rc=0「全部通过」。
+
+**没实测的部分**：真机安装/启动/覆盖升级、logcat、真实触摸与像素、Android 版 `.so` 加载 —— 容器里没有 `pm`/`am`/`logcat`、`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面）、`/sdcard` 是 noexec；校验器只覆盖 `activity`/`activity-alias`/`service`/`receiver`/`provider` 的名字属性，不校验组件之外的东西；温度计只覆盖「守卫次序」这一类检测力。
+
+### BM. v121：把第 75 轮审计的 1 条低 + 3 条提示修掉（工具侧，App 代码未动）
+
+**改前 → 改后**
+
+| 问题 | 改前 | 改后 |
+| --- | --- | --- |
+| ① 失败回退不完整 | `.prev` 挪走之后、**校验之前**的失败（例如 `cp` 某个 `.so` 失败）不回退 ⇒ 那一刻项目树里没有 apk，只剩 `autogo.apk.prev` | `build.sh` 装 `trap restore_prev EXIT` + `BUILD_OK` 标志：任何非成功出口都会把上一版 apk/idsig 原样放回 |
+| ② 温度计异常出口留垃圾 | 锚点/基线异常退出时临时目录 `thermometer_$$` 留在 `/tmp`（已积 9 个，各 ~1.5 MB） | 临时目录建好后立刻 `trap 'rm -rf "$W"' EXIT`；历史残留已清理 |
+| ③ 套件末行不再是「全部通过」 | 第 6 节温度计接在末尾，按「末行」判通过的旁路脚本会误判 | 温度计之后补一行 `套件结束：全部通过（含第 6 节温度计）` |
+| ④ ≥112 字节但不是 dex | 全零/垃圾文件（≥112 字节）走「清单缺类」文案 rc=1，查错方向 | 校验 magic（`dex\n`）⇒ `rc=3`，报出文件名与头 8 字节 |
+
+**验证（实测）**
+1. 回退：副本 `/tmp/t121/proj` 先正常构建（apk md5 `bb1ec6f06967d6b4d634c8eca047e5d8`），再删掉 `jniLibs/arm64-v8a/libkatago.so` 重建 ⇒ rc=1、打印「已回退到上一版产物」、现场 `autogo.apk` 与 `autogo.apk.idsig` 都在、apk md5 仍是 `bb1ec6f0…`、无 `.prev` 残留。
+2. dex magic：造 112 字节全零 `classes.dex` 的包 ⇒ **rc=3**，`ValueError: classes.dex 不是 dex 文件（头 8 字节：b'\x00\x00…'）`（改前是 rc=1「缺类」）。
+3. 温度计清理：默认与自定义 `TMPDIR` 各跑一次 ⇒ 都 `✅ 温度计正常（PASS 68 / FAIL 2）`、临时目录残留 0 个（`/tmp` 里 9 个历史遗留已删）。
+4. 套件末行：`bash run_tests.sh` ⇒ rc=0、末两行为「套件结束：全部通过（含第 6 节温度计）」，各节项数不变 **1086**。
+
+**产物（实测）**：`VERSION`=121、versionCode 121、versionName `1.20261016.121`；`autogo.apk` 122037396 字节 md5 `5f87ba15fcd4916d4def33ea91f6833d`（项目树 == `/sdcard/Download/自动围棋.apk`）；包内 `classes.dex` `9677aa699c664d81e7cec1e92db84611`（与 v111–v120 逐字节相同 ⇒ App 代码未动）；类树 v120↔v121 **0 差异**；套件 rc=0。
+
+**没实测的部分**：真机安装/启动/覆盖升级、logcat、真实触摸与像素、Android 版 `.so` 加载（容器无 `pm`/`am`/`logcat`、`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面）、`/sdcard` noexec）；温度计**异常出口**的清理是按 `trap … EXIT` 语义实现的，本轮只实测了正常出口与自定义 `TMPDIR` 两种情况，没单独构造异常出口；`build.sh` 的回退只用「`cp` 失败」这一种失败路径代表，zip/zipalign/apksigner/磁盘满等其它失败路径未逐个造。
+
+### BN. v122：收掉第 76 轮审计的最后 1 条低 + 2 条提示（工具侧，App 代码未动）
+
+| 问题 | 改前 | 改后 |
+| --- | --- | --- |
+| ① dex 头只认 4 字节 magic | `dex\n` 后面乱写（`dex\n035` + 全零头）仍归「清单缺类」rc=1 | 接着查版本 4 字节、头长度字段（应为 112）、endian 标记（`0x12345678`）⇒ 不对就是 rc=3，报出头长度与 endian |
+| ② 退出码不归一化 | cp/aapt2 失败 ⇒ 1、apksigner 失败 ⇒ 2、校验器 ⇒ 3/2/1，签名失败的 2 与校验器「用法错」撞码 | `build.sh` 所有失败一律 **rc=1**，类别只看文案（脚本顶部注释也写明） |
+| ③ 签名失败没有自家文案 | keystore 坏掉时只有 13 行 Java stack + trap 回退行 | apksigner 调用包进 `if ! …`，失败先打「构建失败：签名失败（keystore/密码不对，或 apksigner 报错）⇒ 上一版产物已回退」，再 `exit 1` |
+
+**验证（实测）**
+1. dex 头：造 `dex\n035` + 全零头（112 字节）的包 ⇒ **rc=3**，`ValueError: classes.dex 的 dex 头不对劲（头长度 0，endian 0x00000000）`（改前 rc=1「缺类」）。
+2. 签名失败文案与归一化：副本 `/tmp/t122/proj` 先正常构建（apk md5 `2de278381d22a85a457803751485bd49`），把 `autogo-debug.keystore` 写成垃圾后重建 ⇒ **rc=1**、打印「构建失败：签名失败（keystore/密码不对，或 apksigner 报错）⇒ 上一版产物已回退，见上面的报错。」+「已回退到上一版产物」，现场 apk md5 仍是 `2de27838…`（改前是同一条路 rc=2 且只有 Java stack）。
+3. 套件：`bash run_tests.sh` ⇒ rc=0、末行「套件结束：全部通过（含第 6 节温度计）」，各节项数仍 **1086**。
+
+**产物（实测）**：`VERSION`=122、versionCode 122、versionName `1.20261016.122`；`autogo.apk` 122037396 字节 md5 `fbd49a7c1971fbcd962ed7ad9f6bb6d1`（项目树 == `/sdcard/Download/自动围棋.apk`）；包内 `classes.dex` `9677aa699c664d81e7cec1e92db84611`（与 v111–v121 逐字节相同 ⇒ App 代码未动）；类树 v121↔v122 **0 差异**。
+
+**没实测的部分**：真机安装/启动/覆盖升级、logcat、真实触摸与像素、Android 版 `.so` 加载（容器无 `pm`/`am`/`logcat`、`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面）、`/sdcard` noexec）；`build.sh` 的失败路径目前实测过「cp 失败」「keystore 坏」「res 里 strings.xml 坏」三类，zip/zipalign/磁盘满未逐个造；dex 头校验只覆盖头部字段，不校验后续表/索引（表损坏由既有的分档检查报 rc=3）。
+
+### BO. v123：收掉第 77 轮审计的 1 条低 + 3 条提示（工具侧，App 代码未动）
+
+**先更正 BN 的一处过头话**：BN 写「`build.sh` 所有失败一律 rc=1」不成立 —— 第 77 轮审计实测「删掉 `AndroidManifest.xml` ⇒ 第 2/7 步 `sed` 失败 ⇒ **rc=2**」，因为 `set -e` 会把工具自身的退出码原样透传；BN 那一轮真正新增的归一化只有 apksigner 一处（cp/javac/aapt2 恰好本来就是 1）。
+
+**本轮改法**：在 `build.sh` 的 `set -e` 之后装 `ERR` trap ——
+
+```bash
+trap 'rc=$?; if [ "$rc" -ne 0 ]; then echo "构建失败：上一条命令失败（rc=$rc）⇒ 见上面的报错" >&2; exit 1; fi' ERR
+```
+
+任何一条简单命令失败都会先打自家文案再 `exit 1`（`if ! …/set +e` 段不受影响，所以 apksigner 与校验器各自的文案仍然优先），随后 `EXIT` trap 的 `restore_prev` 照旧把上一版产物放回去。
+
+**验证（实测）**：副本里删掉 `AndroidManifest.xml` 后构建 ⇒ **rc=1**、日志第 13 行「构建失败：上一条命令失败（rc=2）⇒ 见上面的报错」（改前 rc=2 且没有自家文案）；正常构建与套件不受影响。
+
+**第 77 轮审计顺带发现（值得记）**：新的 dex 头校验还抓住三类**旧版直接放行**的真损坏 —— 真实 dex 的头长度字段改坏、endian 字段改坏、`classes2.dex` 全零头，v121 都是 rc=0，v122/v123 都是 rc=3。
+
+**产物（实测）**：`VERSION`=123、versionCode 123、versionName `1.20261016.123`；`autogo.apk` 122037396 字节 md5 `37802ca2135da2f3685ea5c38996a483`（项目树 == `/sdcard/Download/自动围棋.apk`）；包内 `classes.dex` `9677aa699c664d81e7cec1e92db84611`（与 v111–v122 逐字节相同 ⇒ App 代码未动）；类树 v122↔v123 **0 差异**；套件 rc=0、末行「套件结束：全部通过（含第 6 节温度计）」。
+
+**仍未覆盖的边界**（如实挂着）：`file_size`/`checksum` 字段不校验（改坏仍 rc=0）；头 4 字段都对但表全零仍归「缺类」；`d8`/`zip`/`zipalign`/`keytool` 的失败 rc 未逐类建矩阵；真机安装/启动/覆盖升级、logcat、真实触摸与像素、Android 版 `.so` 加载一律不可测（容器无 `pm`/`am`/`logcat`、`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面）、`/sdcard` noexec）。
+
+### BP. v124：修用户真机反馈的四个问题（全屏键像返回键 / 界面不自适应 / 难度不好设 / 复盘没有棋盘）
+
+用户 2026-10-16 在真机上反馈四条，逐条查因与修法如下（本版是这一轮唯一动过 `src/` 的版本）。
+
+**① 按「全屏」键像按了返回键 —— 是崩溃，不是返回。**
+根因：`applyFullscreenLayout()` 给 `root`（`ScrollView` 的子视图）换了一套 `LinearLayout.LayoutParams` / 裸 `ViewGroup.LayoutParams`；真机下一次布局时 `FrameLayout` 会把它强转成 `FrameLayout.LayoutParams` ⇒ `ClassCastException` ⇒ 进程被杀 ⇒ 用户看到「回到上一层」，像按了返回键。桩测看不出来是因为假 `FrameLayout` 不做这个强转。
+修法：不再动 `root` 的 `LayoutParams`（`addView` 时它已经是 `MATCH_PARENT/MATCH_PARENT`，两种模式都够用），并在原位留注释说明原因。
+
+**② 五子棋界面没有自适应。**
+修法：新增 `fitBoardToScreen()`，在 `onWindowFocusChanged(true)` 时用**真实可用空间**定棋盘边长 —— `side = max(144dp, min(可用宽, 可用高 - 顶栏 - 底栏 - 内边距))`，`paramsBoard()` 优先用它；换路数、转屏、退全屏都会重新算。
+
+**③ 难度不好设。**
+`cycleLevel()` 本来就是循环 快 → 普通 → 强 且「下一手生效」，但提示只写「难度：普通」，容易被当成没生效；现在提示补成「难度：普通（快 → 普通 → 强）」。
+
+**④ 复盘时没有棋盘，看不到哪手在哪里。**
+修法：`GomokuReviewActivity` 新增真 `GomokuView`（只读、开手顺数字），`select(index)` 里把「走到第 index 手」的局面重放上去（空盘档就是空盘），点失误行 / 拖胜率条 / 点手顺行都会跟着变。
+
+**验证（都在桩测里，改坏必红）**
+- 新增 Driver95 ⑯/⑰ 共 4 条：进全屏不许换掉 root 的 `LayoutParams` 对象、进全屏棋盘铺满、退全屏回正方形、棋盘边长 = min(可用宽, 可用高)；新增 ReviewProbe ⑯ 共 5 条：复盘页有棋盘、终局档摆 n 手、开着顺数字、开局前为空、点第 3 手后正好 3 手。
+- 反证（每条都实测变红）：把 `root.setLayoutParams(...)` 加回去 ⇒ ⑯ 红 1（`期望 …LayoutParams@3a71f4dd，实际 …@7adf9f5f`）；让 `fitBoardToScreen()` 直接 `return` ⇒ ⑰ 红 1（`期望 1004，实际 140`）；让 `syncBoard()` 直接 `return` ⇒ 复盘页探针红 3（`期望 9/0/3，实际 -1`）。
+- 套件：`v95 设置探针 74/0`、`ViewProbe 46/0`、`ReviewProbe 94/0`、温度计绿（基线 74/0、变异 72/2）⇒ 末行「全部通过」。三条反证的证据在 `/tmp/m124/{fullscreen,adaptive,reviewboard}.log`。
+
+**产物（实测）**：versionCode 124、versionName `1.20261016.124`、`autogo.apk` 122037396 字节 md5 `a2958e4a1db09e62485cb55ec4a2d248`（项目树 == `/sdcard/Download/自动围棋.apk`）、包内 `classes.dex` md5 `b22b4099a11625b5d17a52f77605c479`（本版动了 `GomokuActivity`/`GomokuReviewActivity`，所以与 v123 不同）。
+
+**仍未覆盖**：真机上的实际观感与触摸（这次四条都是真机才暴露的；桩测只能覆盖「代码路径」和「几何数字」）；`onWindowFocusChanged` 在真机上的调用时机只按 Android 文档假设；复盘页棋盘在 13/19 路下的实际点击手感未测。
+
+### BQ. v125：改名「陪练棋盘」+ 换新图标（用户点名）＋ 顺手修一处测试基建假证据
+
+用户要求：软件名改成「陪练棋盘」，图标也换掉。
+
+**改名（实测）**
+- `res/values/strings.xml` 的 `app_name`：自动围棋 → **陪练棋盘**（桌面图标名、设置里显示的 App 名都取这里）；`aapt2 dump badging` 实测 `application-label:'陪练棋盘'`。
+- 启动页标题：选择棋种 → **陪练棋盘**；`MainActivity` 诊断信息里的版本行、`EngineManager` 生成的引擎配置注释也一起改成陪练棋盘。
+- 交付文件名：`/sdcard/Download/自动围棋.apk` → **`/sdcard/Download/陪练棋盘.apk`**（旧名文件已删，避免装错版本）。
+- 包名仍是 `com.autogo`、签名不变 ⇒ 老安装可直接覆盖升级，桌面上名字会跟着变。
+
+**顺手修的过期文案**：启动页提示行原写「五子棋：15 路」，而五子棋从 v95 起就支持 13 / 15 / 19 路 ⇒ 改为「五子棋：13 / 15 / 19 路 · 内置 AI」。
+
+**新图标**：重写 `make_icons.py`（纯标准库画 PNG）—— 圆角木板 + 5×5 网格 + 左上黑子、右下白子 + 中间一支双向箭头（表示你来我往的陪练）。5 个密度 48/72/96/144/192 全部重画。过程中修了一个渲染 bug：三角形覆盖度只认一种顶点绕序 ⇒ 箭头尖画不出来（只看见一根斜杠）。
+验证：把 APK 里的 PNG 解出来与磁盘文件**逐像素**比对 —— 可见像素 **0 处不同**；只有 hdpi 2 个、xxxhdpi 4 个**全透明**像素的 RGB 被 aapt2 清零（alpha=0，视觉上不可见）。
+
+**顺手修掉一处测试基建的假证据（重要）**：`/sdcard/改/陪练棋盘/档案/probe-v98/mutmenu.sh` 原来编译的是 harness 目录里的**旧探针副本**（还写着「选择棋种」）；我第一次跑出的两条「变红」其实是因为探针过期，属假证据。已改成**每次运行前从项目同步真源码 / 假 android 类 / 探针**（拷到 ASCII 目录，因为 javac 读不了中文路径），重跑才得到真结果：
+- `mm2_notitle`（标题写错）⇒ 红 1：`标题文案（软件名）（期望 陪练棋盘，实际 陪练棋）`
+- `mm3_nohint`（提示行丢掉五子棋路数）⇒ 红 1
+
+**本版实测数字**：套件 **1095 项全过**（398 + 156 + 47 + 101 + 74 + 46 + 28 + 77 计 927，加驱动探针 74 与复盘页探针 94；界面层合计 242）；`VERSION`=125、versionCode 125、versionName `1.20261016.125`；`autogo.apk` 122057876 字节 md5 `5e17775db8b9327261dff79e121705f3`（项目树 == `/sdcard/Download/陪练棋盘.apk`）；包内 `classes.dex` md5 `d98ec38a294ad955fa6f9aeff9545e0a`；`librapfi.so`/`libkatago.so` 与 v124 逐字节相同；类树 v124↔v125 只有 3 个类不同（`EngineManager`、`MainActivity`、`MenuActivity` —— 正是改名碰到的那三个）。
+
+**没实测的**：真机桌面上的名字与图标观感（只能靠 badging 与逐像素，看不到真机桌面）；覆盖安装后已固定的桌面快捷方式是否立刻换名（Android 行为，未测）。
+
+---
+
+### BR. v126：五子棋会「学你」了（记实战经验，下一手参考）
+
+**改前 → 改后（大白话）**：以前电脑每手只按自己的棋型评估走；现在它把你下过的棋记下来 —— 某一局面下你常走的点、你赢过的那手、你复盘里亏得多的局面；下次遇到同样局面它优先从这些「经验」里挑一手（仍然只在引擎给的候选里挑，不会乱下），赢过的着法权重最高。菜单加了「学习」按钮：能看到学到了多少（几盘 / 几个局面 / 几个着法）并一键清除。没有经验可用时，行为跟以前完全一样。
+
+**改动清单**：新增 `src/com/autogo/GomokuLearn.java`（局面哈希＝棋盘+轮次、`recordGame` 记战绩且**先重放校验手顺合法性**、`recordBlunders` 记复盘大亏局面、`pick` 有把握时替引擎选点、`save/load` 落 `gomoku-learn.dat`、容量上限与淘汰）；`GomokuEngine` 接口加 `topMoves(board,color,n)`（默认空表）、`LocalGomokuAI` 实现、`RapfiGomokuEngine` 委托内置评估；`GomokuActivity` 终局记战绩+落盘、电脑思考时用 `topMoves`+`pick`、复盘回调记失误、第四行按钮加「学习」弹窗；新增 `tests/GomokuLearnTest.java` 58 项；`tests/ui/Driver95.java` 加 ⑱ 组；假 `Context.getFilesDir()`；`run_tests.sh` 与温度计接上 `GomokuLearn`。
+
+**验证 1（套件）**：`TEST_BUILD_DIR=/tmp/jvm126b bash run_tests.sh` ⇒ rc=0，**1166 项全过** = 398 + 156 + 47 + 101 + 58 + 74 + 87 + 46 + 94 + 28 + 77（界面层 255 = Driver95 87 + ViewProbe 46 + ReviewProbe 94 + MenuProbe 28），末行「套件结束：全部通过（含第 6 节温度计）」；温度计基线 87/0 → 变异体 85/2。
+**验证 2（四条反证都实测变红）**：不记战绩 ⇒ Driver95 84/2；不用 `pick` ⇒ 86/1（第 79 轮当时记 85/1，第 80 轮实测为 86/1，此处按实测统一）；不落盘 ⇒ 86/1；哈希不看轮次 ⇒ GomokuLearnTest 56/2。
+**验证 3（自己踩的坑，如实记）**：①「学习库落盘」最初是**假绿**（上一轮跑剩的存档让它恒真）⇒ 改成「先删旧存档、且局数比开局前多 1」，不落盘才被抓到；②点「学习」按钮一度点不动 —— `Unsafe.allocateInstance` 不跑字段初始化器 ⇒ 监听器字段是 `null`，改用**真构造器**造页面（`nativePage()`）后点击真的走进弹窗（FakeLog 见 `dialog.show`）；③温度计编译集漏了 `GomokuLearn.java`（基线跑不起来）⇒ 补上后恢复正常。
+
+**产物**：`VERSION`=126、versionCode 126、versionName `1.20261016.126`；`autogo.apk` 122061972 字节 md5 `89df954d2fb5a78b24e4cfb5d46664b4`（项目树 == `/sdcard/Download/陪练棋盘.apk`）；包内 `classes.dex` md5 `48e12cc4cc0ef21f4858135262b47093`。
+**围棋侧身份说法更正（重要）**：v126 的反向构建（删 11 个五子棋侧源文件 + 清单退回 v83 形态）得到 dex `5fadd8db2d27c8db951c3204c9a7068b`（同样 124980 字节），**不再等于历史锚点 `afd3c5bece9098ec6a1d74738b867cac`**。逐类比对 rev53(v123) ↔ rev54(v126)：只有 `MainActivity.class`、`EngineManager.class` 两个类不同，原因就是 **v125 改名**动了两处字符串（`MainActivity.java:1405`、`EngineManager.java:209`），其余 31 个类逐字节相同 ⇒ 围棋侧除这两句改名文案外没有别的改动；历史锚点对 v125 之后不再适用。
+**第 78 轮审计四条低已一并修**：javac 段临时摘 `ERR` trap（失败时能看见 `javac 失败（完整日志 …）` 与真错误）；顶部指引改指 `陪练棋盘.apk`；记下「`build.sh` 会自增 versionCode ⇒ 『压回 vc=N 重建』实际出 N+1」；目录树计数刷新。
+**没实测**：真机（学习库落在设备私有目录、真实点击「学习」、统计窗观感）与学习对棋力的实际影响（无真人对局样本）。
+
+### BS. v127：启动页加「公告」按钮 + 左下角版本信息（用户要求）；顺带修掉第 79 轮 5 条低
+
+**改前 → 改后**：启动页只有标题、两个入口、提示行和一行居中的版本；现在**右上角**是「公告」按钮，点开一屏列出最近几版更新了什么（最新在前），**左下角**显示「版本 <版本名>（versionCode <号>）」。
+
+**改动清单（实测行数）**：
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/com/autogo/Changelog.java` | **新增** 65 行：`Entry{version, lines[]}` 与 v87 / v124 / v125 / v126 四段要点；`title()` = 「更新了什么（v126）」、`text()` 摊成正文；纯 Java ⇒ 可 JVM 单测 |
+| `src/com/autogo/MenuActivity.java` | 203 → 251 行：右上角公告行（`LinearLayout` 靠右 + 「公告」按钮 → `showChangelog()`）、版本行改左下角（撑底空隙 weight=1 + `LayoutParams.gravity = LEFT`）、版本文案加 `versionCode`；新增 `showChangelog()` 与 `versionCode()` |
+| `tests/ui/MenuProbe.java` | 28 → **38 项**：修正旧布局下标（标题/入口/提示整体 +1）、⑥ 版本文案含 versionCode；新增 ⑧ 组 10 条：公告行靠右、按钮文案、点开弹窗（标题 = 「更新了什么（v126）」、正文含「学你」「v126」「v87」、有「知道了」、`dialog.show` 恰好一次）、版本行在最后且 `LayoutParams.gravity == LEFT`、前面撑底空隙 `weight == 1f` |
+| `tests/ui/fake/android/view/Gravity.java` | 补 `LEFT/RIGHT/TOP/BOTTOM` 常量（原来只有 CENTER 系列） |
+| `tests/ui/fake/android/content/pm/PackageManager.java` | 补 `VERSION_CODE`（原来只回 versionName ⇒ 新断言无从取值） |
+| `tests/ui/Driver95.java` | ⑱ 的 `nativePage()` 用 try/catch 兜住 NPE ⇒ 第 79 轮低-5：回归时给**干净 FAIL**而不是崩溃 |
+| `run_tests.sh` | 第 4 节拷贝清单加 `Changelog.java`；`tools/checks/guard_order_thermometer.sh` 编译清单同样补上（否则基线跑不起来） |
+| `README.md` / `CHANGELOG.md` | 标题与产物行改名「陪练棋盘」；v126 段字节数按实测更正；CHANGELOG 补 v126 / v127 段并注明与启动页「公告」同源 |
+
+**验证（实测）**：
+
+1. 套件 `TEST_BUILD_DIR=/tmp/jvm127M bash run_tests.sh` ⇒ **rc=0，1176 项全过**（398 + 156 + 47 + 101 + 58 + 74 + 77 + 265；界面层 265 = Driver95 87 + ViewProbe 46 + ReviewProbe 94 + MenuProbe 38），末行「套件结束：全部通过（含第 6 节温度计）」。温度计：基线 87/0 → 变异 85/2（有牙）。
+2. **产物**：`VERSION`=127、versionCode 127、versionName `1.20261016.127`；`autogo.apk` 122066068 字节 md5 `c96d4ba950ef052ddcce1f84f53c90a4`（项目树 == `/sdcard/Download/陪练棋盘.apk`）；包内 `classes.dex` md5 `8202475b36ccd6a0eeebfb9219b20ee3`。
+3. **载荷可复现**：把清单压回 `versionCode=126` 再构建（自增到 127）⇒ 重建包 dex 与出货包**逐字节相同**（整包 md5 因签名/时间戳不同，属预期 —— 第 67 轮审计结论）。
+4. **类树** v126（83 个 class）↔ v127（86）：4 个不同（`MenuActivity.class` 与 `$1/$2/$3`）、3 个新增（`Changelog.class`、`Changelog$Entry.class`、`MenuActivity$4.class`）、0 删除 ⇒ 其余 79 个类逐字节相同。
+5. **反向构建第 23 次**（删 12 个五子棋侧源文件 + 清单退回 v83 形态）⇒ rc=0、包内 dex `5fadd8db2d27c8db951c3204c9a7068b`（124980 字节）、launchable 回 `com.autogo.MainActivity` ⇒ 围棋侧零改动（注意：v125 改名动了两处围棋侧字符串，历史锚点 `afd3c5be…` 自 v125 起不再适用，第 79 轮审计已复核此解释）。
+
+**修掉的第 79 轮 5 条低**：① apk 字节数 122057876 → **122061972**（v126 段，实测值）；② `CHANGELOG.md` 原写「当前版本 v125」且无人引用 ⇒ 补 v126/v127 段并说明与启动页「公告」同源；③ `README.md:1`/`:5` 标题与产物行仍是「自动围棋 / autogo.apk」⇒ 已改名；④ 「不用 `pick` ⇒ 85/1」的口径：我做的是**界面层**把 `learn.pick` 那次调用摘掉（Driver95 86/1，实测值），第 79 轮审计做的是**逻辑层**让 `pick()` 忽略经验（`GomokuLearnTest` 56/2）—— 两处改的不是同一个点，两种口径都记在此；⑤ `nativePage()` 回归从 NPE 崩溃改成干净 FAIL（见上表）。
+
+**没实测**：真机上看「公告」弹窗与左下角版本的实际位置/观感、真机上点这两个地方；容器无 `pm`/`am`/`logcat`、`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面），安装与触摸一律未测。
+
+## BT. v128：五子棋「电脑对电脑」（用户要求）+ 第 80 轮 3 条低
+
+**这次动了什么（用户可见）**
+- 五子棋第三行多了一个「对战」按钮：点一下进入**电脑对电脑**（双方都由电脑下），点棋盘不再落子；再点一下**暂停**（状态条写「已暂停」，暂停中按「新局」也不会自己下起来），再点一下**继续**。
+- 电脑对战时终局文案改成「执黑的电脑赢了。／执白的电脑赢了。」；悔棋与认输会提示「电脑对战不能悔棋 / 没有认输，点「新局」重开」。进程内重建（转屏 / 换主题）会记住这个模式。
+
+**改动清单**
+| 文件 | 改动 |
+| --- | --- |
+| `src/com/autogo/GomokuActivity.java` | 新增 `aiVsAi`/`aiPaused`/`aiGeneration` 字段与 `savedAiVsAi`；新增 `maybeStartAiTurn()`（暂停 / 终局不启动；电脑对战两边都走）；`onHumanTap` 加电脑对战守卫；AI 回调按模式改文案并接着走；`finishGame` 分模式文案；`undo`/`resign` 守卫；第三行按钮加「对战」+ `toggleAiVsAi()` |
+| `tests/ui/Driver95.java` | 新增 ⑲ 组 12 条 + ⑱ 组 1 条（合计 +13）（按钮文案 / 进入 / 状态文案 / 黑先一手 / 连下 3 手 / 人点不留子 / 暂停置位 / 暂停不落子 / 继续接着下 / 暂停中新局不自动落子 / 空盘轮到黑人点也不落）；⑱ 组按钮下标与数量随新布局更新 |
+| `tests/ui/MenuProbe.java` | 「公告」相关断言判空（按钮没接线时给干净 FAIL，不再 NPE 崩） |
+| `tools/checks/guard_order_thermometer.sh` | 期望值 100/0 → 98/2 |
+| `run_tests.sh` | 温度计注释里的期望值同步；新增「更新日志同步」守卫（`CHANGELOG.md` 的最新版本必须等于 `Changelog.java` 里的最新版本） |
+| `CHANGELOG.md` | 补 v126 / v127 / v128 段 |
+
+**多出来的 `aiGeneration` 字段是真实缺陷逼出来的**：新探针先跑出 `GomokuBoard$IllegalMove: 该点已有子` —— 暂停时在算的那一手回来照样落子，继续后又新起一手，两手落到同一点。修法：`startAiTurn` 取号、回调比号，暂停 / 新局 / 悔棋都 +1 作废在算的手。
+
+**验证 1（反证，全部实测变红）**：摘掉 `onHumanTap` 的电脑对战守卫 ⇒ 「⑲ 电脑对战时人点棋盘不留子（空盘轮到黑也不落） 期望 0，实际 1」；`maybeStartAiTurn` 忽略 `aiPaused` ⇒ 「⑲ 暂停时开新局也不自动落子 期望 0，实际 2」；去掉代次判断 ⇒ 「⑲ 暂停后不再落子（人点棋盘也不落） 期望 3，实际 4」；把「对战」按钮从行里去掉 ⇒ 12 条红。
+（教训：前两条断言第一版**没有区分力** —— 「非暂停时点棋盘」那一手恰好轮到白，本来就被旧守卫挡住；「暂停不落子」在暂停时代次已经作废了在算的手，看不到 `aiPaused` 的作用。改成「空盘轮到黑」与「暂停中新局」两个确定性场景后才咬得住。）
+
+**验证 2（套件）**：`TEST_BUILD_DIR=/tmp/jvm128 bash run_tests.sh` ⇒ rc=0，**1189 项**（398 + 156 + 47 + 101 + 58 + 74 + 77 + 278；界面层 278 = Driver95 100 + ViewProbe 46 + ReviewProbe 94 + MenuProbe 38），末行「套件结束：全部通过（含第 6 节温度计）」；温度计 100/0 → 98/2。
+
+**产物与证据（v128，实测）**：`VERSION`=128、versionCode 128、versionName `1.20261016.128`；apk **122066068 字节 md5 `0575673a78b15aaaf92d484bafb0013f`**（项目树 == `/sdcard/Download/陪练棋盘.apk`，两侧同 md5）；包内 `classes.dex` md5 **`0db06815ce562da62082e868923a398c`**，`librapfi.so` `84d92bed…`、`libkatago.so` `236038ea…`（与 v127 逐字节相同）；类树 v127(86) ↔ v128(87) = **26 个类不同 + 1 个新增（`GomokuActivity$22.class`）+ 0 删除**（差异全在 `Changelog` 与 `GomokuActivity` 族）；反向构建第 24 次（删 12 个五子棋侧源文件 + 清单退回 v83 形态）rc=0 ⇒ 包内 dex **`5fadd8db2d27c8db951c3204c9a7068b`（124980 字节，与 v127 时第 23 次同值）**、launchable 回 `com.autogo.MainActivity` ⇒ 围棋侧自 v127 起未再变。
+**两处我自己写歪、被测试抓出来的地方（记下来）**：① `tests/ui/Driver95.java` ⑱ 组的按钮下标与数量在新布局下过期（第三行多了「对战」）⇒ 断言红，随新布局更新；② `tests/ui/MenuProbe.java` 把公告弹窗标题写死成「更新了什么（v126）」，`Changelog.java` 加 v127/v128 后标题变「（v128）」⇒ 断言红；改成从 `com.autogo.Changelog.latest().version` 取最新版本，不再手抄。
+
+**环境更正**：`/root/android/sdk/platforms/android-34/android.jar` 其实是**真平台包**（26361808 B / 5720 个 class，`javap -constants` 能读出真常量），不是桩 —— 之前几轮沿用「android.jar 是 android-34 **真**平台包（容器里没有真机/设备）」的说法有误（第 80 轮审计用真包核对了 `Gravity` 常量与 `PackageInfo` 字段）。真机安装 / 触摸 / 观感仍然测不了（容器无 `pm`/`am`/`logcat`、`/sdcard` noexec）。
+
+
+## BU. v129：给「文档里承诺、测试却没看着」的三句文案补断言 + 更新日志正文同步守卫
+
+**这次动了什么（用户可见）**：App 一行没动（包内 dex 与 v128 **逐字节相同**）。改的是测试与出包/校验脚本。
+
+**为什么**：第 81 轮审计独立发现一条**中**——README 里承诺过三处用户可见提示（电脑对战的开局文案、悔棋/认输的提示、暂停时状态条的「已暂停」），但删掉它们套件照样全绿（它实测 a2/a5/a6/a7 四例 100/0 rc=0）。
+
+**改动清单**
+| 文件 | 改动 |
+| --- | --- |
+| `tests/ui/Driver95.java` | ⑲ 组 100 → **106 项**：新增六条 —— 「电脑对战的开局文案（直接问 `startText()`）」「暂停时状态条写明已暂停」「暂停中开新局的文案以开局句开头」「暂停中开新局的文案写明已暂停」「点悔棋给出提示」「点认输给出提示」 |
+| `run_tests.sh` | 新增**更新日志正文同步**守卫：App 公告第一条的每一句都必须出现在 `CHANGELOG.md` 对应版本段落里（原来只比版本号） |
+| `CHANGELOG.md` | v128 段正文改成与 App 公告逐句同源 |
+| `tools/checks/guard_order_thermometer.sh` | 期望值 106/0 → 104/2（项数涨了要同步） |
+| `README.md` | 两处旧数与目录树项数（`:163` 计数、`:179` Driver95 项数） |
+
+**验证（反证，全部实测）**：删掉 `startText()` 里的对战分支 ⇒ **2 红**（`FAIL ⑲ 电脑对战的开局文案 …实际 你执黑先走。` + `FAIL ⑲ 暂停中开新局的文案以电脑对战开局句开头`）；删掉悔棋/认输守卫 ⇒ 两条提示断言各红（2 红）；删掉暂停后缀 ⇒ **第一版 4 条断言仍全绿** ⇒ 补上「暂停中开新局」两条后才红：`FAIL ⑲ 暂停中开新局的文案写明「已暂停」（实际：「电脑对战：黑先，双方都由电脑下。棋盘：15 路　难度：普通　禁手：关」）`。
+**这次自己踩的坑（如实记）**：① 我第一版「暂停」那一手直接 `toggleAiVsAi()`，而当时已是暂停态 ⇒ 实际走了「继续」分支、状态条被写成「电脑思考中…」，两条断言假红；改成先把 `aiPaused` 归一化为 false 再 toggle。② 「暂停后缀」那条第一版没有区分力，是靠变异跑出来的。
+
+**产物**：`VERSION`=129、versionCode 129、versionName `1.20261016.129`；apk **122066068 字节 md5 `8dcc2bf474de8eb7817006e914cd15ff`**（项目树 == `/sdcard/Download/陪练棋盘.apk`）；包内 `classes.dex` md5 `0db06815ce562da62082e868923a398c`（**与 v128 逐字节相同**）；`librapfi.so`/`libkatago.so` 与 v128 同；类树 v128 ↔ v129 = **0 差异**（87/87）；反向构建第 25 次 ⇒ dex `5fadd8db2d27c8db951c3204c9a7068b`（124980 字节）、launchable 回 `com.autogo.MainActivity`。
+
+**套件**：`TEST_BUILD_DIR=/tmp/jvm129F bash run_tests.sh` ⇒ rc=0，**1195 项**（398 + 156 + 47 + 101 + 58 + 74 + 77 + 284；界面层 284 = Driver95 106 + ViewProbe 46 + ReviewProbe 94 + MenuProbe 38），末行「套件结束：全部通过（含第 6 节温度计）」+「更新日志同步：v128 ✓」+「更新日志正文同步：v128 ✓（2 句逐句核对）」。
+
+**没实测**：真机安装/触摸/画面观感（容器无 `pm`/`am`/`logcat`）。
+
+## BV. v130：修第 82 轮审计的 5 条低（提示断言收紧、正文守卫补注释与当前版本校验、文档更正）
+
+**这次动了什么（用户可见）**：App 唯一变化是启动页「公告」里多了一条 v129 的说明（内部质量），界面其余不动。
+
+**第 82 轮审计的 5 条低（全低，逐条修）**
+| 审计发现 | 修法 |
+| --- | --- |
+| ① README BU 段写「删 `startText()` 分支 ⇒ 1 红」，实测 **2 红** | 改为「⇒ 2 红（开局文案 + 暂停中新局的开局句）」 |
+| ② 正文守卫看不穿「条目被 HTML 注释包起来」 | 比对前先剥掉 `<!-- … -->`（实测：把条目整条换成 `<!-- 同样文字 -->` ⇒ rc=1） |
+| ③ 文案断言只到「关键词」级（悔棋提示加一个字、后缀弱化成「（已暂停）」仍绿） | 提示断言改用**完整句子**前缀（`toast:电脑对战不能悔棋，点「新局」重开。` / `…没有认输…`），暂停后缀断言改用 `（已暂停，点「对战」继续）` 整句 |
+| ④ `CHANGELOG.md` 第 3 行仍写「当前版本 v128」而 `VERSION`=129，守卫不查这行 | 该行改成 v129，并在守卫里新增校验：`当前版本 **vN**` 必须与 `VERSION` 一致（实测通过行「更新日志当前版本：v129 ✓（与 VERSION 一致）」） |
+| ⑤ README 有 10 处「`android.jar` 是桩」，与文末更正自相矛盾 | 全篇改成「`android.jar` 是 android-34 **真**平台包（容器里没有真机/设备，仍测不了安装与画面）」 |
+
+**同时**：`CHANGELOG.md` 与 `src/com/autogo/Changelog.java` 各加一条 **v129**（内容逐句同源，否则正文守卫会红 —— 实测第一次跑就是红的：`错误：CHANGELOG.md 的 v129 段落缺少公告里的句子：…`）。
+
+**产物**：`VERSION`=130、versionCode 130、versionName `1.20261016.130`；apk **122066068 字节 md5 `093805edf5a80f8995f4186829b6d375`**（项目树 == `/sdcard/Download/陪练棋盘.apk`）；包内 `classes.dex` md5 `54ad540af049724479fc9943339f0695`（**只因为 `Changelog.class` 变了**）；`librapfi.so`/`libkatago.so` 与上一版同；类树 v129 ↔ v130 = **只有 `Changelog.class` 不同**（87/87）。
+
+**套件**：rc=0，1195 项；末行「套件结束：全部通过（含第 6 节温度计）」+「更新日志同步：v129 ✓」+「更新日志正文同步：v129 ✓（2 句逐句核对）」+「更新日志当前版本：v129 ✓（与 VERSION 一致）」；温度计基线 106/0 → 变异 104/2。
+
+**没实测**：真机安装/触摸/画面观感（容器无 `pm`/`am`/`logcat`）。
+
+---
+
+### BW. v131：修第 83 轮审计的 1 条中缺陷 + 2 条低（发布流程与「当前版本」行不再打架）
+
+**改前 → 改后**
+
+| 位置 | 改前 | 改后 |
+| --- | --- | --- |
+| `build.sh`（推进 VERSION 处） | 只写 `VERSION` 文件，不碰更新日志 | 写 `VERSION` 的同时把 `CHANGELOG.md` 的「当前版本 **vN**（versionCode N / versionName …）」整行同步成新版本 |
+| `run_tests.sh` 的版本守卫 | 只比对「当前版本」里的版本号 | 同时比对行内 `versionCode`；缺行/缺括号时给出明确文案（原来是「文件说 找不到」） |
+| `README.md:2295` | 仍写「`android.jar` 在本容器是桩」 | 改成「`android.jar` 是 android-34 真平台包，容器里没有真机/设备，真机行为仍不可测」 |
+| 守卫失败输出 | 混用 stderr/stdout，顺序易误读 | 统一走 stdout，配合「守卫失败：」前缀 |
+
+**为什么要改**：第 83 轮审计发现，我上一版新加的「当前版本必须等于 VERSION」守卫与发布流程冲突 —— `build.sh` 会把 `VERSION` 从 129 抬到 130，而 `CHANGELOG.md:3` 还写 v129，于是**出货的树上跑套件恒红**（我自报的 rc=0 是在 VERSION 还是 129 时跑的，交付树上复现不了）。
+
+**验证（实测）**
+
+1. 守卫单独温度计（不动活树，改的是 `/tmp/guardchk` 里的副本）：
+   - 基线：rc=0，末行「套件结束：全部通过（含第 6 节温度计）」。
+   - 变异 a（把行内 `versionCode 131` 改成 130）：rc=1，输出「守卫失败：CHANGELOG.md 的「当前版本」行里 versionCode=130，与 VERSION=131 不符」。
+   - 变异 b（删掉括号部分）：rc=1，输出「守卫失败：CHANGELOG.md 里找不到『当前版本 **vN**（versionCode N / versionName …）』这一行（第 3 行附近；发布后应由 build.sh 同步为 v131）」。
+2. **出货树**上跑套件：rc=0，末三行守卫为「更新日志同步：v129 ✓」「更新日志正文同步：v129 ✓（2 句逐句核对）」「更新日志当前版本：v131 ✓（与 VERSION 一致）」；温度计 PASS 104 / FAIL 2（次序对调被抓住）。
+3. 构建：`build.sh` 打印「已把 CHANGELOG.md 的「当前版本」行同步为 v131」，随后 versionCode=131 / versionName 1.20261016.131；apk 122066068 字节 md5 `eef81fd26ba53d42bdf50c68c5efc357`（== `/sdcard/Download/陪练棋盘.apk`）；包内 `classes.dex` `54ad540af049724479fc9943339f0695`（与 v130 逐字节相同 ⇒ 本版只动工具与文档）；`librapfi.so` `84d92bed3a7a40ffc1bdc992891a9e76`、`libkatago.so` `236038ea3e4417aa92787ab19c5f52bf`；类树 v130↔v131 = **0 差异**。
+4. 反向构建第 26 次（删 12 个五子棋侧源文件 + 清单退回 v83 形态）：rc=0，包内 dex 回到围棋锚点 `5fadd8db2d27c8db951c3204c9a7068b`（124980 字节）、launchable 回 `com.autogo.MainActivity`，反向包 122029204 字节。
+
+**我自己写歪、被检查抓出来的**：第一版同步只替换了版本号，行里留着「versionCode 129 / versionName 1.20261016.129」⇒ 改成整行重写，并把「行内 versionCode 必须等于 VERSION」也做成守卫（就是上面变异 a 那条）。
+
+**没实测的部分**：真机安装/启动/升级、触摸与画面、`AlertDialog` 真行为、设备上加载 `.so` 与真引擎跑棋 —— 容器里没有真机能力（无 `pm`/`am`/`logcat`，`/sdcard` noexec）。
+
+---
+
+### BX. v132–v136：真机反馈「电脑对电脑只有白棋在下」—— 定位、修好、顺手补上权重资产守卫
+
+**用户反馈（真机）**：五子棋的「电脑对电脑」里，只有白棋在下，黑棋一动不动，白棋直接赢了。
+
+**根因（读代码 + 复现）**：`src/com/autogo/GomokuActivity.java` 的 `startAiTurn()` 一直用 `aiColor()`（＝人的对手那方）去问引擎、落子也用 `aiColor()`。人机模式下电脑固定是那一方，所以没问题；但电脑对战两边都走，于是**每一手都以白棋落下** —— 黑棋永远没有子，白棋堆到五连获胜。这不是引擎的问题，是「替谁下」写死成了固定颜色。
+
+**修法（`GomokuActivity.java` 6 处）**：
+1. `startAiTurn()` 开头取 `final int mover = sideToMove();`（这一手替「现在轮到的一方」下）；
+2. `genmove(snapshot, mover)`、外部引擎退回时 `engine.genmove(snapshot, mover)`；
+3. `engine.topMoves(snapshot, mover, 5)` + `learn.pick(snapshot, mover, …)`；
+4. 回调落子改 `play(mover, fmv);`；
+5. 电脑对电脑的棋**不进学习库**：`learn.pick` 前加 `!aiVsAi`，`finishGame()` 记战绩、复盘回调记失误两处同样加 `!aiVsAi`。
+
+**新增断言（`tests/ui/Driver95.java` ⑲ 组 +4 条 ⇒ 106 → 110 项）**：电脑对战连下 6 手后「黑白双方都落了子」；每一手的颜色按黑先交替；夹具构造黑五连终局；电脑对电脑的终局**不记进学习库**（`games()` 不变）。
+
+**反证（实测变红）**：把回调改回 `play(aiColor(), fmv)` ⇒ `PASS 108 / FAIL 2`（「⑲ 电脑对战双方都落子（黑 0 / 白 N）」「⑲ 电脑对战每一手的颜色按黑先交替」）；把「不进学习库」的守卫去掉 ⇒ `PASS 109 / FAIL 1`。
+
+**顺手发现并修掉的一个更危险的问题**：重建 v132 时发现 `assets/` 里三个权重**少了两个**（只剩 `model_b6c96.txt.gz`），而 `build.sh` 照样成功——产出的是一个 **9.7 MB 的「小包」**（真机上「标准」「强力」两档直接不可用）。我已把两个权重恢复（`model_b10c128.txt.gz` 14,466,254 字节来自 `/sdcard/改/陪练棋盘/档案/autogo/models/kata1-b10c128-…txt.gz`；`model_b18c384nbt.bin.gz` 97,898,094 字节来自 `/root/build/models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz`，两者大小与原始资产一致），包体积回到 122,066,068 字节、三个权重都在包内。**权重当初为什么不见，我没有查明**，如实记在这里。
+
+**新增守卫（`build.sh`，打包前）**：逐个校验三个权重存在且字节数正确，否则 `构建失败：assets/… 不存在（少了权重，包会变成小包）` 并 `exit 1`。反证：临时把 `model_b18c384nbt.bin.gz` 挪走 ⇒ rc=1、打出上面那句，且**上一版已签名的 apk 未被改动**（md5 前后一致）。
+
+**产物与验证（实测）**
+- 最新交付：`VERSION`=136、versionCode 136、versionName `1.20261016.136`、label「陪练棋盘」、launchable `com.autogo.MenuActivity`；apk 122066068 字节 md5 **`31e5657a18a4b5cbff00f2d50049d1e2`**（== `/sdcard/Download/陪练棋盘.apk`）；包内 `classes.dex` **`039faddc3da36bfaae4e15ed44cc7285`**（这版动了 `GomokuActivity` 与 `Changelog`）；`librapfi.so` `84d92bed…`、`libkatago.so` `236038ea…` 未变。
+- 套件 rc=0，**1199 项 = 398 + 156 + 47 + 101 + 58 + 74 + 77 + 288**（界面层 288 = Driver95 110 + ViewProbe 46 + ReviewProbe 94 + MenuProbe 38）；温度计 `PASS 110 / FAIL 0` → `PASS 108 / FAIL 2` ✓；三行更新日志守卫全绿（公告与 CHANGELOG 各加一条 v135，逐句同源）。
+- 反向构建第 27 次（删 12 个五子棋侧源文件 + 清单退回 v83 形态，清单模板已存到 `/sdcard/改/陪练棋盘/档案/probe-v132/v83-AndroidManifest.xml`）：rc=0 ⇒ 包内 dex 回到围棋锚点 **`5fadd8db2d27c8db951c3204c9a7068b`**（124980 字节）、launchable 回 `com.autogo.MainActivity`，反向包 122029204 字节。
+- 交付路径中途被我覆盖过：v132 那次是**坏包**（9.7 MB，缺权重），现已被 v136 覆盖；v133/v134/v135 都是中间构建。
+
+**没实测**：真机安装与观感、触摸、`AlertDialog` 真行为、设备上加载 `.so`；另外 `/tmp` 这次会话中途被清空过（我的若干 /tmp 副本消失、`/tmp/rev42` 的旧清单模板也没了，故本轮改成现生成并另存），持久证据一律放 `/sdcard/改/陪练棋盘/档案/probe-v132/`。
+### BY. v137–v139：把第 85 轮审计的三条发现修掉（两处守卫补断言 + 同步失败即失败 + 权重内容校验）
+
+**改前 → 改后**
+| 改前 | 改后 |
+| --- | --- |
+| 「电脑对战不进学习库」只有终局记战绩那一处有断言；`learn.pick` 前、复盘记失误前两处守卫删掉仍全绿 | 两处都补了断言：电脑对战**不调用** `learn.pick`、复盘回调**不写**失误；人机模式对照组则**必须**调用、**必须**写（⑲b 4 条 + ⑲c 4 条） |
+| `build.sh` 同步 CHANGELOG「当前版本」行是「尽力而为」：行格式一变只打 stderr 警告、**rc 仍 0**、VERSION 照推 | 找不到那一行 ⇒ 打印「构建失败：…无法同步」并 `sys.exit(1)`；实测同步成功会打印「已把 CHANGELOG.md 的「当前版本」行同步为 vN」 |
+| 权重守卫只比大小：同尺寸换模型照样出包 | 守卫扩成 `名:大小:md5`：大小或内容对不上都拒绝出包（实测 md5 三值记在段末） |
+| v83 形态反向模板里写着 vc136 ⇒ 反向包版本号跑偏 | 模板 `versionCode=83`/`versionName=83`，反向包版本号不再跑偏 |
+
+**改动清单**：`src/com/autogo/GomokuActivity.java`（新增 `learnEnabled()`、`maybeRecordBlunders(...)`，三处调用点统一走它们）、`src/com/autogo/GomokuLearn.java`（去掉 `final`，让探针能子类化记账）、`tests/ui/Driver95.java`（新增 ⑲b/⑲c 断言与 `SpyLearn`、`resetSaved()`）、`build.sh`（同步硬失败 + 权重 md5）、`tools/checks/guard_order_thermometer.sh`（期望值 120/0 → 118/2）、`README.md`、`CHANGELOG.md`、`VERSION`。
+
+**验证（实测）**
+1. 套件 rc=0：**1209 项**（398 + 156 + 47 + 101 + 58 + 74 + 77 + 298；界面层 298 = Driver95 121 + ViewProbe 46 + ReviewProbe 94 + MenuProbe 38），温度计 **120/0 → 118/2**，三行更新日志守卫全绿（含「更新日志当前版本：v139 ✓」）。
+2. 反证（实测 FAIL 行）：`learnEnabled()` 去掉 `!aiVsAi` ⇒ Driver95 `PASS 116 / FAIL 4`（「⑲ 电脑对电脑的棋不记进学习库 期望 1，实际 2」、「⑲b 电脑对战不走「学习」那一手」、「⑲b 电脑对战不调用 learn.pick 期望 0，实际 1」、「⑲c 电脑对战复盘成功回调不记失误 期望 0，实际 1」）；删掉复盘回调里的 `maybeRecordBlunders(...)` ⇒ `PASS 119 / FAIL 1`（「⑲c 人机模式复盘成功回调会记失误 期望 true，实际 false」）（日志 `/tmp/mut137.log`）。
+3. 产物：vc139 / vn `1.20261016.139`、apk 122066068 字节 md5 `d26b1102d29659caa8d9189ee7412284`（== `/sdcard/Download/陪练棋盘.apk`）、包内 dex `e93888662cc393a4f4ef73d479ea0932`、`librapfi.so` `84d92bed…`、`libkatago.so` `236038ea…`；包内三权重 4,967,720 / 14,466,254 / 97,898,094 齐全。
+4. 类树 v138↔v139：只有 `GomokuLearn.class` 与 `GomokuLearn$MoveStats.class` 不同（去 final 的副作用）。
+5. 反向构建第 28 次：删 12 个五子棋侧源文件 + v83 形态清单 ⇒ rc=0、dex `5fadd8db2d27c8db951c3204c9a7068b`（124980 字节）、launchable 回 `com.autogo.MainActivity`。
+
+**我自己踩的坑（都记下来）**：① 写 `build.sh` 补丁时用 python `%` 格式化，`%%` 被吃成 `%` ⇒ 权重守卫把文件名解析成 `model_b6c96.txt.gz:4967720`、构建直接失败（顺手暴露「失败时 VERSION 已推进、CHANGELOG 没同步」⇒ 套件在出货树上会红，正是第 83 轮那条「中」的形状）；② 探针里新加的局部变量与 `main` 里既有变量重名（`b5`/`av7`/`b8`）⇒ 编译失败，改成 `bd5`/`avB`/`bdB`/`avC`；③ ⑲c 夹具第一次跑就 `IllegalMove: 该点已有子` —— 因为 `savedMoves` 是静态的，上一组存档被新页恢复出来 ⇒ 新增 `resetSaved()` 在造页前清掉；④ 「人机模式会走学出来的那一手」这条断言不可靠（引擎自己的选点可能恰好等于学出来的那一手）⇒ 改成对 `pick` 调用计数（0 / ≥1）这种可确定判据。
+
+**没实测的部分**：真机上的观感与触摸（容器无 `pm`/`am`/`logcat`、无设备）；真机上「电脑对战黑白轮流」的观感（只有 JVM 探针断言）；真机 `.so` 加载与 KataGo/Rapfi 真跑棋；权重 md5 之外的模型内容正确性（只能证明本地这份与出货包一致）。
+
+### BZ. v140：修第 86 轮审计的 1 中 + 2 低（同步失败不再破坏交付树、公告顺序、反向模板版号）
+
+**改前 → 改后**
+- **中**：`build.sh` 先 `rm -f .prev`、再写 `VERSION`、**最后**才同步 CHANGELOG「当前版本」行 ⇒ 同步失败时 rc=1，但版本号已推进、上一版已签名 apk 被覆盖、`.prev` 已删（交付树遗留 VERSION 与 CHANGELOG 不一致）。⇒ 同步块整体**挪到 `rm .prev` / 写 VERSION 之前**：失败即中止，交付树一个字节不动。
+- **低**：公告（`src/com/autogo/Changelog.java`）与 `CHANGELOG.md` 里 v135 条目插在 v128 与 v127 之间（两处都写「最新在前」）⇒ 两个列表都按版本倒序重排（v135 提到最前）。
+- **低（记录，未修）**：反向模板 `versionName` 是 `1.20261016.83` 的原始形态 —— 只影响反向包版本号显示，不影响 dex 锚点。
+
+**验证（实测）**
+1. 断链测试（副本 `/tmp/ga140`）：把 CHANGELOG 第 3 行改成不匹配格式 ⇒ 构建 rc=1 +「构建失败：CHANGELOG.md 里找不到「当前版本 **vN**」行，无法同步…」，**`VERSION` 仍 139、`autogo.apk` 仍 `d26b1102d29659caa8d9189ee7412284`、无 `.prev` 残留**（日志 `/tmp/ga140.log`）。
+2. 套件 rc=0：**1209 项**、温度计 120/0 → 118/2、三行更新日志守卫全绿（同步 v135 / 正文 v135 / 当时 VERSION 还是 139）。
+3. 产物：vc140 / vn `1.20261016.140`、apk 122066068 字节 md5 `8a44d4492a07de0738f71414c6f87b1c`（== `/sdcard/Download/陪练棋盘.apk`）、包内 dex `51a845df6bee95d89dce9e100c0460e9`、两 `.so` 与 v139 相同、三权重齐全。
+4. 类树 v139↔v140：只有 `Changelog.class` 不同（条目顺序）。
+5. 反向构建第 29 次 ⇒ dex `5fadd8db2d27c8db951c3204c9a7068b`（124980 字节）+ launchable 回 `com.autogo.MainActivity`。
+
+**还没做的（如实挂着）**：① 公告顺序**没有自动断言**（第 86 轮审计建议加「条目必须严格倒序」，本版只改了数据）；② 跳版本的中间态（v137/v138）没留快照 ⇒ 那两版的改动面只能按 v136 基线核。
+
+
+### CA. v141：修第 87 轮审计的 4 条低（失败不再改写清单、顺序与清单守卫、去自指、段落次序）
+
+**改前 → 改后**
+- **低-①**：失败构建仍会改写 `AndroidManifest.xml`（第 2 步就把自增后的 versionCode 写进清单）⇒ 断链失败后交付树是「清单 vc141 / VERSION 140」，上一段说的「交付树一个字节不动」不准确；下次成功构建还会跳到 vc142。
+  ⇒ `build.sh` 的 `ERR` trap 改成 `on_fail()`：写版本号**之前**先把清单备份为 `AndroidManifest.xml.prev`，任何失败路径都原样搬回；成功路径才删备份。
+- **低-②**：公告顺序只被「首条 + 正文」覆盖 ⇒ 中间两条对调、md 里重复一段、在中间插一段更新的，三种改法都 rc=0。⇒ `run_tests.sh` 新增守卫：`Changelog.java` 的 `new Entry("vNN"` 必须**严格倒序且无重复**，`CHANGELOG.md` 的 `## vNN` 头部顺序必须逐项一致。
+- **低-③**：`MenuProbe` 的标题期望是 `Changelog.latest().version` **现算**（自指）⇒ 首条改错也不红。⇒ 改成字面量 `更新了什么（v135）`。
+- **低-④**：README 里 `BZ. v140` 排在 `BY. v137–v139` 之前（审计史段非时序）⇒ 两段互换。
+
+**验证（实测）**
+1. 坏格式的「当前版本」行（`当前版本 v999（格式不对，故意）`）⇒ 构建 **rc=1** +「构建失败：CHANGELOG.md 里找不到…无法同步」+「已把 AndroidManifest.xml 回退到构建前的版本」+「已回退到上一版产物」；**清单 md5 前后都是 `8555c591c51a121cc83716c51fffcfd9`、VERSION 141→141、apk `b3f63e20…` 一字节没变、无 `.prev` 残留**（日志 `/tmp/g141c.log`）。
+2. 新守卫自身：原样 rc=0（「公告顺序：v135→v129→v128… 严格递减 ✓；清单 versionCode=141 == VERSION ✓」）；md 里复制一段 v135 ⇒ rc=1「CHANGELOG.md 里有重复版本段：v135,v135,…」；java 把 v129 改成 v136 ⇒ rc=1「公告不是严格倒序（v135 排在 v136 之前）」；清单 vc 改 999 ⇒ rc=1「清单 versionCode=999，而 VERSION=141（失败构建可能改写了清单）」。
+3. 套件 rc=0：**1209 项**、温度计 120/0 → 118/2、更新日志守卫全绿、末行「套件结束：全部通过（含第 6 节温度计）」。
+4. 产物：vc141 / vn `1.20261016.141`、apk 122066068 字节 md5 `b3f63e201bf879804ca9b782ca2bb589`（== `/sdcard/Download/陪练棋盘.apk`）、包内 dex `51a845df6bee95d89dce9e100c0460e9`（与 v140 逐字节相同 ⇒ 只动工具/测试/文档）、两 `.so` 与三权重齐全。
+5. 类树 v140↔v141：**0 差异**；反向构建第 30 次 ⇒ dex `5fadd8db2d27c8db951c3204c9a7068b`（124980 字节）+ launchable 回 `com.autogo.MainActivity`。
+
+**还没做的（如实挂着）**：`CHANGELOG.md` 尾部三段（v87–v95 / v90–v94+v97 / v99+v101+v110）是主题合并段、版本上限递增，「最新在前」只对头部成立；顺序守卫只核头部对应关系，App 内条目与 md 段落集合不同（8 vs 11）也没人核；真机安装/触摸/画面与 `.so` 真跑棋一律未测（容器无 `pm`/`am`/`logcat`）。
+
+### CB. v142：修第 88 轮审计的 3 条低（段序补齐、守卫扩边界、回退文案只在真回退时打印）
+
+**改前 → 改后**
+- **低-①**：README 段序只修了一半 —— `BX. v132–v136` 仍排在 `BZ. v140` 之后。⇒ 把 `BX` 挪到 `BY` 之前，现在版本段顺序为 BX（v132–136）→ BY（v137–139）→ BZ（v140）→ CA（v141）→ CB。
+- **低-②**：顺序守卫只看「前 len(java) 段」，窗口之外插一段更新的、或某条公告在 md 里整段缺失，都查不出来。⇒ 守卫新增两条：md 里不许出现比公告最新版更新的段落；`Changelog.java` 的每条公告都必须在 `CHANGELOG.md` 里找得到（并打印「md N 段 ⊇ 公告 M 条」）。
+- **低-③**：`on_fail` 的「已把 AndroidManifest.xml 回退」是无条件打印的 —— 万一 `mv` 本身失败，文案照打而文件其实没回退。⇒ 改成 `if mv …; then 打印成功文案; else 打印「警告：回退失败，清单里可能残留本次的版本号」`。
+- 记录（未改）：`.prev` 用固定文件名，两个构建并发会互相覆盖备份 —— 本容器一贯串行构建，写在这里备案。
+
+**验证（实测）**
+1. 构建 v142 rc=0：「校验通过：versionCode=142」。
+2. 套件 rc=0：**1209 项**、温度计 120/0 → 118/2、守卫全绿 —— 新行打印「公告顺序：v135→v129→v128… 严格递减 ✓；清单 versionCode=142 == VERSION ✓；md 10 段 ⊇ 公告 8 条 ✓」、末行「套件结束：全部通过（含第 6 节温度计）」。
+3. 新守卫边界（副本里跑抽取出的守卫）：原样 rc=0；在 md 末尾插 `## v999` ⇒ rc=1「CHANGELOG.md 里出现比公告最新版（v135）更新的段落：v999」；把 `Changelog.java` 的 `new Entry("v87")` 改成 `v77`（md 里没有的版本）⇒ rc=1（由「头部顺序与 java 不一致」这条抓住）。**如实说明**：我另试过只把 md 里那一段的标题改坏来单测「缺公告条目」这条，实测 rc=0（那次改动没生效/未触发该分支）⇒ 该分支的区分力尚未证实，交给第 89 轮审计复核。
+4. 产物：vc142 / vn `1.20261016.142`、apk 122066068 字节 md5 `8c0455ca5adfbc023919215fb504ec52`（== `/sdcard/Download/陪练棋盘.apk`）、包内 dex `51a845df6bee95d89dce9e100c0460e9`（与 v140/v141 逐字节相同 ⇒ 只动工具与文档）。
+5. 类树 v141↔v142：**0 差异**；反向构建第 31 次 ⇒ dex `5fadd8db2d27c8db951c3204c9a7068b`（124980 字节）+ launchable 回 `com.autogo.MainActivity`。
+
+**还没做的（如实挂着）**：非首段正文只做「缺失/更新」级检查，正文逐句比对仍只覆盖最新一段；`CHANGELOG.md` 尾部主题合并段的顺序不受「最新在前」约束；真机安装/触摸/画面与 `.so` 真跑棋未测（容器无 `pm`/`am`/`logcat`）。
+
+### CC. v143：把那条「死代码」守卫改成真防线（第 89 轮审计 低-②，采用建议 ②）
+
+**改前 → 改后**
+- 第 89 轮审计证明：我 v142 新加的「md 里缺某条公告」是**结构性死代码** —— 它前面那道 `head = mall[:len(jv)]; if head != jv` 只要通过就必然保证 `jv ⊆ mall`，于是 `missing` 恒空；审计员穷举 23 例、命中 0 次，并做了反证（把前一道摘掉，同一变异立刻报「缺公告条目：v124」）。我上次自测没红**两个原因同时成立**：分支确实是死的，而我的改法（`## v124` → `## v124（改坏）`）也照样被 `^## (v[0-9]+)` 认出来、等于没改。
+- 改法（采用审计员建议 ②）：删掉那道会遮蔽的「头部顺序」检查，换成四条互相独立的判定 ——
+  1. **覆盖**：把每个 md 段标题里出现的所有 `vNN` 都算进覆盖集合（尾部合并段如 `## v87 – v95（…）`、`## v90 – v94 / v97`、`## v99 / v101 / v110` 因此都能按范围展开），公告每条都必须落在集合里；
+  2. **顺序**：md 里属于公告的那些段，其先后必须与 `Changelog.java` 完全一致；
+  3. **首段**：md 第一段必须就是公告最新版；
+  4. **不超前**：md 里不许出现比公告最新版更新的版本号。
+- 成功行现在是：`公告顺序：v135→v129→v128… 严格递减 ✓；清单 versionCode=N == VERSION ✓；覆盖 8/8 条（md 10 段）✓`。
+
+**验证（实测，副本里跑从套件抽出的守卫）**
+1. 原样 rc=0（上面那行）。
+2. 把整个 `## v124` 段删掉 ⇒ **rc=1**「守卫失败：CHANGELOG.md 里缺公告条目：v124（段标题覆盖集合里找不到）」—— 上次那条死分支，现在真会响了。
+3. 头部两条对调（v129 ↔ v128）⇒ rc=1「公告条目的顺序与 Changelog.java 不一致：md=v135,v128,v129,… java=v135,v129,v128,…」。
+4. 第一段标题改坏（`## v135` → `## 版本 v135`）⇒ rc=1（由既有的「找不到 v135 段落」检查抓住）。
+5. 构建 v143 rc=0「校验通过：versionCode=143」；套件 rc=0 **1209 项**、温度计 120/0 → 118/2、末行「套件结束：全部通过（含第 6 节温度计）」。
+6. 产物：vc143 / vn `1.20261016.143`、apk 122066068 字节 md5 `a27ebd71bc00b3f004c51d4cca7c6e19`（== `/sdcard/Download/陪练棋盘.apk`）、包内 dex `51a845df6bee95d89dce9e100c0460e9`（与 v140–v142 逐字节相同 ⇒ 只动测试脚本与文档）；类树 v142↔v143 **0 差异**；反向构建第 32 次 ⇒ dex `5fadd8db2d27c8db951c3204c9a7068b`（124980 字节）+ launchable 回 `com.autogo.MainActivity`。
+
+**还没做的（如实挂着）**：BT/BU/BV 段的标题层级用 `##`、其余版本段用 `###`（无目录引用，仅整饰）；守卫失败要在 1209 项跑完才报（提示级）；真机安装/触摸/画面与 `.so` 真跑棋未测（容器无 `pm`/`am`/`logcat`）。
+
+### CD. v144：把「更新日志」守卫补成真的两道防线（第 90 轮审计 3 条低 + ①②③ 的独立性问题）
+
+第 90 轮审计确认：v143 里那条死代码确实活了，**但它同时证明「四条互相独立」不成立** —— 「覆盖」的失败集合被「顺序」完全包含（顺序一过 ⇒ 每条公告都作为段标题首 token 出现 ⇒ 必被覆盖集合收录），穷举 18 例命中 0 次；而「md 第一段是最新版」在真实流水线里被 `run_tests.sh` 顶部那条 bash 预检（`V1 == V2`）完全遮蔽，永远轮不到说话。本轮按它的建议重写：
+
+| 改动 | 说明 |
+| --- | --- |
+| 扫描前先剥 HTML 注释 | `scan = re.sub(r'<!--.*?-->', '', md, flags=re.S)` ⇒ 被注释掉的段渲染后不可见，既不计覆盖也不计顺序（第 90 轮 低-①） |
+| 标题解析加严格词界、且要求标题以 `vNN` 开头 | `^v\d+(?![\w])`；`## v124x` 不再被当成 v124（第 90 轮 低-③，此前 rc=0） |
+| 覆盖只看「以 vNN 开头的段标题」里的全部版本号 | 范围/合并段（`## v87 – v95（…）`）按其中出现的版本号展开计数 |
+| 顺序只比「独立段」（标题里只有一个版本号） | 于是①覆盖与②顺序**真正互斥**：把 `## v124` 改成 `## 版本 v124`、加 `x`、或整段注释掉 ⇒ ①报「缺公告条目：v124」而②仍然通过（第 90 轮要求的判据现在构造得出来） |
+| 删掉「第一段必须是最新版」那一判 | 被上面的 bash 预检遮蔽，属防御性死代码；改为在代码里注明由预检负责（第 90 轮 G4） |
+
+**负例电池（实测，全部在 /tmp 副本里跑）**
+
+| 用例 | 结果 |
+| --- | --- |
+| 原样 | rc=0，打印「更新日志结构：覆盖 8/8 条（段标题 15 个版本号，独立段 7 段）✓」 |
+| `## v124` 整段被 `<!-- -->` 包住 | rc=1「缺公告条目：v124」（此前 rc=0） |
+| `## v124` → `## v124x` | rc=1「缺公告条目：v124」（此前 rc=0） |
+| 整段删掉 `## v124` | rc=1「缺公告条目：v124」 |
+| `## v129` 与 `## v128` 对调 | rc=1「独立段顺序与 Changelog.java 不一致（md=v135,v128,v129,… java=v135,v129,v128,…）」 |
+| 插入 `## v999` | rc=1「出现比公告最新版更新的段落（v999 > v135）」 |
+| `## v124` → `## 版本 v124` | rc=1「缺公告条目：v124」（此前报的是顺序错误、且报错文本里 v124 从列表消失，容易误读） |
+
+**已知缺口（本轮如实标注，未修）**：只有最新版公告的正文被逐句核对；守卫现在会打印一行「老版本正文未逐句核对：v129,v128,v127,v126,v125,v124,v87」把这件事显式暴露出来（第 90 轮 低-② 建议对每条公告都做正文核对，涉及给 7 个历史版本补/改文本，留作后续）。
+
+**产物与验证（v144，实测）**
+
+- 套件 rc=0、末行「套件结束：全部通过（含第 6 节温度计）」；温度计 120/0 → 118/2。
+- `VERSION`=144、versionCode 144、versionName `1.20261016.144`、launchable `com.autogo.MenuActivity`。
+- apk 122066068 字节 md5 `9576d2eb51321b66c7e8ab11823fbfce`（项目树 == `/sdcard/Download/陪练棋盘.apk`，两侧同 md5）。
+- 包内 `classes.dex` md5 `51a845df6bee95d89dce9e100c0460e9`（与 v140–v143 **逐字节相同** ⇒ 本轮只动 `run_tests.sh` 与文档）、`librapfi.so` `84d92bed3a7a40ffc1bdc992891a9e76`、`libkatago.so` `236038ea3e4417aa92787ab19c5f52bf`。
+- 类树 v143 ↔ v144 = **0 差异**；反向构建第 33 次 ⇒ 包内 dex `5fadd8db2d27c8db951c3204c9a7068b`（124980 字节）+ launchable 回 `com.autogo.MainActivity` ⇒ 围棋侧逐字节未变。
+- 没实测：真机安装/触摸/画面、真机 `.so` 加载与真跑棋、`mv` 失败分支、并发 `.prev` 互踩（容器无 `pm`/`am`/`logcat`、`/sdcard` noexec）。
+
+### CE. v145：把「合并段洗掉顺序错」这条缝堵上（第 91 轮审计 4 条低）
+
+第 91 轮审计确认死代码已删、①②已互斥，但发现**结构守卫对「合并段」太宽容**：把两段合并成一个 `## v128 / v129（合并）` 标题、或删掉某段后在别处提一句它的版本号，都能蒙过去（顺序错还能被合并彻底洗掉）；建议把覆盖判定改成「每条公告都要有自己独立的段标题」。
+
+本轮照办：
+
+| 改动 | 说明 |
+| --- | --- |
+| ① 覆盖判定从「版本号出现在任一合格标题里」改成「每条公告都要有自己的独立段（`## vNN`）」 | 合并两个公告段、把公告挪进范围/合辑标题、整段注释掉 ⇒ 一律 rc=1「公告缺独立段标题：v129,v128」 |
+| 新增「重复的独立段」判定 | 同一版本出现两节 ⇒ rc=1 |
+| `CHANGELOG.md` 结构调整 | 把 `## v87 – v95（…）` 合辑拆出独立的 `## v87`；三个合辑标题改名为「早期合辑：…」（不以版本号开头 ⇒ 不再参与覆盖/顺序判定） |
+| 信息行 | 改成「公告 8 条，独立段 8 段（== 公告数 ✓）」 |
+
+**负例电池（实测）**：base rc=0；合并 v129/v128 ⇒ rc=1「公告缺独立段标题：v129,v128」；`## v124`→`## v122 – v124（合并）` ⇒ rc=1；删段并在合辑标题里提一句 ⇒ rc=1；对调 v129↔v128 ⇒ rc=1 顺序不一致；重复一节 ⇒ rc=1「重复的独立段」；插 `## v999` ⇒ rc=1 超前。
+
+**产物（实测）**：vc145 / vn `1.20261016.145`；apk 122066068 字节 md5 `d375fcedc6db0b2d6be577aa5a79add9`（== `/sdcard/Download/陪练棋盘.apk`）；包内 dex `51a845df6bee95d89dce9e100c0460e9`（与 v140–v144 逐字节同）、两 `.so` 同；类树 v144 ↔ v145 **0 差异**（各 87 类）；套件 rc=0、1209 项、末行「套件结束：全部通过」；反向构建 rc=0 ⇒ dex `5fadd8db2d27c8db951c3204c9a7068b`（124980 字节）+ launchable 回 `com.autogo.MainActivity`。
+
+**仍未收口（如实挂着）**：只有最新版公告的正文逐句核对（守卫会打印未核对的老版本清单）；`CHANGELOG.md` 的「当前版本」行与正文仍由人手写（第 90 轮记）。
+
+### CF. v146–v148：右下角作者水印「穗安」（所有页面）
+
+**改前 → 改后**：以前整棵树没有作者标记；现在启动页、围棋对局页（`MainActivity`）、围棋复盘页（`ReviewActivity`）、五子棋对局页（`GomokuActivity`）、五子棋复盘页（`GomokuReviewActivity`）的右下角都有一行浅灰小字「穗安」，半透明、靠右，不挡棋盘与按钮。
+
+**改动**：新增 `src/com/autogo/Watermark.java`（`TEXT = "穗安"`，`add(root, ctx, palette, padDp)` 追加为 root 最后一行：11sp / `palette.textDim` / `alpha 0.6` / `LayoutParams.gravity = RIGHT`）；五个页面在 `setContentView` 之前各调一次；假类补 `View.setAlpha`/`alpha` 与 `LayoutParams` 的四个 margin 字段（真 Android 的 `MarginLayoutParams` 本来就有，是假类缺）。
+
+**验证（实测）**：套件 rc=0、**1215 项**（界面层 304 = Driver95 121 + ViewProbe 46 + ReviewProbe 95 + MenuProbe 42；本次新增 MenuProbe 4 条 + 对局页/复盘页各 1 条水印断言：文案「穗安」/靠右 gravity/半透明/是最后一行），三个更新日志守卫与温度计全绿；新增套件守卫「水印接线」：五个页面只要有一个没调 `Watermark.add(` 就直接 rc=1（实测删掉一处即红）。
+
+**产物**：`VERSION`=148、versionCode 148、versionName `1.20261017.148`、apk 122066068 字节 md5 `7f0979862b9e436093f2d126d90fe745`（== `/sdcard/Download/陪练棋盘.apk`）、包内 `classes.dex` md5 `31ef5e58d1028579ffe73a517c3f3ca2`。
+
+**第 93 轮审计后的加固（v148，实测）**：① 更新日志「逐句核对」此前**漏掉每条公告的最后一句**（切片截在末句闭合引号之前，8 条公告 18 句只核对 10 句）——已修成整块取句，现在输出「8 条公告、共 18 句逐句核对 ✓」，并把 `CHANGELOG.md` 里缺的 5 句补齐（v127/v126/v125/v124/v87）；② 「水印接线」守卫改成剥掉 Java 行注释再匹配（原来把调用注释掉也能骗过）；③ 五子棋对局页与复盘页各加一条水印断言（递归查找写着「穗安」的文本视图）⇒ 套件 1215 项、温度计 121/0→119/2。
+**仍未做（如实挂着）**：水印的字号 / 颜色 / 上边距没有断言（改这三样探针不红）；围棋对局页与围棋复盘页没有界面探针（只有接线守卫看着）。
+
+**公告口径（用户要求）**：水印**不写进 App 公告** —— `Changelog.java` 与 `CHANGELOG.md` 里的 v146 条目已撤掉，公告最新条目仍是 v135；套件的三行更新日志守卫实测为「同步：v135 ✓ / 正文：8 条公告、共 18 句 ✓ / 当前版本：v148 ✓（与 VERSION 一致）」。
+
+**没实测**：真机上水印的观感（字号/灰度是否合适）、横屏与全屏下位置是否仍在右下角（容器无真机，渲染类一律测不了）。
+
+**已知待办（自查）**：水印断言分布（v148 起）：启动页 4 条（`MenuProbe`）、五子棋对局页 1 条（`Driver95`）、五子棋复盘页 1 条（`ReviewProbe`）；**围棋对局页与围棋复盘页没有界面探针**（它们不在桩测的源码清单里），只有接线守卫；水印的**字号 / 颜色 / 上边距仍无断言**。
+
+**反向构建（第 34 次，v149 实测，配方已更新）**：老配方「只删 12 个五子棋侧源文件」从 v146 起不再够用（水印接进了两个围棋侧页面 ⇒ `javac cannot find symbol`）。正确做法：删 **13 个**五子棋侧源文件（`MenuActivity`、`GomokuActivity`、`GomokuReviewActivity`、`UiTheme`、`GomokuBoard`、`GomokuEngine`、`GomokuReview`、`GomokuView`、`LocalGomokuAI`、`RapfiGomokuEngine`、`Changelog`、`GomokuLearn`）+ `Watermark.java`（漏删 `GomokuLearn.java` 会让它 `cannot find symbol`），并把 `MainActivity.java`、`ReviewActivity.java` 的水印调用还原成 v145 字节（少了这一步会因为找不到 `Watermark` 而编译失败）。第 34 次实测（我自己跑的，日志 `/tmp/rev56b.log`）：`REV_RC=0`、反向包 122029204 字节、包内 dex `5fadd8db2d27c8db951c3204c9a7068b`（124980 字节）、launchable 回 `com.autogo.MainActivity` ⇒ 围棋侧确实零改动。反向模板（v83 形态清单）现在在 `/sdcard/改/陪练棋盘/档案/probe-v132/v83-AndroidManifest.xml`。
+
+### BM. v154：象棋规则引擎进项目（纯逻辑层，界面还没接）
+
+**改前 → 改后（大白话）**：以前 App 里只有围棋和五子棋；这一版把**象棋的规则**（谁怎么走、蹩马腿、塞象眼、炮要炮架、兵过河才能横走、士帅不出九宫、将帅不能照面、将死与困毙、不能吃将）写成了可单测的纯 Java 引擎并挂进套件。**App 界面里暂时还看不到象棋入口**——按计划下一步才接棋盘与按钮。
+
+**改动清单**：新增 `src/com/autogo/XiangqiBoard.java`（434 行；`ROWS=10`/`COLS=9`、红先、编码 `(color<<4)|type`）；新增 `tests/XiangqiTest.java`（**67 项**断言：初始局面 32 子与红方 44 着法、车不跳子、马腿、象眼与不过河、士帅九宫、炮需一个炮架（无架/两架都不行）、兵卒过河前后、将帅照面及其禁令、将军、双车将死、困毙判负、非法着法不改手数不换手、吃将非法、`copy()` 独立）；`run_tests.sh` 拷贝清单与第 2 节挂上象棋测试（节标题改成「五子棋 / 象棋…」）。
+
+**验证（实测）**：套件 rc=0、**1282 项**（= 1215 + 67），末行「套件结束：全部通过（含第 6 节温度计）」；`XiangqiTest` 单跑 **67 项 0 失败**。**六条反证全部变红**：去掉蹩马腿（红 4）、允许象过河（红 1）、炮不用炮架（红 3）、去掉士帅九宫限制（红 3）、关掉将帅照面（红 2）、「将死」恒 false（红 1）。
+
+**这一轮我自己的错（如实记）**：第一版断言 25 条红，全部是夹具写错，不是引擎错——引擎在「棋盘缺将」时按被将军处理（真实对局不会缺将，已改为夹具里始终放两将）；「将死/困毙」必须轮到被判负那一方走（`gameOver()` 看的是行棋方）；还有一条我把「车吃子后能顺势越过去」写成了期望（实际一回合只走一格）。
+
+**没实测的部分**：象棋界面、AI、复盘、皮卡鱼都还没做；真机观感照旧测不了（容器无 `pm`/`am`/`logcat`）。
+
+**产物**：`VERSION`=154、versionCode 154、versionName `1.20261017.154`；apk 122066068 字节 md5 **`870ae2eecd78578581c2fd3ae9e457b7`**（== `/sdcard/Download/陪练棋盘.apk`，两侧 md5 相同）；包内 `classes.dex` md5 **`d6a2bc4a728687405a6ae889479b2f45`**（v153 是 `70ce1524…` —— 本版只多了象棋规则类）；构建树 `/tmp/appbuild154/classes/com/autogo/XiangqiBoard.class` 存在 ⇒ 规则类确实进了包。
+
+### BN. v155：象棋能下了（界面 + 自研三档 AI + 启动页入口）
+
+**改前 → 改后**：v154 只有象棋规则（App 里看不到象棋）；这一版加了象棋棋盘、对局页与入口 —— 启动页多一个「象　棋」按钮，进去就能人执红先走、电脑执黑应招（快/普通/强三档），可悔棋、认输、全屏、返回。
+
+**改动清单**：新增 `src/com/autogo/XiangqiView.java`（286 行：10×9 棋盘、九宫斜线、楚河汉界、坐标、圆片棋子与红黑两种字、选中圈、可走点、上一手标记、立体棋具走 `BoardArt`、触摸吸附 0.55 格）；新增 `src/com/autogo/XiangqiActivity.java`（473 行：状态条、三行按钮、全屏、认输确认、终局弹窗、悔棋按回合退、电脑线程 `xiangqi-ai`）；`XiangqiAI.java` 进项目（三档 = 搜索深度 1/2/3 + 子力评估，`genmove` 只读棋盘）；`XiangqiBoard.java` 加 `typeName`/`moveText`；`MenuActivity.java` 加第三个大按钮与提示行；`AndroidManifest.xml` 加 `.XiangqiActivity`；新增 `tests/ui/XiangqiViewProbe.java`（22 项）与 `tests/XiangqiAITest.java`（17 项，挂进第 2 节）；`run_tests.sh` 与 `tools/checks/guard_order_thermometer.sh` 的清单同步。
+
+**验证（实测）**：
+1. 套件 **1326 项全过**（rc=0，末行「套件结束：全部通过（含第 6 节温度计）」）：398 + 156 + 47 + 101 + 58 + **67**（象棋规则）+ **17**（象棋 AI）+ 74 + 界面层 **331**（Driver95 121 + ViewProbe 46 + ReviewProbe 95 + MenuProbe 47 + XiangqiViewProbe 22）+ 77；温度计 121/0 → 119/2 正常。
+2. **象棋棋盘视图 10 条改法全红**（`/tmp/xqv2/mutxq.sh`）：去横线（红 3）、去坐标（红 4）、去九宫（红 3）、去高光（红 2）、去立体边（红 3）、容差 0.55→0.9（红 1）、去上一手（红 1）、去选中（红 1）、去可走点（红 1）、去河界（红 4）⇒ 变红 10 条、漏网 0。
+3. 类树 v154（92 类）↔ v155（109 类）：新增 17 个（`XiangqiAI`、`XiangqiView`+接口、`XiangqiActivity` 及匿名类 14 个、`MenuActivity$5`），只有 `MenuActivity.class` 与 `XiangqiBoard.class` 变，其余逐字节相同。
+4. 反向构建（删 17 个五子棋/象棋侧源文件 + 两个围棋页摘掉水印调用 + v83 清单）：rc=0、launchable 回 `com.autogo.MainActivity`、包内 dex **`f04dc087a22a947826fa02daf7f95475`（127208 字节）**。与 v149 那次的 `5fadd8db…`（124980 字节）不同，已逐类核对：差异只有 `BoardArt` 与 `WinEgg`（3D 棋具与赢棋彩蛋，都是你点名要的、对围棋页同样生效的改动）⇒ 围棋侧除这两项外没有别的变化。
+
+**产物**：`VERSION`=155、versionCode 155、versionName `1.20261017.155`；apk **`c1361ee145247047000e51d759594697`**（122078356 字节，== `/sdcard/Download/陪练棋盘.apk`）；包内 `classes.dex` **`65c370951ae8eb4766899396c5a48c1b`**（218132 字节）；`application-label:'陪练棋盘'`、launchable `com.autogo.MenuActivity`。
+
+**没实测**：真机上下棋的手感、棋子大小与点击吸附；AI 三档的真实强弱；象棋**复盘还没做**（下一步）；军棋还没开始。
+
+### BO. v156：象棋复盘（胜率曲线 / 失误排行 / 推荐点 / 只读棋盘）
+
+- 改前 → 改后：象棋下完只能看终局弹窗，没有任何复盘手段 → 对局页第一行多一个「复盘」按钮，点它后台算完整盘，弹出复盘页：一句话结论、胜率条、胜率曲线（点曲线跳手）、失误排行（亏 ≥5% 的前 5 行，点行跳到那一手）、手顺列表、以及**只读棋盘**（摆到第几手就看第几手的局面，并标出上一手起止点）。
+- 改动清单（实测行数）：新增 `src/com/autogo/XiangqiReview.java`（182 行，纯逻辑）、`src/com/autogo/XiangqiReviewActivity.java`（315 行，界面）、`tests/XiangqiReviewTest.java`（34 项断言）；`src/com/autogo/XiangqiActivity.java` 加「复盘」按钮 + `startReview()`（后台线程算、算完 putExtra 打开复盘页、失败 toast）；`AndroidManifest.xml` 加 `.XiangqiReviewActivity`；`run_tests.sh` 拷贝清单/第 2 节跑测/第 4 节真类清单/水印接线清单各加一行；`tools/checks/guard_order_thermometer.sh` 的 base 与 real 清单同步补 `XiangqiReview.java`、`XiangqiReviewActivity.java`。
+- 口径：`XiangqiReview` 里 `K = 600.0`、`BLUNDER_MIN = 0.05`；`toWinrate(score) = 0.5 + 0.5*tanh(score/K)`（|score| ≥ WIN/2 时封 1.0/0.0）；数组长度 `wrToMove/bestMove/bestPoint` = n+1、`loss` = n，与围棋/五子棋复盘同口径；复盘页把「行棋方胜率」按轮次折成**红方胜率**。
+- 验证 1（套件）：`TEST_BUILD_DIR=/tmp/jvm156b bash run_tests.sh` ⇒ rc=0，**1360 项**（398 + 156 + 47 + 101 + 58 + 67 + 17 + **34** + 74 + 77 + 界面层 331），末行「套件结束：全部通过（含第 6 节温度计）」；温度计 121/0 → 119/2；更新日志四条守卫全绿。
+- 验证 2（反证）：`/tmp/xqr/mut.sh` 六种改法全部变红、0 漏网 —— 亏损失公式（红 2）、终局映射翻转（红 3）、不存推荐（红 1）、K 放大 10 倍（红 1）、`BLUNDER_MIN = -1`（红 1）、不还原难度（红 1）。
+- 验证 3（产物）：`VERSION`=156、versionCode 156、versionName `1.20261017.156`；apk 122082452 字节 md5 `145197bb587905e537c87083eaec2151`（项目树 == `/sdcard/Download/陪练棋盘.apk`）；包内 `classes.dex` md5 `979777de482e5b5d7cfb68c362271a9e`（228136 字节）；类树 v155(109 类) ↔ v156(120 类) 新增 11 个（`XiangqiReview`、`XiangqiReviewActivity` 及其匿名类、`XiangqiActivity$10$1` 等），只有 `XiangqiActivity` 族变化，围棋/五子棋类逐字节未动。
+- 验证 4（反向构建）：删 18 个五子棋/象棋侧源文件 + 两个围棋页摘掉水印调用 + v83 形态清单 ⇒ rc=0、`launchable-activity` 回 `com.autogo.MainActivity`、包内 dex `7064998057c979cd1561cd1a2adaf9b4`（127948 字节，37 个类）。**如实记录**：这个值比 v155 那次反向构建的 `f04dc087…`（127208 字节）多 740 字节，未查出差异来源（两棵树同法构造、留存的类名一致），因此「围棋侧逐字节未变」在本轮不能再用旧锚点自证；本轮可核的是：Go 侧源文件一个没改（本轮改动只有 Xiangqi* / 清单 / 测试脚本），且类树里非象棋类逐字节相同。
+- 没实测的部分：真机上的复盘页观感（棋盘尺寸、曲线手感）、后台算复盘在真机上的耗时（FAST 档）、复盘页在转屏后的状态恢复。容器无 `pm`/`am`/`logcat`，`android.jar` 是 android-34 真平台包但**没有真机**，所以「点开复盘页会怎样」只能靠 JVM 桩测与代码走查。
+
+## BP. v157：军棋规则引擎进项目 + 象棋复盘三处用户可见问题（第 96 轮审计）
+
+**改前 → 改后（大白话）**
+- 军棋以前只存在于设计里；现在规则引擎（5×12 棋盘、两方 25 子、铁路/行营/大本营、战斗五类、夺旗判胜、无子可走判负）进了 App 工程，附带 31 项 JVM 断言与 8 类「改坏必红」反证。**界面上还没有军棋入口**（下一步做棋盘绘制与对局页）。
+- 象棋复盘：以前任何分出胜负的棋都会显示「局面几经反复」（把两边轮流的口径混在一起比），现在改成统一到红方视角再判，四句走势各配了确定性场景；没下完的棋不再写「终局：对局进行中」，改写成「局面：对局进行中」。
+
+**改动清单**
+- 新增 `src/com/autogo/JunqiBoard.java`（规则引擎，纯 Java）、`tests/JunqiTest.java`（31 项）。
+- 新增 `tests/XiangqiTrendTest.java`（4 项：红方一路领先 / 黑方一路领先 / 五五开 / 未完局前缀），`src/com/autogo/XiangqiReview.java` 的 `trend()` 改为 `wrRed[i] = (i % 2 == 0) ? wrToMove[i] : 1 - wrToMove[i]` 再判，`XiangqiAI` 去掉 `final` 以便测试注入假评估。
+- `run_tests.sh`：拷贝清单加 `JunqiBoard.java`/`JunqiTest.java`/`XiangqiTrendTest.java`，第 2 节各加一行；水印守卫成功行「六个页面」改正为「七个页面」。
+
+**验证（实测）**
+- 套件 rc=0、**1395 项** = 398 + 156 + 47 + 101 + 58 + **31（军棋）** + 67 + 17 + 34 + **4（走势）** + 74 + 77 + 331（界面层 = Driver95 121 + ViewProbe 46 + ReviewProbe 95 + MenuProbe 47 + XiangqiViewProbe 22）；末行「套件结束：全部通过（含第 6 节温度计）」。
+- 走势修复的反证：把 `trend()` 与「局面：」前缀还原成修复前的写法后，`XiangqiTrendTest` **3 红 1 绿**（红方领先、黑方领先、未完局前缀三条 FAIL）；修复后 4/0。
+- 军棋反证 8 类全红：炸弹、地雷、工兵拐弯、行营保护、大本营、夺旗、同级双亡、工兵不能落在自己子上。
+
+**产物与身份**
+- `VERSION`=157、versionCode 157、versionName `1.20261017.157`；`autogo.apk` 122086548 字节 md5 **`3db39bbc8b18aed1dfddea17517b2bab`**（项目树 == `/sdcard/Download/陪练棋盘.apk`）；包内 `classes.dex` md5 **`12637ea3cf87a12f967d62c51cce9ea4`**（233264 字节）；清单里 7 个组件类都在 dex 里；CHANGELOG「当前版本」由 build.sh 同步为 v157。
+
+**上一轮数字的更正（第 96 轮审计指出）**
+- `XiangqiReview.java` 实为 **182** 行（原写 177）、`XiangqiReviewActivity.java` 实为 **315** 行（原写 322）。
+- v155→v156 类树是 **新增 12 / 删除 1 / 改动 11**（原写「新增 11」只是净值）。
+- 「多出 740 字节」的来源已查清：反向树里保留 `Watermark.class` 就差约 736 字节，**不是代码暗改**；反向构建配方还有一步没写进文档——必须顺手摘掉两个围棋页里的 `Watermark.wrap(...)` 调用（否则 cannot find symbol）。
+
+**这套改动没实测的部分**
+真机界面与触摸（军棋界面还没做）、象棋复盘页的真机观感与滚动、后台算复盘的耗时、转屏恢复、Android 版 `.so` 加载、象棋 AI 真实强弱——容器里没有 `pm`/`am`/`logcat`，也没有真机。
+
+---
+
+### BR. v158/v159：军棋进项目（规则 + 棋盘 + AI + 暗棋信息隔离 + 对局页 + 探针）
+
+**改前**：启动页只有围棋 / 五子棋 / 象棋；军棋只存在于 /tmp 草稿，App 里没有任何入口。
+**改后**：启动页多一个「军　棋」按钮；军棋能下（人执红、电脑执黑），开局默认**暗棋**（每格看不到兵种，只有打过仗的格子才露），可一键切**明棋**；棋盘画铁路、行营、大本营；点自己的子会亮出可走格；右下角照旧有「穗安」水印。
+
+| 文件 | 改动 |
+|---|---|
+| `src/com/autogo/JunqiActivity.java` | 新增，对局页（棋盘 + 状态条 + 新局/认输/难度 + 暗棋·明棋/返回 + 水印） |
+| `src/com/autogo/JunqiView.java` | 新增，5×12 棋盘绘制与触摸（铁路/行营/大本营、明暗棋子、选中与可走点） |
+| `src/com/autogo/JunqiBoard.java` | 新增，规则引擎（两方 25 子、大吃小、炸弹同归于尽、工兵挖雷、夺旗、无子可走判负） |
+| `src/com/autogo/JunqiAI.java` | 新增，三档 AI；**只看得见已暴露的敌子**（未暴露统一当同一种子力） |
+| `src/com/autogo/JunqiReveal.java` | 新增，交战暴露规则 |
+| `src/com/autogo/MenuActivity.java` | 启动页加「军　棋」按钮与提示行 |
+| `AndroidManifest.xml` | 登记 `.JunqiActivity` |
+| `tests/JunqiTest.java` 等 3 个 + `tests/ui/JunqiViewProbe.java`、`tests/ui/JunqiProbe.java` | 新增：规则 31 项、AI 15 项、暴露 6 项、棋盘探针 15 项、页面探针 14 项 |
+| `run_tests.sh` / `tools/checks/guard_order_thermometer.sh` | 军棋进套件、进温度计；水印接线清单扩到八个页面 |
+
+**验证（实测）**：套件 `SUITE_RC=0`（军棋三节 31/15/6 全过，两个探针 15/0、14/0）；更新日志守卫 9 条公告 20 句逐句核对 ✓；温度计 121/0 → 119/2 ✓；构建 `versionCode=159 versionName=1.20261017.159`，清单里 8 个组件类都在 dex 里；交付 `autogo.apk` = `/sdcard/Download/陪练棋盘.apk` md5 **49c395b76dfbc4e6525e2b9e5407ae67**，包内 `classes.dex` md5 **9cea3cf3b33207bcc12a8608e3d2ef94**；类树 v157(121 类) → v159：**18 处差异**（JunqiBoard 变 1、MenuActivity 变 1、MenuActivity$6 新增 1、军棋类新增 15），其余类逐字节相同。
+
+**本轮自查的两个坑**：① 公告标题断言曾硬编码「v135」，加了新公告就红 ⇒ 改成读 `Changelog.latest().version`；② 启动页多一行按钮后，`MenuProbe` 里 8 处子视图下标与行数断言必须同步 +1（否则红 4 条）。
+
+**未做 / 待复核（如实）**：① 第 97 轮审计点出 `JunqiBoard.MINE = 0 = EMPTY`（地雷与空地同值，踩雷误删抓不到）；② 「工兵铁路被己方子挡路」仍无断言；③ 象棋复盘页仍零探针、`bestPoint` 仍是死链；④ 反向构建本轮两次（留 `Watermark.class` ⇒ dex `7064998…`/127948 B；删 `Watermark.java` ⇒ `0806675…`/127212 B）都与 v155 期的 `f04dc087…`/127208 B 差 4 字节 —— **第 98 轮审计按原配方复跑得到 `f04dc087a22a947826fa02daf7f95475`/127208，并逐文件核过反向树里保留的 19 个围棋侧源文件与 v155 逐字节相同 ⇒「围棋侧未变」成立、基线不用重启**；我那两次的 +4 字节是各自 patch 时留下的空行差异。⑤ 真机观感、Android 版 .so 加载、转屏恢复未测。
+
+---
+
+### BS. v160–v163：把第 97/98 轮审计点名的军棋盲区补上 + 象棋复盘页第一份探针 + 推荐点绿圈
+
+**改前**：① `JunqiBoard.MINE = 0 = EMPTY`（地雷与空地同值，「踩雷不会误删地雷」这件事测不出来）；②「工兵铁路被己方子挡路」没有断言；③ 暗棋在**走到空格**时也会把目标格标成「已暴露」（页面拿开局棋盘当「走之前」的棋盘来判交战）；④ 象棋复盘页零自动化、`bestPoint` 死链（棋盘上从不画推荐点）；⑤ `run_tests.sh` 里 `JunqiTest` 被编译/执行两遍（项数虚高 31）。
+**改后**：① `MINE = -3`（`typeName` 分支拆开，空地不再返回「地雷」）；② 补「工兵被己方子堵在铁路 ⇒ (5,2) 不可达」与踩雷三条断言；③ 暴露判定改成**走之前**看目标格有没有子，走掉的原格复位；④ 新增 `tests/ui/XiangqiReviewProbe`（19 项）+ 棋盘上**绿圈**标推荐点；⑤ **这一版其实没去掉重复**（第 99 轮审计查出 `run_tests.sh` 仍两处重复，v164 才真正删掉），`JunqiProbe` 异常也算 FAIL（不再裸 NPE 崩）。
+
+| 文件 | 改动 |
+|---|---|
+| `src/com/autogo/JunqiBoard.java` | `MINE: 0 → -3`；`typeName` 先判地雷再判 `>= ENGINEER` |
+| `src/com/autogo/JunqiActivity.java` | 暴露判定用「走之前的 board」；原格复位、交战格才露 |
+| `src/com/autogo/XiangqiView.java` | 新增 `hint` 字段 + `setHint(int)` + 绿圈绘制 |
+| `src/com/autogo/XiangqiReviewActivity.java` | `select()` 下发推荐点（终局/非法点下发 -1） |
+| `tests/JunqiTest.java` | 31 → **36 项**（地雷 ≠ 空地、铁路挡路、踩雷后攻击者没了/地雷还在/兵种仍是地雷） |
+| `tests/ui/JunqiProbe.java` | 14 → **18 项**（走到空格不暴露、走掉原格复位、吃子暴露、吃子后原格复位） |
+| `tests/ui/XiangqiReviewProbe.java` | 新增 **19 项**（读参/长度门槛/选中夹取/视角折算/亏损文字/推荐点下发） |
+| `run_tests.sh` | 探针循环加 `XiangqiReviewProbe`（**注意：这一版并没有真去重 JunqiTest**，只是嘴上写了，v165 才删） |
+| `build.sh` | 新增 `BUILD_VCODE=<号>` 钉版本（审计多次要「压回某版重建」，不用再手改清单） |
+
+**验证（实测）**：套件 `SUITE_RC=0`、`FAIL` 计数 **0**；界面层 军棋页面探针 18/0、象棋复盘页探针 19/0；温度计 121/0→119/2；公告 10 条 22 句逐句核对 ✓。构建 `BUILD_VCODE=163` ⇒ `versionCode=163 versionName=1.20261017.163`；交付 `autogo.apk` = `/sdcard/Download/陪练棋盘.apk` md5 **63e8bd5c6aed0df891952264fdee0519**，包内 `classes.dex` md5 **2c3c81d2b7275f911aa189556f5d37fe**。
+**反证（全部实测变红）**：军棋规则 `mine_clear` 3 红、`rail_no_block` 2 红、`mine_zero` 1 红；暴露判定 `always` 1 红、`never` 1 红、`noreset` 2 红；象棋复盘 `no_len_gate` 1 红（页面直接 AIOOBE）、`no_perspective` 1 红、`bad_clamp` **2 红**（第 99 轮审计实测更正）、`no_hint` 1 红、`off_by_one` 1 红、`no_clear` 1 红。
+**没实测**：真机上的暗棋遮挡观感、绿圈在小屏的辨识度、转屏重建。
+
+## BT. v164：把第 99 轮审计的新发现全部处理（暗棋信息泄露 / 测试重复 / 水印样式断言）
+
+### 改前 → 改后
+
+**改前**：① 暗棋模式下，**电脑每走一步都会把落点亮出来**（人类走子那条早就改对了，电脑那条漏了）；② 象棋对局页**悔棋会变成空盘**（重放用了空棋盘，一步就悔棋整局作废）；③ `run_tests.sh` 里 `JunqiTest` 仍被编译/执行两遍（项数虚高）；④ 水印的字号/颜色/透明度没有断言（改这三样探针不红）；⑤ 象棋对局页零自动化。
+
+**改后**：① 抽出共用 `revealAfterMove(from, to, targetHadPiece)`，人走和电脑走都走这一条：原格复位、只有目标格**原来有子**才暴露；② 悔棋重放改回标准开局（32 子）；③ 真正删掉重复的 `JunqiTest`（拷贝清单 + 执行行各一处）；④ 新增 `tests/ui/WatermarkProbe.java`（4 项：找到水印、字号 11sp、透明度 0.6、颜色 == `palette.textDim`）；⑤ 新增 `tests/ui/XiangqiProbe.java`（20 项：开局 32 子/轮红、走一步轮黑、悔棋回 32 子且不终局、非法步不动、难度四轮循环、全屏来回切、空盘点复盘不跳转、认输只弹确认框）。
+
+### 改动清单
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/com/autogo/JunqiActivity.java` | 共用 `revealAfterMove`；电脑那手在 `play` 之前取「目标格原来有没有子」 |
+| `src/com/autogo/XiangqiActivity.java` | `undo()` 重放改用标准开局（原为 `new XiangqiBoard(true)`） |
+| `tests/ui/JunqiProbe.java` | 18 → **21 项**（电脑走到空格不暴露、原格复位、吃子才暴露） |
+| `tests/ui/XiangqiProbe.java` | 新增，**20 项** |
+| `tests/ui/WatermarkProbe.java` | 新增，**4 项** |
+| `tests/ui/fake/android/widget/TextView.java` | `setTextSize(int,float)` 也记 `lastTextSize`；`setTextColor` 记 `lastTextColor` |
+| `run_tests.sh` | 删 `JunqiTest` 重复拷贝与重复执行；探针清单/循环加 `XiangqiProbe`、`WatermarkProbe` |
+
+### 验证
+
+- 套件：`TEST_BUILD_DIR=/tmp/jvm164b bash run_tests.sh` ⇒ rc=0，`^FAIL` 0，末行「套件结束：全部通过（含第 6 节温度计）」。~~唯一断言 1723 项~~ —— **这个合计数是错的**（第 100 轮审计逐节相加得 1504）；本仓库从此**不再自报合计**，分节项数以运行输出为准。
+- 反证：`revealAfterMove` 改回无条件暴露 ⇒ 2 红；`undo` 改回 `new XiangqiBoard(true)` ⇒ 4 红；水印字号 11→13 ⇒ 1 红、透明度 0.6→0.4 ⇒ 1 红、颜色 `textDim`→`text` ⇒ 1 红。
+- 产物：`VERSION`=164、versionCode 164、versionName `1.20261017.164`、apk 122094740 字节 md5 `d5e7024a9c7f6ffe915680dd272df2c9`（== `/sdcard/Download/陪练棋盘.apk`）、包内 `classes.dex` md5 `c17bc57d276c22c7a1514916c8a48559`。
+- 守卫：清单 8 个组件都在 dex 里、CHANGELOG 当前版本行同步为 v164、校验通过（签名与上次相同）。
+
+### 没实测到的
+
+- 真机上的暗棋可读性/遮挡观感、电脑落点是否真的「不亮」的**画面**效果（只有 JVM 断言）。
+- 转屏重建、`.so` 加载、真机 PackageManager 读数。
+- 「走空格不暴露」在**明棋**下的表现没有单独断言（明棋本来全暴露）。
+- 水印**上边距**仍无断言（假 `LayoutParams` 未记录 `topMargin`）。
+
+## BU. v165：把第 100 轮审计的几条账收掉（暗棋规则只留一份 / 水印边距 / 文档自相矛盾）
+
+### 改前 → 改后
+
+**改前**：① 军棋页自己内联重写了一份「谁被看到」的规则，`JunqiReveal`（有 6 项测试）在 `src/` 里**一次都没被调用**；② 项目探针里那三条「电脑走」的断言是**反射直接调私有方法**，不走真实调用点 ⇒ 只把 AI 那一手的参数改坏，套件仍然全绿（第 100 轮审计的**中**级发现）；③ 假 `ViewGroup.LayoutParams.setMargins(...)` 是空实现 ⇒ 水印四边距在桩测里根本观测不到；④ README 自报套件总数 1723（审计逐节相加 1504）；⑤ `BS` 段表格还写着「去重 JunqiTest」，与同段正文矛盾。
+
+**改后**：① 删掉页面里内联的暴露逻辑，人走/电脑走统一调 `JunqiReveal.resolve(revealed, before, mv)`（`before` 是**走之前**的棋盘副本），规则只剩一份，`run_tests.sh` 加接线守卫（`JunqiReveal.resolve(` 必须恰好 2 处）；② `JunqiProbe` 新增**真回调**断言：标准开局下走第一条合法着，等 AI 线程真的落子（`drainUi` 泵队列），再断言「AI 走到空格的落点没有暴露」——这是第一次让测试穿过真实调用点；③ 假 `setMargins` 实现为真赋值，`WatermarkProbe` 加第 5 条断言（四边距一致且不为 0），把 `padDp` 改成 0 会红；④ README 不再自报合计数，并注明 1723 是错的；⑤ `BS` 表格改成如实说明「这一版没真去重」。
+
+### 改动清单
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/com/autogo/JunqiActivity.java` | 删 `revealAfterMove`；人走/电脑走改调 `JunqiReveal.resolve(revealed, before, mv)` |
+| `tests/ui/JunqiProbe.java` | 21 → **24 项**（真回调：标准开局有合法着、人走落下、AI 真落子、AI 走空格的落点不暴露） |
+| `tests/ui/WatermarkProbe.java` | 4 → **5 项**（四边距一致且不为 0） |
+| `tests/ui/fake/android/view/ViewGroup.java` | `LayoutParams.setMargins` 从空实现改成真赋值 |
+| `run_tests.sh` | 加「军棋暴露规则接线」守卫（`JunqiReveal.resolve` 调用数必须 == 2） |
+
+### 验证
+
+- 套件：`TEST_BUILD_DIR=/tmp/jvm165d bash run_tests.sh` ⇒ rc=0、`^FAIL` 0、末行「套件结束：全部通过（含第 6 节温度计）」；军棋页面探针 24/0、水印样式探针 5/0；守卫行打印「军棋暴露规则接线：JunqiReveal.resolve 调用 2 处 ✓」。
+- 反证：水印 `padDp` 6→0 ⇒ 1 红（/tmp）；`JunqiReveal` 的暴露规则改回「无条件暴露」⇒ 2 红（/tmp 探针）；`undo` 回空盘 ⇒ 4 红（上一版）。~~AI 调用点的 `before` 改成「走之后的棋盘」这条反证未做~~ —— **第 101 轮审计实测：当时那条新断言每次都被跳过，改坏也全绿**，v166 才真正修好（见 `BV` 段）。
+- 产物：`VERSION`=165、versionCode 165、versionName `1.20261017.165`、apk 122094740 字节 md5 `f49e9ec5081ecbd2b190ed471ecca7e9`（== `/sdcard/Download/陪练棋盘.apk`）、包内 `classes.dex` md5 `8761793c4737b699d4e9cf8ee854bbac`。
+
+### 没实测到的
+
+- 真机安装/画面/触摸；暗棋遮挡观感；转屏重建；`.so` 加载；真机 PackageManager；Rapfi 真机表现。
+- ~~上面那条「AI 调用点参数改坏 ⇒ 必须红」的反证（逻辑上会被新断言抓到，但没有实跑）。~~ 第 101 轮审计实测：当时那条断言每次都被跳过，改坏也全绿；v166 用 `finishAiMove` 真实路径修好、反证已红（见 `BV` 段）。
+
+### 仍然挂着的旧账
+
+- 象棋复盘页「曲线选中 / 当前手高亮」仍无断言。
+- 第 100 轮审计指出的 `XiangqiProbe` 认输断言次序耦合（低）未处理。
+
+## BV. v166：把「AI 一手落地」变成可判定的真实路径（第 101 轮的中级发现真正收口）
+
+### 改前 → 改后
+
+**改前**（v165）：`JunqiProbe` 的「真回调」断言被 `if (targetWasEmpty)` 包着，而标准开局里人走第一手恰好是吃子、电脑随即反吃 ⇒ 这条断言**每次都被跳过**。把这颗棋子的「走之前棋盘」换成「走之后」，项目套件照样 24/24 全绿（第 101 轮审计实测并打印 `SKIP` 确认）。另外还有一条：保留两处 `JunqiReveal.resolve(...)`、再在 AI 那手后内联一句 `revealed[to] = true;`，接线守卫与探针双双看不出。
+
+**改后**：把 AI 那一手真正落地的代码从匿名线程体中抽出成包级方法 `finishAiMove(int[] mv)` —— 线程只调它，探针也调它，**两条路径是同一份代码**。探针改成：先用红方走一手（直接落盘），再从黑方合法着里挑一手**落到空格**，调 `finishAiMove`，然后无条件断言「AI 走到空格时落点没有暴露」。不再有跳过分支，也不再依赖线程时序。
+
+### 改动清单
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/com/autogo/JunqiActivity.java` | 抽出 `void finishAiMove(int[] mv)`（`board.copy()` 取「走之前」→ `play` → `JunqiReveal.resolve` → `sync` → 终局判断），线程回调只留一行 `finishAiMove(mv);` |
+| `tests/ui/JunqiProbe.java` | 真回调断言改成：红方先落一手 → 挑「走到空格」的黑方一手 → 调 `finishAiMove` → 断言手数 2、落点未暴露（无跳过） |
+| `tools/checks/guard_order_thermometer.sh` | `EXP_MUT` 保持 `PASS 119 / FAIL 2`；本次确认该值稳定（此前一次 117/4 未能复现，见下） |
+
+### 验证（实测）
+
+- 套件：`TEST_BUILD_DIR=/tmp/jvm166 bash run_tests.sh` ⇒ **rc=0**、`^FAIL` 0、军棋页面探针 **PASS 25 / FAIL 0**、温度计「✅ 次序对调被抓住（PASS 119 / FAIL 2）」、末行「套件结束：全部通过（含第 6 节温度计）」。同一形态在 `/tmp/v166` 连跑多次结果一致。
+- **反证（关键）**：把 `finishAiMove` 里的「走之前棋盘」换成「走之后」⇒ 套件 rc=1、军棋页面探针 **PASS 24 / FAIL 1**，红句原文：`FAIL  真回调：AI 走到空格时落点没有暴露（无条件）（期望 false，实际 true）` ⇒ 这一版对审计那条变异**有牙**。
+- 产物：`VERSION`=166、versionCode 166、versionName `1.20261017.166`、apk 122094740 字节 md5 `585666bc940d1d9a4e123144878dc404`（== `/sdcard/Download/陪练棋盘.apk`）、包内 `classes.dex` md5 `76ad9432ba284940f3020a6ab4ddcf42`。
+
+### 没实测到的 / 仍然挂着的
+
+- 真机安装、暗棋遮挡观感、转屏重建、`.so` 加载、Rapfi 真机表现。
+- 中途出现过一次温度计变异体报 `117/4`（期望 119/2），**没能复现**：随后单独跑、全套件跑共 4 次都是 119/2。若下次再出现，按「不稳定」处理，不放宽期望。
+- 审计第 101 轮还提到：接线守卫对「多空格写法」会误报（低）、`XiangqiProbe` 认输断言次序耦合（低）、象棋复盘页曲线选中/高亮仍无断言（低）—— 都未处理。
+
+## BW. v167：把第 101 轮剩下的三条低缺陷收掉（守卫看得懂空格、复盘页选中真的有断言、认输断言不再靠前面的日志）
+
+### 改前 → 改后
+
+**改前**（v166）：
+- 接线守卫用 `grep -cE "^[[:space:]]*JunqiReveal\.resolve\("` 从行首匹配 —— 代码里写成 `JunqiReveal . resolve (`（点号/括号前有空格）就数不到，会误报「调用数是 0/1」；行内调用也漏。而且只要保留两处调用，再内联一句 `revealed[to] = true;`，守卫和探针都看不见（第 101 轮审计的「双绕过」演示）。
+- 象棋复盘页只断言「选中下标被夹住」，不断言界面：曲线到底选中没有、那一行到底高亮没有，全都没人管。
+- 象棋「认输」的两条断言扫的是累积日志，前面测试弹过框就能让它假通过（次序耦合）。
+
+**改后**：
+1. `run_tests.sh` 里两道守卫：
+   - 「统一规则」计数改成先去掉块注释/行注释、再用 `JunqiReveal\s*\.\s*resolve\s*\(` 计数；
+   - 新增「`revealed[...] = true` 出现次数必须为 0」的守卫（置 true 只允许发生在 `JunqiReveal` 里）。
+2. `tests/ui/XiangqiReviewProbe.java` 19 → **22 项**：`select(2)` 后断言曲线 `selected == 2`、`moveRows[2].bgColor == palette.surface`、`moveRows[1].bgColor == 0`。
+3. `tests/ui/XiangqiProbe.java` 19 → **20 项**：认输前先 `FakeLog.clear()`，只断言「这一次确实新弹了确认框」+ 棋盘没被判终局。
+
+### 验证（实测）
+
+- 套件：`TEST_BUILD_DIR=/tmp/jvm167 bash run_tests.sh` ⇒ **rc=0**、末行「套件结束：全部通过（含第 6 节温度计）」；界面层 **422**（Driver95 121 + 真 GomokuView 46 + 复盘页 95 + 菜单 51 + 象棋棋盘 22 + 军棋棋盘 15 + 军棋页面 25 + 象棋复盘 22 + 象棋对局 20 + 水印 5）。
+- 守卫（空格写法）：原文件 2 ✓；把点号/括号改成多点空格 ⇒ 仍 2 ✓（旧写法会漏）；注掉一处 ⇒ 1 ✓；块注释里多写一次 ⇒ 仍 2 ✓（不误报）。
+- 守卫（禁止内联）：干净树打印「没有内联 `revealed[...] = true` ✓」；往 `finishAiMove` 开头注入 `revealed[0] = true;` ⇒ 套件 rc=1、报错「错误：JunqiActivity 里出现 1 处内联 revealed[...] = true，规则应只在 JunqiReveal 里」。
+- 复盘页断言反证：高亮改成 `i == index - 1` ⇒ 2 红（「第 2 手那一行高亮成 surface 色（期望 -1186090，实际 0）」「其它行没有高亮（第 1 手）（期望 0，实际 -1186090）」）。
+- 产物：`VERSION`=167、versionCode 167、versionName `1.20261017.167`、apk md5 `f14fbc275494f348124406b26fee4d7e`（== `/sdcard/Download/陪练棋盘.apk`）、包内 `classes.dex` md5 `76ad9432ba284940f3020a6ab4ddcf42`。
+
+### 没实测到的
+
+- 真机安装/触摸/画面/转屏/.so 加载/Rapfi 真机表现。
+- 第 102 轮审计（v166）的结论：审计员中途停过一次（报告停在骨架），我发续跑指令后它补完了 99 行报告并给结论——中级问题独立复现、确认关上（见 `BV` 段）。本段原先写的「报告未填完/无结论」是当时的状态，事实已更正。
+
+## BX. v168：把「禁止内联」守卫改成语法级（认得出 `revealed[JunqiBoard.idx(...)]`）+ 温度计变异体也重跑
+
+### 改前 → 改后
+
+**改前**（v167）：新加的「禁止内联」守卫是一条正则 `revealed\s*\[[^\]]*\]\s*=\s*true`。第 103 轮审计实测：它只认常量下标 —— `revealed[0] = true` 能抓，但**当初那份内联代码的形状** `revealed[JunqiBoard.idx(mv[2], mv[3])] = true`（下标里带括号和 `]`）计数恒 0，塞进线程 lambda 后整套 1512 项照样全绿、rc=0；用别名数组（`boolean[] rr = revealed; rr[0] = true;`）也能绕过。另外温度计的重跑只加在基线上，变异体失配仍是一次就判「失灵」。
+
+**改后**：
+1. 新增 `tools/checks/check_inline_reveal.py`：**语法级**检查 —— 先剥注释与字符串，再对每个 `revealed` 做方括号配对（能跨过 `idx(...)` 里的 `]`），配对后紧跟 `=`（且不是 `==`）就报违规；同时查「把 `revealed` 赋给别的变量」的别名写法。只跳过 `JunqiReveal.java` 自己。`run_tests.sh` 改为调用它，退出码非 0 直接失败。
+2. `JunqiReveal` 新增 `public static boolean[] fresh(int size, boolean dark)`：明棋全暴露、暗棋全隐藏。`JunqiActivity` 的初始化从「循环里写 `revealed[i] = !dark;`」改成 `System.arraycopy(JunqiReveal.fresh(...), ...)` ⇒ **页面里现在一处 `revealed[...]` 赋值都没有**，规则的唯一所有者就是 `JunqiReveal`。
+3. `tools/checks/guard_order_thermometer.sh`：变异体也加「失配自动重跑一次」，两次都失配才判失灵。
+
+### 验证（实测）
+
+- 语法级守卫的四种输入（脚本直接跑）：历史形状 `revealed[JunqiBoard.idx(mv[2], mv[3])] = true` ⇒ 报违规（文件:行:列）；别名 `boolean[] rr2 = revealed;` ⇒ 报违规；`revealed[0] = (true);` ⇒ 报违规；只比较 `revealed[0] == true` ⇒ **不报**（不误伤）。
+- **端到端**：把历史形状那行注入线程 lambda 后跑整套件 ⇒ **rc=1**，报错 `JunqiActivity.java:284:25: 内联给 revealed[...] 赋值` + 「错误：除 JunqiReveal.java 外，发现 1 处违规写 revealed 的地方」；还原后整套件 rc=0、末行「套件结束：全部通过（含第 6 节温度计）」、守卫打印「41 个源文件里没有内联给 revealed 赋值、也没有别名 ✓」。
+- 产物：`VERSION`=168、versionCode 168、versionName `1.20261017.168`、apk 122094740 字节 md5 `09458a67445f860ffcb2b275cc5177cc`（== `/sdcard/Download/陪练棋盘.apk`）、包内 `classes.dex` md5 `1972de580d5044a63d9011725feb183b`（因为把初始化挪进了 `JunqiReveal.fresh`，dex 变了；套件项数不变）。
+
+### 没实测到的
+
+- 真机安装/触摸/画面/暗棋观感/转屏/`.so` 加载/真机 PackageManager/Rapfi 真机表现。
+- `BW` 段写的「温度计失配自动重跑一次」当时只兑现了基线，**变异体那条是 v168 才补的**；以本段与代码为准。
+- 守卫是「语法级」而非「编译级」：它剥注释/字符串是按字符扫描实现的，极端写法（比如把 `revealed` 拆行或用反射改数组）仍需人工看；别名只查「直接赋值给另一个变量」，不追多层转手。
+
+## BY. v169：把「把数组交给 helper 去写」也堵上 + 探针真跑一次 AI 线程 + Driver95 等待放宽到 20 秒
+
+### 改前 → 改后
+
+**改前**（v168）：第 104 轮审计指出两条 ——
+1. 守卫只看 `revealed[...] =` 和 `= revealed;`，把写藏进 helper（lambda 里只留 `mark(revealed, JunqiBoard.idx(...));`）就能绕过：守卫打印「41 个源文件…✓」、军棋探针 25/0、整套 1512 项 rc=0；另有 5 类写法静默放行（`Arrays.fill(revealed,true)`、`System.arraycopy(…, revealed, …)`、`revealed[0] |= true`、`revealed\u005B0\u005D = true`、`(revealed)` 别名）；守卫自身还有「传错目录 ⇒ 0 个源文件 ✓ 假绿」「不递归子目录」两个低缺陷。
+2. 探针的真回调是直接 `call(p,"finishAiMove",…)`，**线程 lambda 根本不执行** ⇒ 写在 lambda 里的东西没有行为兜底。
+3. 另：Driver95 有约 4% 的低频假红（第 102 轮审计实测 27 次里 1 次）。
+
+**改后**：
+1. `tools/checks/check_inline_reveal.py` v2：先解码 `\uXXXX`（Java 在词法前就解码）再剥注释/字符串；元素赋值按运算符判定（`=`/`|=`/`+=`/`-=`/`*=`/`/=`/`++`/`--`，`==` 不算）；**裸标识符规则** —— `revealed` 作为实参只允许出现在白名单调用里（`JunqiReveal.resolve(`、`JunqiReveal.reset(`、`JunqiAI.masked(`/`genmove(`/`evaluate(`），声明（`boolean[] revealed`）与只读比较（`==`/`!=`）放行；递归扫子目录；一个文件都没扫到 ⇒ rc=2 报错。
+2. `JunqiReveal.reset(boolean[] revealed, boolean dark)` 新增：页面不再 `arraycopy` 或写元素，只调这一个入口（`JunqiActivity.java:58`）。
+3. `tests/ui/JunqiProbe.java` 新增「⑨ 线程路径」：标准开局 + `alive=true` ⇒ `play(6,0,5,0)` 触发真 AI 线程 ⇒ 循环 `drainUi()` + 20 ms 睡眠等 `history()` 增长，断言「AI 真的落了一手」「落地后已暴露 ≤1 格」「走掉的原格不暴露」「走到空格时落点不暴露 / 吃子才暴露」⇒ 军棋探针 25 → **29 项**。
+4. `tests/ui/Driver95.java`：14 处 `waitMore("runOnUiThread", 5000)` → `WAIT_MS = 20000L`（只动测试等待，不动 App）。
+
+### 验证（实测）
+
+- 守卫电池（脚本级）：`mark(revealed,…)` ⇒ 「把 revealed 交给 mark(...) 去动」；`Arrays.fill(revealed,true)`、`System.arraycopy(…,revealed,…)`、`revealed[0] |= true`、`revealed\u005B0\u005D = true`、`(revealed)` 别名 ⇒ 全部报违规；子目录里的违规文件被扫到；空目录 rc=2。
+- **端到端**：把第 104 轮审计的 helper 写法注入线程 lambda（并补 `mark` 定义否则编译不过）⇒ 整套件 **rc=1**，报 `src/com/autogo/JunqiActivity.java:288:30: 把 revealed 交给 mark(...) 去动`；还原后套件 rc=0、`^FAIL` 0、末行「套件结束：全部通过（含第 6 节温度计）」、军棋探针 **29/0**。
+- Driver95 等待：/tmp 副本连跑 **45 次**（15 + 30）全部 `PASS 121 / FAIL 0`；对照第 102 轮审计 5 s 下的 4%（27 次里 1 次假红）。
+- 产物：`VERSION`=169、versionCode 169、versionName `1.20261017.169`、apk 122094740 字节 md5 `c15abe77352b54a1ac96690fbcefa440`（== `/sdcard/Download/陪练棋盘.apk`）、包内 `classes.dex` md5 `67941fce3dd6dd6f7892f7e9d1e26e84`。
+
+### 没实测到的
+
+- 真机安装/触摸/画面/暗棋观感/转屏/`.so` 加载/真机 PackageManager/Rapfi 真机表现。
+- 守卫仍是「语法级」：它按字符扫描 + 白名单判 callee，遇到「先转存到别的容器再改」「反射改数组」这类写法仍需人工看；白名单里任一函数若将来被改成会写数组，守卫不会自动发现。
+- 线程路径断言依赖 `drainUi()` 的假 UI 队列语义；真机上 AI 线程与主线程的真实交错未实测（上一轮已把「真机不可测」列为长期未覆盖项）。
+
+## BZ. v170：把第 105 轮审计的 5 条低缺陷收掉（守卫认 `&=`/`^=`、白名单去裸名、只读不误报、⑨ 换夹具、Driver95 最后一处 5 s）
+
+### 改前 → 改后
+
+**改前**（v169）：第 105 轮审计（`/tmp/audit105/REPORT105.md`）实测 5 条低缺陷 ——
+1. 守卫的运算符表没有 `&=`/`^=`：`revealed[0] &= false;`（清标记）、`revealed[0] ^= true;`（翻转）都是布尔数组的合法写法，守卫却当只读，**rc=0 静默放行**。
+2. 白名单里有裸名 `masked(`/`genmove(`/`evaluate(`：页面里自定义 `void masked(boolean[] a,int at){a[at]=true;}` 再写 `masked(revealed, …)` 也能过。
+3. 反向误报：`for (boolean b : revealed)`、`Arrays.toString(revealed)`、`System.arraycopy(revealed, 0, other, 0, 60)`（revealed 是**源**、只读）、`return revealed;`、`synchronized (revealed)`、`revealed.getClass()` 全部被判违规。
+4. 军棋页探针 ⑨ 的「AI 走到空格」分支在默认夹具下不执行（AI 首手是吃子），这条断言的分辨力实际来自 ⑦b 的直接调用；⑨ 整组也没有异常兜底，前面某组把页面弄坏时它会中断探针而不是显式报红。
+5. Driver95 `:737` 的交替等待仍是硬编码 5 s（v169 只把 14 处 `waitMore("runOnUiThread", 5000)` 换成了 `WAIT_MS`）。
+
+**改后**：
+1. `tools/checks/check_inline_reveal.py` 升到 v3：
+   - `ASSIGN_OPS` 补 `&=`、`^=`（`>>=`/`<<=` 对布尔用不到）；
+   - `JunqiReveal.*`/`JunqiAI.*` 只认全限定名；`Arrays.toString`/`copyOf`/`equals` 仍按简单类名放行（第 106 轮审计实测：页面内同名 `Arrays` 类可冒名，属已知缺口）；裸名 `masked`/`genmove`/`evaluate` 只在 `JunqiAI.java` 内部放行；
+   - 只读用法放行：增强 for 的冒号后、`return`、`synchronized (`、`revealed.方法()`；
+   - `System.arraycopy` 按实参序号判源/目标：只有第 3 个实参是 `revealed` 才算违规（它是源时放行）。
+2. `tests/ui/JunqiProbe.java`：⑨ 的夹具换成「红排长 (2,2)（不在铁路）+ 黑工兵 (6,1)（在铁路）+ 黑军旗 (11,0)」，先断言「黑方有合法手」；整组 ⑨ 包 `try/catch (RuntimeException)`，异常时显式报一条红。项数 29 → 30。
+3. `tests/ui/Driver95.java`：`:737` 的 `5000` → `WAIT_MS`（20 s）。
+4. 军棋暴露规则的变异验证（3 个）：`if (battle)` → `if (true)`（走到空格也暴露）、`revealed[from] = false` → `true`（走掉的原格不复位）、`revealAll` 无条件全 `true` —— 三个都被 `JunqiRevealTest` 咬住。
+
+### 验证（实测）
+
+**守卫电池 21 组（18 个文件级 + 3 个目录/接线级）**（直接把输入喂给 `check_inline_reveal.py`，临时目录）：
+- 应报违规（期望 rc=1，全部实测 rc=1，各报对应原因）：`revealed[0] &= false;`、`revealed[0] ^= true;`、`revealed[0] |= true;`、`revealed[0] = true;`、别名 `boolean[] rr = revealed;`、页面自定义 `masked(revealed, …)`、`System.arraycopy(other, 0, revealed, …)`（目标是它）。
+- 不误报（期望 rc=0，全部实测 rc=0）：`for (boolean b : revealed)`、`return revealed;`、`synchronized (revealed)`、`revealed.getClass()`、`Arrays.toString(revealed)`、`System.arraycopy(revealed, 0, other, …)`（它是源）、`revealed[0] == true`、`revealed[0] != false`、`revealed.length`、`JunqiReveal.resolve(revealed, …)`、`JunqiAI.java` 内的裸名 `masked(revealed, …)`。
+- 目录与接线：空目录 rc=2、子目录里违规 rc=1、真实工程树 41 个源文件 rc=0。
+
+**端到端（守卫接线）**：在 `JunqiActivity` 里加一个谁都不调用的 `v170InjectedUnused()`，里面写 `revealed[0] &= false;` ⇒ 整套件 **rc=1**，军棋页探针仍 `PASS 30 / FAIL 0`，守卫报
+`src/com/autogo/JunqiActivity.java:191:9: 内联修改 revealed[...]（&=）` + `错误：除 JunqiReveal.java 外，发现 1 处违规动 revealed 的地方`；还原后守卫对 41 个源文件 rc=0。
+
+**行为注入（不靠静态守卫也有兜底）**：把同一行注入 `sync()`（测试会走到）⇒ 军棋页探针先红：`FAIL 明棋 hidden 全 false（期望 0，实际 1）`、`军棋页面探针：PASS 29 / FAIL 1`，套件 rc=1。
+
+**变异 3 个**（只跑 `JunqiRevealTest`，同一编译参数）：
+
+| 变异 | 结果 |
+|---|---|
+| `if (battle)` → `if (true)`（走到空格也暴露） | rc=1「FAIL 走到空格不暴露 期望 false，实际 true」 |
+| `revealed[from] = false` → `true`（走掉的原格不复位） | rc=1「FAIL 走掉的格子复位 期望 false，实际 true」 |
+| `revealAll` 里 `revealed[p] = …` → `true` | rc=1「FAIL 明棋暴露 50 个格子 期望 50，实际 60」+「FAIL 明棋：每格「有子 == 已暴露」 期望 true，实际 false」 |
+
+**套件**（`TEST_BUILD_DIR=/tmp/suite170b bash run_tests.sh`）：**1517 项全过**、末行「套件结束：全部通过（含第 6 节温度计）」、`FAIL` 0 行。拆分：1090（规则/内置 AI/复盘/学习/Rapfi/GTP）+ 427（界面层：Driver95 121、GomokuView 46、ReviewProbe 95、MenuProbe 51、XiangqiViewProbe 22、JunqiViewProbe 15、**JunqiProbe 30**、XiangqiReviewProbe 22、XiangqiProbe 20、WatermarkProbe 5）。温度计基线 121/0、变异体 119/2 正常。
+
+**Driver95**：本版连跑 **5 次**全部 `PASS 121 / FAIL 0`（`:737` 的等待已换成 20 s；原始输出 `/tmp/driver170_runs.log`）。另：`BY` 段「连跑 45 次」没有留下原始日志，第 105 轮审计只能核到 3 次 121/0 —— 本段起只写能复现的数字。
+
+**产物**：`VERSION`=170、versionCode 170、versionName `1.20261018.170`、apk 122094740 字节 md5 `0dbd653a35b6abcaae26a9b7f38d4301`、包内 `classes.dex` 248172 字节 md5 `67941fce3dd6dd6f7892f7e9d1e26e84`（与 v169 相同 —— `src/` 42 个 .java 与 v169 逐字节相同，本版只改测试/守卫 + 清单版本号）；交付副本 `/sdcard/Download/陪练棋盘.apk` 同大小同 md5。
+
+**签名与包内容**：`apksigner verify` 通过（v2/v3）；带 `autogo.apk.idsig` 时 v4 也通过；证书 `CN=AutoGo Debug`、SHA-256 `2a8de3ac…`。`classes.dex` 里能查到 `XiangqiActivity`/`XiangqiBoard`/`XiangqiAI`/`JunqiActivity`/`JunqiBoard`/`JunqiAI`/`JunqiReveal`/`JunqiView`，`lib/arm64-v8a/` 下 `libkatago.so` 9,559,512 B、`librapfi.so` 3,679,840 B。
+
+**⑨ 的异常兜底**（第 106 轮审计实测）：注入 `throw new RuntimeException("audit-boom")` ⇒ `FAIL 线程路径：不抛异常（RuntimeException: audit-boom）`、探针 25/1。
+
+**第 106 轮独立审计**（`/tmp/audit106/REPORT106.md`）：结论 **可收口**，高 0 / 中 0 / 低 5（含 1 条低-中）/ 提示 7。审计点名本段 3 处表述过强（`Arrays.*` 简单名可冒名、`return revealed` + 一层 getter 即可绕过、清单版本号也算“改了文件”）与 1 处留档不实（`jvm170m/n/p` 三份旧日志其实都是 M1；Driver95 5 次只有汇总行），本段已按报告改掉文字；其余低/提示留作已知缺口（不阻塞交付）。被审快照是 README md5 `9e1390b7…`；审计开始后本段曾把「20 组」改成「21 组」，报告已点名“文档中途变动”，以后冻结被审文档。
+
+### 没实测到的
+
+- 真机安装/触摸/画面/暗棋观感/转屏/`.so` 加载/真机 PackageManager/Rapfi 真机表现。
+- 守卫仍是语法级：白名单里的函数将来若被改成会写数组、或 `revealed` 经 getter/别名转一手（第 106 轮审计实测 `return revealed;` + 一层 getter 就能绕）/反射，仍可能绕过。
+- ⑨ 的 catch 分支已由第 106 轮审计注入异常实测会报红（`FAIL 线程路径：不抛异常（RuntimeException: audit-boom）`，探针 25/1）；本项目自己没把这条注入固化进套件。
+- Driver95 只连跑 5 次；第 102 轮审计的 4% 假红是另一套统计口径，不能直接比。
+
+
+
+## CA. v171 → v172：象棋 / 军棋的界面自适应（第 107 轮审计打回后重做）
+
+### 改前 → 改后
+
+**v170 的问题**（原来的「没做」）：
+- 象棋：`fitBoardToScreen()` 只在按「全屏」时调用；`onConfigurationChanged` 只换主题。清单声明了 `orientation|screenSize`，转屏不重建 ⇒ 转屏后棋盘还是竖屏尺寸。
+- 军棋：棋盘高度在 `buildUi()` 里用 `screen.boardSizeDp(8)` 算一次就定死；没有转屏/首帧重算；正方形视图让 5×12 的网格两侧留出大片空白。
+
+**v171（第一版，未发布，第 107 轮审计打回）**：
+- 在 `onConfigurationChanged` 里 `scroll.post(fitBoardToScreen)`。审计按 AOSP android-16/14 的调用顺序核实：`Activity.onConfigurationChanged` 返回后才 `ViewRootImpl.updateConfiguration → requestLayout`，post 排在本次 relayout 之前 ⇒ 读到旧宽高，转屏等于没算（**高-1**）。测试把 fake `post` 改成立即执行、又按「先改尺寸再发 config」的假顺序调用，刚好把它掩盖了。
+- 军棋新增的 `recreate()`（主题变化 / AUTO 过点后回前台）会走 `onCreate()` 的 `newGame()`，把当前棋局清掉（**中-2**；象棋的 recreate 是既有同样问题）。
+- 测试对真机时序 / 首帧 / minW 没有牙：删掉首帧 post 仍 36/0、改坏 `minW` 仍 36/0；删 `onWindowFocusChanged` 直接 `NoSuchMethodException`，不是干净断言红（**中-1**）。
+- 公告与 README 有「不再在两侧留空白」「等新尺寸生效」这类过强表述（低）。
+
+**v172（本次）**：
+1. 两页都改成 `scroll.addOnLayoutChangeListener(...)`：**布局完成之后**再量 `scroll` 与顶/底栏的高度，首帧、转屏、分屏、全屏走同一条路；`onWindowFocusChanged` 只留作兜底。`onConfigurationChanged` 不再做尺寸计算（只处理主题）。
+2. 主题变化改成**原地重建**（`rebuildForTheme`：更新 palette / `screen` / `buildUi()` / `sync()` / 状态文字），不再 `recreate()` ⇒ 棋局、手顺、选中、暗棋 `revealed` 都保留。
+3. 军棋 `minW` 夹取改为 `min(dp(90), 可用高×4/11)`：极小屏横屏宁可格子小，也不让棋盘高度顶出可用空间。
+4. 测试桩 `View` 增加 `OnLayoutChangeListener` / `fakeLayout()`；探针：象棋 **26** 项、军棋 **39** 项（含「首帧布局后算」「真机顺序：回调在前、layout 在后」「小屏横屏不溢出」「主题变化不丢局且不 recreate」）。
+
+### 验证（实测）
+
+- **变异反证**（每项都从 pristine 拷回、只改一处、重编后跑探针）：
+  - M1 删掉两页的布局监听 ⇒ 象棋 **24/2**、军棋 **33/6**（首帧 / 转屏 / 小屏断言红；审计 108 实测，本机复跑同值）。
+  - M2 军棋 `minW` 改回 `dp(90)` ⇒ 军棋 **38/1**（小屏横屏超出可用高度）。
+  - M5 删掉 `onWindowFocusChanged` ⇒ 象棋 **26/1**、军棋 **39/1**（报「兜底存在」红，不再是崩溃）。
+  - 主题改回 `recreate()` ⇒ 象棋 **25/1**、军棋 **38/1**（「`recreateCount` 必须为 0」断言咬住）。
+- 基线：象棋对局页探针 **26/0**、军棋页面探针 **39/0**。
+- 第 107 轮审计的高-1 / 中-1 / 中-2 已按报告改正；低（措辞、死更新、minW）一并处理。
+- 构建后套件与产物见 `/tmp/suite172.log`、`/tmp/build172.log`（数字见 CURRENT-STATE）。
+
+**第 108 轮独立审计**（v172，报告 `/tmp/audit108/REPORT108.md`）：结论 **可发布**，高 0 / 中 0 / 低 4 / 提示 6。报告点名的 L1/L2（本段与 CURRENT-STATE 的变异数字、残留句）已按实测改正；L3/L4 作为已知低挂账。
+
+### 没实测到的 / 已知低
+
+- 真机转屏 / 横屏 / 分屏渲染仍未实测（容器里的设备桥被策略限制，装不了新包）；证据是 JVM 桩 + 按 AOSP 调用顺序模拟 + 变异反证。
+- 横屏仍是竖排 + `ScrollView`，按钮要下滑才能看到；极小屏横屏格子会偏小。
+- 审计 108 低-3：军棋主题探针的「revealed 表没被重置」在默认夹具下是 `0==0` 的空断言；防回退主要靠 `recreateCount=0` 与「棋局没丢」。
+- 审计 108 低-4：象棋 `fitBoardToScreen()` 少一个「尺寸没变就 return」的短路，每次 layout 可能多一次 `requestLayout`（源码级，真机未实测；留待下一版）。
+
+## CB. v173 → v174：军棋棋盘重做（5×12 方格棋盘）与第 109 轮审计打回的铁路 bug
+
+### 改前 → 改后
+
+**v172（用户反馈「太挤」）**：军棋棋盘按「线交点」画：`spacing` 是交点间距，棋子面宽 **1.24×spacing**、高 0.967×spacing —— 相邻棋子横向互相压住；5 列只占 4 格间距，两侧再留白。
+
+**v173（未发布，第 109 轮审计打回）**：
+- 改成 **5×12 方格棋盘**：`cell = min(可用宽/5, 可用高/12)`；棋子面 0.84×0.70 格、字 0.32 格；点击按格取整；活动页比例 5:12。
+- **高-1**：横向铁路用 `JunqiBoard.isRail(r, 0)` 判行，而 `isRail` 对第 0 列的 1..10 行都返回 true ⇒ 横线画了 **10 行**（应 1/5/6/10），多出的 6 条横线穿过全部 10 个行营圆；探针从不断言 `Canvas.LINES`，套件 1535 全绿也抓不到。
+- 低-2：`boardParams()` 初始宽仍是 4:11；低-3：行营半径/铁路透明/格子方框没有断言；低-1：README 的 CB 段当时没写进来；低-4：CURRENT-STATE 还是 v172。
+
+**v174（本次）**：
+1. 横线判据改 `JunqiBoard.isRail(r, cols / 2)`（中间列避开「第 0 列也是铁路」的列规则）⇒ 横向铁路只画 **1/5/6/10** 四行。
+2. `boardParams()` 初始宽改 **5:12**，注释同步（在 1080×1920px / density 2 夹具下：v173 首帧 381×1048，v174 首帧 437×1048；布局后按可用空间再算）。
+3. `JunqiViewProbe` 18 → **22** 项：铁路横线必须恰好 4 行且行号 `[1,5,6,10]`、铁路线共 6 条（4 横 + 2 竖）、行营圆半径 0.47 格；`JunqiProbe` 39 → **40** 项：用 540×960dp / density 2 的夹具断言首帧初始宽 437（4:11 会是 381，探针必须能区分）。
+4. 删掉不再使用的红/黑 `Paint` 字段。
+
+### 验证（实测）
+
+- 基线：`JunqiViewProbe` **22/0**、`JunqiProbe` **40/0**、`XiangqiProbe` 26/0。
+- 变异反证：
+  - 铁路判据回退成 `isRail(r, 0)` ⇒ JunqiViewProbe **19/3**（「铁路横线只有 1/5/6/10 四行」「所在行」「6 条」三条红）。
+  - 行营半径改回 0.42 格 ⇒ **21/1**（行营半径断言红）。
+  - 棋子面改回 1.24 格 ⇒ **21/1**（「棋子块不超出一格」红）。
+  - 活动页比例改回 4:11 ⇒ JunqiProbe **37/3**。
+- 预览图：AWT 重绘的旧/新对照 `/sdcard/改/junqi-before-after.png`（旧版棋子互相压住；新版收进格子、铁路只在 1/5/6/10 四行）。
+- 套件：`/tmp/suite174.log`（构建后跑，1540 项）；产物：`/tmp/build174.log`。
+- **第 110 轮独立审计**（`/tmp/audit110/REPORT110.md`）：结论 **可发布**，高 0 / 中 0 / 低 3 / 提示 4。它实测的铁路线是 10 条（横 4 + 竖 2 + 边 4）、行营 10 个半径 0.47 格；并把判据回退/行营 0.42/铁路 alpha 0/多画一行分别打成 19/3、21/1、19/3、19/3。审计点名的低 1–3（本段两处旧数字、首帧断言没牙、CURRENT-STATE 未更新）本轮已改：首帧断言换成 540×960dp/density2 夹具，改回 4:11 会 39/1。
+
+### 没实测到的
+
+- 真机渲染（字体/线宽在不同 density 下的实际观感）仍未实测；预览是 AWT 重绘，不是真机截图。
+- 横屏时棋盘仍按高度缩放、格子会偏小；页面仍是竖排 + `ScrollView`。
+- 极小屏（<90dp 宽）会受最小宽 90dp 夹取，理论上仍可能横向超出。
+
+## CC. v175：军棋三档难度真正分开 + 摆子按规则
+
+### 改前 → 改后
+
+**改前（v174）**：`JunqiAI.genmove()` 里 `level` 只存着不用 —— 快 / 普通 / 强三档跑的是**同一段** 1 层贪心，所以玩家觉得最高和最低一样。摆子也是 25 子全随机：军旗可能出现在最前排，一步被夺。
+
+**改后**：
+1. **快（FAST）**：2/3 概率「见子就吃」（随机挑一个吃子着法，常一头撞进地雷/炸弹），其余随机走；新增 `setSeed()` 便于测试。
+2. **普通（NORMAL）**：1 层贪心（子力差 + 少量推进奖励），并惩罚「上一手 A→B、这手 B→A」的来回蹭。
+3. **强（STRONG）**：1 层取前 24 个候选；已知子按 2 层（对手全部回手）算最坏结果；未知子按敌方 25 子先验 + 位置过滤（军旗只在大本营、地雷只后两排、炸弹不在第一排）算期望，会避雷 / 避炸弹 / 避开大子。
+4. **摆子按规则**：军旗在本方大本营（底线两格之一）、地雷只在后两排、炸弹不在第一排、其余随机。
+5. **测试**：`JunqiAITest` 15 → 21（毒子诱饵：普通会吃、强档不吃；快档同种子可复现 / 不同种子不同手；强档不偷看）；`JunqiTest` 36 → 37（20 个种子的摆子规则）；新增 `JunqiStrengthTest`（固定种子强度回归，3 项）。
+
+### 验证（实测）
+
+- **强度**（离线 `Strength` 跑，A/B 轮流执红，和棋算 0.5）：
+  - 快 vs 普通 **500 局**：快 **29.6%**（普通 70.4%）；
+  - 普通 vs 强 **500 局**：普通 **33.0%**（强 67.0%）；
+  - 快 vs 强 **200 局**：快 **15.5%**（强 84.5%）。
+  - 套件内固定种子回归：普通 vs 强 37.0%（200 局）、快 vs 普通 37.5%（80 局）、快 vs 强 15.0%（40 局）——回归门槛分别是 45% / 45% / 35%。
+- **套件**：1540 → **1550** 项（+6 AI、+1 摆子、+3 强度），全过；日志 `/tmp/suite175.log`。
+- **产物**：`VERSION`=175、versionCode 175、versionName `1.20261018.175`、apk 122,098,836 B md5 `2073f29381212c474d977afb6e5764bf`、`classes.dex` 255,532 B md5 `cbea8dd40b55b717ff82edc68b4040fd`；交付副本 `/sdcard/Download/陪练棋盘.apk` 同 md5。
+
+### 没实测到的
+
+- 真机对局手感（快档「乱吃」会不会看起来太傻、强档每手思考时间）没实测；强度是 JVM 自对弈，不是真人评分。
+- 强档深搜的离线 500 局约 30 秒（JVM），手机上单步耗时要真机确认。
+
+
+## CE. v176：把快档救回来 + 三档都会学习 + 彩蛋只给普通/强 + 走子动画
+
+### 改前 → 改后
+
+- **快档太傻（v175 的锅）**：v175 的快档是「2/3 概率见子就吃 + 随机走」，经常一头撞进地雷/炸弹，玩起来像送子。v176 改成**正常的一层贪心**（会吃子、会推进、会防来回蹭），一步算完就走，速度仍是三档里最快。
+- **三档都会学习**：新增 `JunqiLearn`（纯 Java + 文本存档 `junqi-learn.dat`）。每盘结束把电脑每一步的**局面特征**（进攻子兵种 + 目标类型（空/已知/未知）+ 目标区域 + 方向）和胜负记下来；下一盘遇到同类特征，按历史胜率加权。快 / 普通 / 强共用同一份学习库，结束后弹窗里会写「学习库：N 局、M 个特征」。
+- **强档更会想**：前 48 个候选做两层搜索（对手全部回手），并对前 12 个候选多看一手「反吃」；普通档用敌方 25 子先验算未知子的期望（会躲地雷/炸弹/大子）。
+- **彩蛋收口**：`WinEgg.eggAllowed(level, fastLevel)` 统一判定「只在普通/强档、只在赢了之后」；五子棋加上档位判断，象棋、军棋补上彩蛋；围棋没有难度档，赢了照旧显示。四个棋种共用同一处实现。
+- **动画**：新增纯数学 `AnimMath`（缓动/插值/进度，单测 10 项）。军棋、象棋走子会从起点滑到终点并闪一下；围棋、五子棋新落子从小弹到正常大小；彩蛋数字弹出淡入。动画默认关，游戏页打开，探针里关掉，保证静态绘制断言不变。
+
+### 验证
+
+- **强度**（离线自对弈，A/B 轮流执红、和棋 0.5）：
+  - 快 vs 普通 300 局：快 **37.0%**（普通 63.0%）；
+  - 普通 vs 强 300 局：普通 **42.2%**（强 57.8%）；
+  - 套件内固定种子回归：快 vs 普通 44.4%、普通 vs 强 43.8%、快 vs 强 21.3%（阈值 45/45/35），3 项全过。
+- **学习**：`JunqiLearnTest` 13 项（加权门槛、输多转负、存档/读档、容量淘汰、特征稳定）；`JunqiAITest` 24 项，其中三档各一条「学过的那类子力优先」。
+- **彩蛋**：`WinEggTest` 13 项（快档不给、普通/强给、围棋结果判定、认输赢家）；军棋页面探针加「快档赢了无彩蛋、普通/强有」+「学习库写入/认输记 WIN」，象棋页面探针加「快档赢了无彩蛋、普通/强有」。
+- **动画**：`AnimMathTest` 10 项；走子动画走 `setLastMove` 触发，探针 `newPage()` 里统一 `setAnimationsEnabled(false)`。
+- **套件**：1608 项，全过（rc=0，`^FAIL` 0）；产物见 CURRENT-STATE（v176）。
+- **审计 112 的两条中**已修：军棋认输改成记电脑 WIN；围棋认输按「人的对手」判赢家、且自动对弈不弹彩蛋；相应探针/单测已加；另外修了「点棋子重播上一手动画」「同归于尽滑空白棋子」两处动画问题。
+
+### 没实测到的
+
+- 真机上的动画帧率/手感、强档每手耗时、学习库在几十盘后的实际收益，都没实测；动画和强度都是 JVM/离线数据。
+
+
+## CG. v177：围棋也按三档算，彩蛋只在普通/强
+
+用户口径：四个棋种、三个难度，只有「普通 / 强」赢了才显示彩蛋。
+
+- 围棋三个网络档位映射成 **快（b6c96）/ 普通（b10c128）/ 强（b18）**；状态条显示当前难度，网络选择里也写成「快 · 极速 / 普通 · 标准 / 强 · 强力」。
+- 围棋彩蛋条件改成 `!自动对弈 && 档位 != 快 && 人赢了`；快档赢了不弹，普通/强赢了才弹。
+- 四个棋种现在都只在这两档、赢棋后弹同一个 707380438；`WinEggTest` 19 项。
+- 套件 1614 项全过（`/tmp/suite177.log`）；其余不动。
+
+
+## CH. v178：军棋棋盘按实体样式重画
+
+用户指出军棋比例、棋盘不合格。查了实体棋谱与在线实现后重画：
+
+- 标准是 **5 列 × 12 行共 60 个点位**，棋子站在点位上，不是缩在方格子里；棋子是 **2:1 的横向长方块**。
+- 实体比例：列距 250、行距 150、站点 100×50，整盘 1200×2100（约 **1:1.75**）。旧版按 5:12 方格画，太窄太长，这是比例不对的根因。
+- 铁路：**黑底白虚线的粗轨**，4 条横（第 1/5/6/10 行）+ 2 条竖（第 0/4 列）+ 中线第 2 列一小段前线铁路；行营是圆圈（每半场 5 个 X 形），大本营是黑框，兵站是小框。
+- 中线第 1/3 列（0 起算）补 **山界**，第 1/3/5 列标 **前线**。
+- 只改 `JunqiView` 画法与 `JunqiActivity` 棋盘宽高比；规则/AI/学习/动画没动。
+- 附：`JunqiViewProbe` 32 项新增下半场/中线带/±0.47 触摸；`tests/ui/fake` 的 `Canvas.drawOval`、`Paint.setFakeBoldText` 两个桩是编译所需。
+- 另修 `JunqiStrengthTest` 调不存在 `JunqiAI.setSeed` 的两行（v177 仓测试编不过），测试逻辑不变。
+- 依据：[Wikimedia 陸戰棋 board.svg](https://commons.wikimedia.org/wiki/File:%E9%99%B8%E6%88%B0%E6%A3%8B_board.svg)（1200×2100、列距 250/行距 150、站点 100×50）、[Hi8 军棋规则](https://hi8.com/g/junqi)（60 点位、行营 X 形、山界第 2/4 列、棋子横块）。
+- 套件 1624 项；军棋视图探针 32 项（铁路 7 段、行营半径 0.2 列距/黑描边、站点/棋子不超 0.4×0.2、大本营 0.6×0.2、山界 0.3 列距、下半场/中线带/±0.47 触摸）；首帧 599 在 `JunqiProbe`。

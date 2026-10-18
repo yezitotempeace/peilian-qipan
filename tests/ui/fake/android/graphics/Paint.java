@@ -18,6 +18,7 @@ public class Paint {
     public Style getStyle() { return style; }
     public void setTextAlign(Align a) { align = a; }
     public Align getTextAlign() { return align; }
+    public void setFakeBoldText(boolean b) {}
     public void setTextSize(float s) { textSize = s; }
     public float getTextSize() { return textSize; }
     public float measureText(String s) { return s == null ? 0f : s.length() * textSize * 0.6f; }

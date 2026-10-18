@@ -29,8 +29,6 @@ public class JunqiStrengthTest {
             boolean[] revealed = new boolean[JunqiBoard.COLS * JunqiBoard.ROWS];
             JunqiAI a = new JunqiAI(levelA);
             JunqiAI b = new JunqiAI(levelB);
-            a.setSeed(seed * 31 + 7);
-            b.setSeed(seed * 31 + 11);
             int aColor = (g % 2 == 0) ? JunqiBoard.RED : JunqiBoard.BLACK;
             int moves = 0;
             while (!board.gameOver() && moves < 400) {
