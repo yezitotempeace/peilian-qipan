@@ -94,4 +94,8 @@ bash run_tests.sh  # 运行测试 / runs the test suite
 
 ## 版本 / Version
 
-v171 · versionCode 171 · versionName 1.20261018.171
+当前 v171 · versionCode 171 · versionName 1.20261018.171
+
+- 每个版本一个 GitHub Release，旧版本保留、不删除；想回旧版直接去 Releases 下载对应的 APK。
+- App 启动页左下角显示当前 versionName 与 versionCode（设置页也能看到）。
+- Each version gets its own GitHub Release; older releases are kept. The app shows the current versionName / versionCode at the bottom-left of the launch screen (and on the settings page).
