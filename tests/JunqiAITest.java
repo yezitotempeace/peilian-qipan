@@ -14,6 +14,10 @@ public class JunqiAITest {
         }
     }
 
+    static boolean sameMove(int[] a, int[] b) {
+        return a != null && b != null && a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
+    }
+
     static boolean has(java.util.List<int[]> ms, int fr, int fc, int tr, int tc) {
         int from = JunqiBoard.idx(fr, fc);
         int to = JunqiBoard.idx(tr, tc);
@@ -83,6 +87,48 @@ public class JunqiAITest {
         // A7 评估符号
         chk("红方子力占优时评估为正", true, JunqiAI.evaluate(base(JunqiBoard.PLATOON), JunqiBoard.RED) > 0);
         chk("黑方视角相反为负", true, JunqiAI.evaluate(base(JunqiBoard.PLATOON), JunqiBoard.BLACK) < 0);
+
+        // A8 三档难度必须真不一样：普通档贪吃「送到嘴边的排长」，强档会算到被司令反吃
+        JunqiBoard trap = new JunqiBoard(true);
+        trap.put(6, 1, JunqiBoard.RED, JunqiBoard.COMPANY);    // 我方连长(200)
+        trap.put(7, 3, JunqiBoard.RED, JunqiBoard.ENGINEER);   // 我方工兵(120)：放在非铁路格，给一个安全走法
+        trap.put(6, 2, JunqiBoard.BLACK, JunqiBoard.PLATOON);  // 黑排长(150)：看起来白吃
+        trap.put(5, 2, JunqiBoard.BLACK, JunqiBoard.COMMANDER);// 黑司令(900)：吃完就能反吃
+        boolean[] allRevealed = new boolean[JunqiBoard.COLS * JunqiBoard.ROWS];
+        java.util.Arrays.fill(allRevealed, true);
+        int[] normalMv = new JunqiAI(JunqiAI.NORMAL).genmove(trap, JunqiBoard.RED, allRevealed);
+        chk("普通档会贪吃送到嘴边的子", true,
+                normalMv != null && normalMv[0] == 6 && normalMv[1] == 1 && normalMv[2] == 6 && normalMv[3] == 2);
+        int[] strongMv = new JunqiAI(JunqiAI.STRONG).genmove(trap, JunqiBoard.RED, allRevealed);
+        chk("强档不吃会被反吃的子", false,
+                strongMv != null && strongMv[0] == 6 && strongMv[1] == 1 && strongMv[2] == 6 && strongMv[3] == 2);
+        chk("强档给的仍是合法手", true,
+                strongMv != null && has(trap.legalMoves(JunqiBoard.RED), strongMv[0], strongMv[1], strongMv[2], strongMv[3]));
+
+        // A9 快档有真随机：同种子可复现；不同种子会走出不同的手（不是换个名字的普通档）
+        JunqiBoard openBoard = new JunqiBoard(true);
+        openBoard.put(6, 2, JunqiBoard.RED, JunqiBoard.COMPANY);
+        openBoard.put(0, 0, JunqiBoard.BLACK, JunqiBoard.FLAG);
+        JunqiAI fastA = new JunqiAI(JunqiAI.FAST);
+        fastA.setSeed(42);
+        JunqiAI fastB = new JunqiAI(JunqiAI.FAST);
+        fastB.setSeed(42);
+        int[] fast1 = fastA.genmove(openBoard, JunqiBoard.RED, null);
+        int[] fast2 = fastB.genmove(openBoard, JunqiBoard.RED, null);
+        chk("快档同一随机种子可复现", true, sameMove(fast1, fast2));
+        java.util.Set<String> fastMoves = new java.util.HashSet<String>();
+        for (int seed = 1; seed <= 20; seed++) {
+            JunqiAI f = new JunqiAI(JunqiAI.FAST);
+            f.setSeed(seed);
+            int[] m = f.genmove(openBoard, JunqiBoard.RED, null);
+            fastMoves.add(m[0] + "," + m[1] + "," + m[2] + "," + m[3]);
+        }
+        chk("快档不同种子会走出不同的手", true, fastMoves.size() > 1);
+
+        // A10 强档也不偷看：未暴露的黑子换成司令/工兵，强档走法不变
+        int[] strongA = new JunqiAI(JunqiAI.STRONG).genmove(base(JunqiBoard.COMMANDER), JunqiBoard.RED, null);
+        int[] strongB = new JunqiAI(JunqiAI.STRONG).genmove(base(JunqiBoard.ENGINEER), JunqiBoard.RED, null);
+        chk("强档：暗子换兵种走法不变（不偷看）", true, sameMove(strongA, strongB));
 
         System.out.println("军棋 AI 测试：通过 " + pass + " 项，失败 " + fail + " 项");
         if (fail > 0) {

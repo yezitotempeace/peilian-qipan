@@ -133,6 +133,45 @@ public class JunqiTest {
         nm.put(5, 0, JunqiBoard.BLACK, JunqiBoard.COMMANDER);
         nm.play(6, 0, 5, 0);
         chk("对方无子可走判胜", JunqiBoard.RED, nm.winner());
+        // 摆子规则：军旗必须在大本营；地雷只在后两排；炸弹不在第一排（20 个种子）
+        boolean setupOk = true;
+        for (int seed = 1; seed <= 20; seed++) {
+            JunqiBoard sb = new JunqiBoard();
+            sb.setupStandard(new java.util.Random(seed));
+            for (int color = JunqiBoard.RED; color <= JunqiBoard.BLACK; color++) {
+                int backRow = color == JunqiBoard.RED ? JunqiBoard.ROWS - 1 : 0;
+                int frontRow = color == JunqiBoard.RED ? 6 : 5;
+                int mines = 0;
+                int flags = 0;
+                for (int rr = 0; rr < JunqiBoard.ROWS; rr++) {
+                    for (int cc = 0; cc < JunqiBoard.COLS; cc++) {
+                        if (sb.ownerAt(rr, cc) != color) {
+                            continue;
+                        }
+                        int tt = sb.at(rr, cc);
+                        if (tt == JunqiBoard.FLAG) {
+                            flags++;
+                            if (!JunqiBoard.isHq(rr, cc)) {
+                                setupOk = false;
+                            }
+                        } else if (tt == JunqiBoard.MINE) {
+                            mines++;
+                            boolean backTwo = color == JunqiBoard.RED ? (rr == 10 || rr == 11) : (rr == 0 || rr == 1);
+                            if (!backTwo) {
+                                setupOk = false;
+                            }
+                        } else if (tt == JunqiBoard.BOMB && rr == frontRow) {
+                            setupOk = false;
+                        }
+                    }
+                }
+                if (flags != 1 || mines != 3) {
+                    setupOk = false;
+                }
+            }
+        }
+        chk("摆子规则：军旗在大本营、地雷只在后两排、炸弹不在第一排（20 个种子）", true, setupOk);
+
         System.out.println("通过 " + pass + " 项，失败 " + fail + " 项");
         if (fail > 0) System.exit(1);
     }

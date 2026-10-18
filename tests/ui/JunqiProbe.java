@@ -63,7 +63,7 @@ public class JunqiProbe {
         chk("暗棋：吃子后原格复位", false, rev2[JunqiBoard.idx(6, 0)]);
 
         // ⑦ 共用暴露逻辑：AI 走到空格不该暴露、吃子才暴露（原来电脑那一手是无条件暴露）
-        JunqiBoard before3 = new JunqiBoard();
+        JunqiBoard before3 = new JunqiBoard(true);   // 空盘：标准开局 (4,4) 可能已经有子，不能靠天吃饭
         before3.put(3, 3, JunqiBoard.RED, JunqiBoard.PLATOON);
         boolean[] r3 = new boolean[JunqiBoard.COLS * JunqiBoard.ROWS];
         r3[JunqiBoard.idx(3, 3)] = true;   // 假装这枚子此前暴露过

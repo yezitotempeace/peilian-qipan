@@ -69,7 +69,20 @@ public final class JunqiBoard {
         }
     }
 
-    /** 随机摆子（暗棋开局用）；同 seed 摆法一致，便于测试。 */
+    /** 除军旗/地雷/炸弹外的 19 个兵种（随机摆子用）。 */
+    private static final int[] OTHER_SET = {
+            COMMANDER, ARMY, DIVISION, DIVISION, BRIGADE, BRIGADE, REGIMENT, REGIMENT,
+            BATTALION, BATTALION, COMPANY, COMPANY, COMPANY, PLATOON, PLATOON, PLATOON,
+            ENGINEER, ENGINEER, ENGINEER
+    };
+
+    /**
+     * 随机摆子（暗棋开局用）；同 seed 摆法一致，便于测试。
+     *
+     * <p>按军棋规则摆：军旗必须在本方大本营（底线两格之一）；地雷只能放后两排；
+     * 炸弹不能放第一排；其余子随机。以前是 25 个子完全随机，军旗可能出现在最前排，
+     * 一步就被夺旗，AI 强弱也测不出来。
+     */
     public void setupStandard(Random rnd) {
         java.util.Arrays.fill(grid, EMPTY);
         java.util.Arrays.fill(owner, EMPTY);
@@ -79,17 +92,71 @@ public final class JunqiBoard {
         sideToMove = RED;
         Random r = rnd == null ? new Random(20261017L) : rnd;
         for (int color = RED; color <= BLACK; color++) {
-            List<Integer> cells = new ArrayList<Integer>();
-            int base = setupRows(color);
+            int base = setupRows(color);          // 红 6、黑 0
+            int backRow = color == RED ? ROWS - 1 : 0;
+            int frontRow = color == RED ? base : base + 5;
+            List<Integer> all = new ArrayList<Integer>();
             for (int row = base; row < base + 6; row++) {
                 for (int col = 0; col < COLS; col++) {
-                    cells.add(idx(row, col));
+                    all.add(idx(row, col));
                 }
             }
-            java.util.Collections.shuffle(cells, r);
-            for (int i = 0; i < ARMY_SET.length; i++) {
-                int p = cells.get(i);
-                grid[p] = ARMY_SET[i];
+            // 军旗：底线两个大本营之一
+            List<Integer> hq = new ArrayList<Integer>();
+            hq.add(idx(backRow, 1));
+            hq.add(idx(backRow, 3));
+            java.util.Collections.shuffle(hq, r);
+            int flagAt = hq.get(0);
+            grid[flagAt] = FLAG;
+            owner[flagAt] = color;
+
+            // 地雷：后两排（去掉军旗那一格）
+            List<Integer> backTwo = new ArrayList<Integer>();
+            for (int row = backRow == 0 ? 0 : ROWS - 2; row <= (backRow == 0 ? 1 : ROWS - 1); row++) {
+                for (int col = 0; col < COLS; col++) {
+                    int p = idx(row, col);
+                    if (p != flagAt) {
+                        backTwo.add(p);
+                    }
+                }
+            }
+            java.util.Collections.shuffle(backTwo, r);
+            for (int i = 0; i < 3; i++) {
+                int p = backTwo.get(i);
+                grid[p] = MINE;
+                owner[p] = color;
+            }
+
+            // 炸弹：不能在第一排（去掉已用格）
+            List<Integer> bombCells = new ArrayList<Integer>();
+            for (int p : all) {
+                int row = rowOf(p);
+                if (row == frontRow) {
+                    continue;
+                }
+                if (owner[p] != EMPTY) {
+                    continue;
+                }
+                bombCells.add(p);
+            }
+            java.util.Collections.shuffle(bombCells, r);
+            for (int i = 0; i < 2; i++) {
+                int p = bombCells.get(i);
+                grid[p] = BOMB;
+                owner[p] = color;
+            }
+
+            // 其余 19 子：剩下的空格随机
+            List<Integer> rest = new ArrayList<Integer>();
+            for (int p : all) {
+                if (owner[p] == EMPTY) {
+                    rest.add(p);
+                }
+            }
+            java.util.Collections.shuffle(rest, r);
+            for (int i = 0; i < OTHER_SET.length; i++) {
+                int p = rest.get(i);
+                grid[p] = OTHER_SET[i];
                 owner[p] = color;
             }
         }
