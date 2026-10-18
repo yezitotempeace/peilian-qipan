@@ -25,6 +25,33 @@ public class View {
     public void postInvalidate() {}
     /** 桩测专用：立即执行（真机上会排到下一帧，测里同步跑更好断言）。 */
     public void post(Runnable r) { if (r != null) r.run(); }
+
+    /** 布局变化回调（真机上有；第 107 轮审计要求用它做「布局完成后再算尺寸」）。 */
+    public interface OnLayoutChangeListener {
+        void onLayoutChange(View v, int left, int top, int right, int bottom,
+                            int oldLeft, int oldTop, int oldRight, int oldBottom);
+    }
+
+    private final java.util.List<OnLayoutChangeListener> layoutListeners =
+            new java.util.ArrayList<OnLayoutChangeListener>();
+
+    public void addOnLayoutChangeListener(OnLayoutChangeListener l) {
+        if (l != null) layoutListeners.add(l);
+    }
+
+    public void removeOnLayoutChangeListener(OnLayoutChangeListener l) {
+        layoutListeners.remove(l);
+    }
+
+    /** 桩测专用：模拟 ViewRootImpl 完成一次 layout（真机上 layout() 之后才回调监听）。 */
+    public void fakeLayout(int w, int h) {
+        int ow = width, oh = height;
+        width = w;
+        height = h;
+        for (OnLayoutChangeListener l : new java.util.ArrayList<OnLayoutChangeListener>(layoutListeners)) {
+            l.onLayoutChange(this, 0, 0, w, h, 0, 0, ow, oh);
+        }
+    }
     public void setFocusable(boolean f) {}
     public void setWillNotDraw(boolean b) {}
     public void requestLayout() {}

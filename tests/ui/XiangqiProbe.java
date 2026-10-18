@@ -70,29 +70,43 @@ public class XiangqiProbe {
         chk("认输先弹确认框（清空后确实新弹了框）", true, anyEvent("dialog"));
         chk("确认框里没把棋盘判终局", false, ((XiangqiBoard) get(a, "board")).gameOver());
 
-        // ⑳ 屏幕自适应：按真实可用空间定边长；转屏后要重算（清单声明了 configChanges，页面不会重建）
+        // ⑳ 屏幕自适应：布局完成后再算；转屏按真机顺序（onConfigurationChanged 先到、layout 在后）
         XiangqiActivity z = newPage();
         Object zScroll = get(z, "scroll");
-        callInherited(zScroll, "fakeSize", new Class<?>[]{int.class, int.class}, 1080, 1920);
         callInherited(get(z, "topChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 300, 300);
         callInherited(get(z, "bottomChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 300, 600);
-        call(z, "onWindowFocusChanged", new Class<?>[]{boolean.class}, Boolean.TRUE);
+        callInherited(zScroll, "fakeLayout", new Class<?>[]{int.class, int.class}, 1080, 1920);   // 首帧 layout
         android.view.ViewGroup.LayoutParams zlp =
                 (android.view.ViewGroup.LayoutParams) callInherited(get(z, "boardView"), "getLayoutParams", new Class<?>[]{});
         int zdp16 = ((Integer) call(z, "dp", new Class<?>[]{int.class}, 16)).intValue();
         int wantPortrait = Math.min(1080 - zdp16, 1920 - 300 - 600 - zdp16);
-        chk("自适应：竖屏棋盘边长 = min(可用宽, 可用高)", wantPortrait, zlp.width);
+        chk("自适应：首帧布局后棋盘边长 = min(可用宽, 可用高)", wantPortrait, zlp.width);
         chk("自适应：竖屏棋盘是正方形", zlp.width, zlp.height);
 
-        // 横屏：宽高互换、顶栏/底栏变矮 ⇒ 边长必须跟着变小
-        callInherited(zScroll, "fakeSize", new Class<?>[]{int.class, int.class}, 1920, 1080);
+        // 真机顺序：先 onConfigurationChanged（此时还是旧尺寸），然后才 layout 出新尺寸
+        call(z, "onConfigurationChanged", new Class<?>[]{android.content.res.Configuration.class}, new android.content.res.Configuration());
         callInherited(get(z, "topChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 1920, 200);
         callInherited(get(z, "bottomChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 1920, 400);
-        call(z, "onConfigurationChanged", new Class<?>[]{android.content.res.Configuration.class}, new android.content.res.Configuration());
+        callInherited(zScroll, "fakeLayout", new Class<?>[]{int.class, int.class}, 1920, 1080);
         zlp = (android.view.ViewGroup.LayoutParams) callInherited(get(z, "boardView"), "getLayoutParams", new Class<?>[]{});
         int wantLandscape = Math.min(1920 - zdp16, 1080 - 200 - 400 - zdp16);
-        chk("自适应：转横屏后按新尺寸重算", wantLandscape, zlp.width);
-        chk("自适应：横屏棋盘也不超过可用高度", true, zlp.width <= 1080 - 200 - 400 - zdp16);
+        chk("自适应：转屏（回调在前、layout 在后）后按新尺寸重算", wantLandscape, zlp.width);
+
+        // 兜底：聚焦时再算一次；方法被删也要报红而不是崩
+        try {
+            call(z, "onWindowFocusChanged", new Class<?>[]{boolean.class}, Boolean.TRUE);
+        } catch (NoSuchMethodException e) {
+            chk("自适应：onWindowFocusChanged 兜底存在", true, false);
+        }
+
+        // 主题变化：原地重建不丢棋局（旧实现 recreate + onCreate newBoard 会把棋局清掉）
+        callPlay(z, 6, 0, 5, 0);
+        int zMoves = ((XiangqiBoard) get(z, "board")).moveCount();
+        set(z, "dark", Boolean.valueOf(!((Boolean) get(z, "dark")).booleanValue()));
+        call(z, "onResume");
+        chk("主题变化重建后棋局没丢", zMoves, ((XiangqiBoard) get(z, "board")).moveCount());
+        chk("主题变化重建后确实动过棋", true, zMoves > 0);
+        chk("主题变化走的是原地重建（没有 recreate 清局）", 0, ((Integer) get(z, "recreateCount")).intValue());
     }
 
     static XiangqiActivity newPage() throws Exception {

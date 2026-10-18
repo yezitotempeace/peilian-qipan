@@ -157,13 +157,12 @@ public class JunqiProbe {
             chk("线程路径：不抛异常（" + ex.getClass().getSimpleName() + ": " + ex.getMessage() + "）", true, false);
         }
 
-        // ⑩ 屏幕自适应：军棋 5×12、格子是正方形 ⇒ 视图宽高比 = 4:11；转屏后重算
+        // ⑩ 屏幕自适应：布局完成后再算；转屏按真机顺序（回调在前、layout 在后）
         JunqiActivity z = newPage();
         Object zScroll = get(z, "scroll");
-        callInherited(zScroll, "fakeSize", new Class<?>[]{int.class, int.class}, 1080, 1920);
         callInherited(get(z, "topChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 1080, 300);
         callInherited(get(z, "bottomChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 1080, 600);
-        call(z, "onWindowFocusChanged", new Class<?>[]{boolean.class}, Boolean.TRUE);
+        callInherited(zScroll, "fakeLayout", new Class<?>[]{int.class, int.class}, 1080, 1920);
         android.view.ViewGroup.LayoutParams zlp =
                 (android.view.ViewGroup.LayoutParams) callInherited(get(z, "boardView"), "getLayoutParams", new Class<?>[]{});
         int zdp16 = ((Integer) call(z, "dp", new Class<?>[]{int.class}, 16)).intValue();
@@ -171,21 +170,53 @@ public class JunqiProbe {
         int availH = 1920 - 300 - 600 - zdp16;
         int wantH = Math.min(availH, Math.round(availW * 11f / 4f));
         int wantW = Math.round(wantH * 4f / 11f);
-        chk("自适应：竖屏棋盘高度 = min(可用高, 可用宽×11/4)", wantH, zlp.height);
-        chk("自适应：竖屏棋盘宽度按 4:11 推出", wantW, zlp.width);
-        chk("自适应：棋盘不超出可用宽度", true, zlp.width <= availW);
+        chk("自适应：首帧布局后棋盘高度 = min(可用高, 可用宽×11/4)", wantH, zlp.height);
+        chk("自适应：首帧布局后棋盘宽度按 4:11 推出", wantW, zlp.width);
 
-        // 横屏
-        callInherited(zScroll, "fakeSize", new Class<?>[]{int.class, int.class}, 1920, 1080);
+        // 真机顺序：先回调（旧尺寸），再 layout（新尺寸）
+        call(z, "onConfigurationChanged", new Class<?>[]{android.content.res.Configuration.class}, new android.content.res.Configuration());
         callInherited(get(z, "topChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 1920, 200);
         callInherited(get(z, "bottomChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 1920, 400);
-        call(z, "onConfigurationChanged", new Class<?>[]{android.content.res.Configuration.class}, new android.content.res.Configuration());
+        callInherited(zScroll, "fakeLayout", new Class<?>[]{int.class, int.class}, 1920, 1080);
         zlp = (android.view.ViewGroup.LayoutParams) callInherited(get(z, "boardView"), "getLayoutParams", new Class<?>[]{});
-        int lH = Math.min(1080 - 200 - 400 - zdp16, Math.round((1920 - zdp16) * 11f / 4f));
+        int lAvailW = 1920 - zdp16;
+        int lAvailH = 1080 - 200 - 400 - zdp16;
+        int lH = Math.min(lAvailH, Math.round(lAvailW * 11f / 4f));
         int lW = Math.round(lH * 4f / 11f);
-        chk("自适应：转横屏后按新尺寸重算", lH, zlp.height);
+        chk("自适应：转屏（回调在前、layout 在后）后按新尺寸重算", lH, zlp.height);
         chk("自适应：横屏宽度同样按 4:11", lW, zlp.width);
-        chk("自适应：横屏棋盘比竖屏矮", true, zlp.height <= wantH);
+
+        // 极小屏横屏：minW 夹取不能把高度顶出可用空间
+        callInherited(get(z, "topChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 640, 100);
+        callInherited(get(z, "bottomChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 640, 150);
+        callInherited(zScroll, "fakeLayout", new Class<?>[]{int.class, int.class}, 640, 360);
+        zlp = (android.view.ViewGroup.LayoutParams) callInherited(get(z, "boardView"), "getLayoutParams", new Class<?>[]{});
+        int sAvailH = 360 - 100 - 150 - zdp16;
+        chk("自适应：小屏横屏棋盘不超出可用高度", true, zlp.height <= sAvailH);
+        chk("自适应：小屏横屏宽度也按 4:11", Math.round(zlp.height * 4f / 11f), zlp.width);
+
+        // 兜底：聚焦时再算一次；方法被删也要报红而不是崩
+        try {
+            call(z, "onWindowFocusChanged", new Class<?>[]{boolean.class}, Boolean.TRUE);
+        } catch (NoSuchMethodException e) {
+            chk("自适应：onWindowFocusChanged 兜底存在", true, false);
+        }
+
+        // 主题变化：原地重建不丢棋局/暗棋状态（旧实现 recreate 会 newGame）
+        JunqiBoard zb = new JunqiBoard(true);
+        zb.put(6, 0, JunqiBoard.RED, JunqiBoard.ENGINEER);
+        set(z, "board", zb);
+        set(z, "startBoard", zb.copy());
+        set(z, "alive", false);
+        call(z, "sync");
+        call(z, "play", new Class<?>[]{int.class, int.class, int.class, int.class}, 6, 0, 5, 0);
+        int zHist = ((JunqiBoard) get(z, "board")).history().size();
+        int zRev = countTrue((boolean[]) get(z, "revealed"));
+        set(z, "darkTheme", Boolean.valueOf(!((Boolean) get(z, "darkTheme")).booleanValue()));
+        call(z, "onResume");
+        chk("主题变化重建后棋局没丢", zHist, ((JunqiBoard) get(z, "board")).history().size());
+        chk("主题变化重建后 revealed 表没被重置", zRev, countTrue((boolean[]) get(z, "revealed")));
+        chk("主题变化走的是原地重建（没有 recreate 清局）", 0, ((Integer) get(z, "recreateCount")).intValue());
 
         System.out.println("军棋页面探针：PASS " + pass + " / FAIL " + fail);
         if (fail > 0) {

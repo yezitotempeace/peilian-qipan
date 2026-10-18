@@ -67,16 +67,10 @@ public class XiangqiActivity extends Activity {
     @Override
     public void onConfigurationChanged(Configuration cfg) {
         super.onConfigurationChanged(cfg);
-        screen = Screen.read(this);
+        // 顺序注意：AOSP 里 onConfigurationChanged 返回后才 ViewRootImpl.updateConfiguration → requestLayout，
+        // 所以在本回调里量不到新尺寸；重算交给 scroll 的 OnLayoutChangeListener，布局完成后再算。
         if (UiTheme.dark(this) != dark) {
-            dark = UiTheme.dark(this);
-            setTheme(UiTheme.style(dark));
-            recreate();
-            return;
-        }
-        // 清单声明了 orientation|screenSize，转屏不会重建 Activity ⇒ 自己按新尺寸再算一次
-        if (scroll != null) {
-            scroll.post(this::fitBoardToScreen);
+            rebuildForTheme(UiTheme.dark(this));
         }
     }
 
@@ -84,7 +78,7 @@ public class XiangqiActivity extends Activity {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
-            fitBoardToScreen();
+            fitBoardToScreen();   // 兜底：个别机型转屏不重跑布局监听时也补一次
         }
     }
 
@@ -92,7 +86,35 @@ public class XiangqiActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (UiTheme.dark(this) != dark) {
-            recreate();
+            rebuildForTheme(UiTheme.dark(this));
+        }
+    }
+
+    /** 主题变了：原地重建控件（不 recreate）——棋局/手顺/选中都在字段里，重建不会丢。 */
+    private void rebuildForTheme(boolean now) {
+        dark = now;
+        palette = Palette.of(now);
+        setTheme(UiTheme.style(now));
+        screen = Screen.read(this);
+        buildUi();
+        if (fullscreen) {
+            topChrome.setVisibility(View.GONE);
+            bottomChrome.setVisibility(View.GONE);
+        }
+        syncBoardView();
+        refreshStatus();
+    }
+
+    private void refreshStatus() {
+        if (board == null) {
+            return;
+        }
+        if (board.gameOver()) {
+            setStatus(board.resultString());
+        } else if (aiThinking) {
+            setStatus("电脑思考中…");
+        } else {
+            setStatus("轮到你走（红方）。难度：" + LEVEL_NAMES[level]);
         }
     }
 
@@ -198,6 +220,14 @@ public class XiangqiActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
         Watermark.wrap(this, scroll, palette, 6);
+        // 布局完成后再按真实可用空间算棋盘：转屏、分屏、全屏都由它触发（比在 onConfigurationChanged 里 post 可靠）
+        scroll.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom,
+                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                fitBoardToScreen();
+            }
+        });
     }
 
     private LinearLayout.LayoutParams textRowParams(int topDp, int bottomDp) {

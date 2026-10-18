@@ -148,8 +148,14 @@ public class JunqiActivity extends Activity {
         Watermark.wrap(this, scroll, palette, 6);
         sync();
         setStatus(dark ? "你执红先走。当前是暗棋。" : "你执红先走。当前是明棋。");
-        // 首帧布局完成后再按真实可用空间算棋盘大小
-        scroll.post(this::fitBoardToScreen);
+        // 布局完成后按真实可用空间算棋盘（首帧、转屏、分屏都走这里；比 post 可靠）
+        scroll.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom,
+                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                fitBoardToScreen();
+            }
+        });
     }
 
     private LinearLayout.LayoutParams boardParams() {
@@ -175,7 +181,8 @@ public class JunqiActivity extends Activity {
         float spanY = JunqiBoard.ROWS - 1f;
         int h = Math.min(availH, Math.round(availW * spanY / spanX));
         int w = Math.round(h * spanX / spanY);
-        int minW = dp(90);
+        // 下限只到「不会把高度顶出可用空间」的程度：极小屏横屏宁可格子小，也不让棋盘藏到滚动区里
+        int minW = Math.min(dp(90), Math.round(availH * spanX / spanY));
         if (w < minW) {
             w = minW;
             h = Math.round(w * spanY / spanX);
@@ -198,14 +205,10 @@ public class JunqiActivity extends Activity {
     @Override
     public void onConfigurationChanged(android.content.res.Configuration cfg) {
         super.onConfigurationChanged(cfg);
-        screen = Screen.read(this);
+        // onConfigurationChanged 返回后才 requestLayout（AOSP 顺序），量不到新尺寸；
+        // 重算由 scroll 的 OnLayoutChangeListener 在布局完成后触发。
         if (UiTheme.dark(this) != darkTheme) {
-            recreate();
-            return;
-        }
-        // 清单声明了 orientation|screenSize ⇒ 转屏不重建，自己按新尺寸重算
-        if (scroll != null) {
-            scroll.post(this::fitBoardToScreen);
+            rebuildForTheme(UiTheme.dark(this));
         }
     }
 
@@ -213,7 +216,7 @@ public class JunqiActivity extends Activity {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
-            fitBoardToScreen();
+            fitBoardToScreen();   // 兜底：个别机型转屏不重跑布局监听时也补一次
         }
     }
 
@@ -221,7 +224,31 @@ public class JunqiActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (UiTheme.dark(this) != darkTheme) {
-            recreate();
+            rebuildForTheme(UiTheme.dark(this));
+        }
+    }
+
+    /** 主题变了：原地重建控件（不 recreate）——棋局/暗棋 revealed/难度都在字段里，重建不会丢。 */
+    private void rebuildForTheme(boolean now) {
+        darkTheme = now;
+        palette = Palette.of(now);
+        setTheme(UiTheme.style(now));
+        screen = Screen.read(this);
+        buildUi();
+        sync();
+        refreshStatus();
+    }
+
+    private void refreshStatus() {
+        if (board == null) {
+            return;
+        }
+        if (board.gameOver()) {
+            setStatus("对局已经结束，点「新局」再来一局。");
+        } else if (aiThinking) {
+            setStatus("电脑思考中…");
+        } else {
+            setStatus(dark ? "你执红先走。当前是暗棋。" : "你执红先走。当前是明棋。");
         }
     }
 
