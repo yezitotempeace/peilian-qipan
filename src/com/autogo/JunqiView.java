@@ -8,7 +8,12 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-/** 军棋棋盘（5×12）：铁路 / 行营 / 大本营 / 暗棋背面 / 选中与可走点。纯绘制，规则在 JunqiBoard。 */
+/**
+ * 军棋棋盘（5 列 × 12 行）：铁路 / 行营 / 大本营 / 暗棋背面 / 选中与可走点。纯绘制，规则在 JunqiBoard。
+ *
+ * <p>棋盘按「方格」画：每个交叉点是一枚棋子格（不是围棋那种线条交点），铁路画在格子后面，
+ * 只从格缝里露出来；棋子格占 0.88 格、棋子占 0.84×0.70 格，保证相邻棋子之间留出空隙。
+ */
 public class JunqiView extends View {
 
     public interface OnCellTap {
@@ -25,18 +30,21 @@ public class JunqiView extends View {
     private OnCellTap tapListener;
 
     private final Paint bg = new Paint();
-    private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint cellFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint cellLine = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint rail = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint face = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint red = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint black = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint pieceLine = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint mark = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private float padX, padY, spacing;
+    private final Paint camp = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint hq = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    /** 每个格子的边长（px）与棋盘左上角。 */
+    private float cell, originX, originY;
     private static final int cols = JunqiBoard.COLS;
     private static final int rows = JunqiBoard.ROWS;
-    private boolean coords;
 
     public JunqiView(Context c) {
         super(c);
@@ -52,26 +60,27 @@ public class JunqiView extends View {
         setFocusable(true);
         bg.setColor(0xFFF6F1E7);
         bg.setStyle(Paint.Style.FILL);
-        line.setColor(0xFF8A6A44);
-        line.setStrokeWidth(1.5f);
-        line.setStyle(Paint.Style.STROKE);
-        rail.setColor(0xFF5A4326);
-        rail.setStrokeWidth(4f);
+        cellFill.setStyle(Paint.Style.FILL);
+        cellFill.setColor(0xFFFFFCF4);
+        cellLine.setStyle(Paint.Style.STROKE);
+        cellLine.setColor(0x558A6A44);
+        rail.setColor(0x996D4C33);
         rail.setStyle(Paint.Style.STROKE);
         text.setColor(0xFF222222);
         text.setTextAlign(Paint.Align.CENTER);
         face.setStyle(Paint.Style.FILL);
-        red.setColor(0xFFC62828);
-        black.setColor(0xFF263238);
+        pieceLine.setStyle(Paint.Style.STROKE);
         mark.setStyle(Paint.Style.STROKE);
-        mark.setStrokeWidth(3f);
-        mark.setColor(0xFF1A73E8);
-        dot.setColor(0x881A73E8);
+        dot.setStyle(Paint.Style.FILL);
+        camp.setStyle(Paint.Style.FILL_AND_STROKE);
+        camp.setColor(0x332E7D32);
+        hq.setStyle(Paint.Style.FILL);
+        hq.setColor(0x33F9A825);
     }
 
     public void setBoard(JunqiBoard b) {
         board = b;
-        spacing = 0f;
+        cell = 0f;
         invalidate();
     }
 
@@ -87,21 +96,21 @@ public class JunqiView extends View {
     public void setOnCellTap(OnCellTap l) { tapListener = l; }
 
     private void geometry(int w, int h) {
-        if (spacing > 0f) {
+        if (cell > 0f) {
             return;
         }
-        float pad = Math.max(6f, Math.min(w, h) * 0.02f);
-        spacing = Math.min((w - 2 * pad) / (cols - 1), (h - 2 * pad) / (rows - 1));
-        padX = (w - spacing * (cols - 1)) / 2f;
-        padY = (h - spacing * (rows - 1)) / 2f;
+        float pad = Math.max(8f, Math.min(w, h) * 0.03f);
+        cell = Math.min((w - 2 * pad) / cols, (h - 2 * pad) / rows);
+        originX = (w - cell * cols) / 2f;
+        originY = (h - cell * rows) / 2f;
     }
 
-    private float cx(int col) { return padX + col * spacing; }
-    private float cy(int row) { return padY + row * spacing; }
+    private float cx(int col) { return originX + (col + 0.5f) * cell; }
+    private float cy(int row) { return originY + (row + 0.5f) * cell; }
 
     @Override
     protected void onSizeChanged(int w, int h, int ow, int oh) {
-        spacing = 0f;
+        cell = 0f;
         super.onSizeChanged(w, h, ow, oh);
     }
 
@@ -109,41 +118,53 @@ public class JunqiView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         geometry(getWidth(), getHeight());
+        if (cell <= 0f) {
+            return;
+        }
         canvas.drawRect(0, 0, getWidth(), getHeight(), bg);
-        BoardArt.boardEdge(canvas, 0, 0, getWidth(), getHeight());
-        // 细网格
+
+        // 每格：普通方格 / 行营圆 / 大本营方块
+        cellLine.setStrokeWidth(Math.max(1f, cell * 0.018f));
         for (int r = 0; r < rows; r++) {
-            canvas.drawLine(cx(0), cy(r), cx(cols - 1), cy(r), line);
+            for (int c = 0; c < cols; c++) {
+                float x = cx(c), y = cy(r);
+                if (JunqiBoard.isCamp(r, c)) {
+                    camp.setStrokeWidth(Math.max(1.5f, cell * 0.035f));
+                    camp.setColor(0x332E7D32);
+                    canvas.drawCircle(x, y, cell * 0.47f, camp);
+                } else if (JunqiBoard.isHq(r, c)) {
+                    float s = cell * 0.47f;
+                    canvas.drawRect(x - s, y - s, x + s, y + s, hq);
+                    canvas.drawRect(x - s, y - s, x + s, y + s, cellLine);
+                } else {
+                    float s = cell * 0.44f;
+                    canvas.drawRect(x - s, y - s, x + s, y + s, cellFill);
+                    canvas.drawRect(x - s, y - s, x + s, y + s, cellLine);
+                }
+            }
         }
-        for (int c = 0; c < cols; c++) {
-            canvas.drawLine(cx(c), cy(0), cx(c), cy(rows - 1), line);
-        }
-        // 铁路：整行 1/5/6/10 + 两侧列 1..10
+
+        // 铁路：压在格子上（半透明，仍看得见连续轨道），棋子再盖在它上面
+        rail.setStrokeWidth(Math.max(2.5f, cell * 0.065f));
         for (int r = 0; r < rows; r++) {
-            if (JunqiBoard.isRail(r, 0)) {
-                canvas.drawLine(cx(0), cy(r), cx(cols - 1), cy(r), rail);
+            // 只看「整行铁路」：isRail(r, 0) 会被「第 0 列也是铁路」的规则命中，
+            // 第 1..10 行都会返回 true（第 109 轮审计 高-1）；用中间列避开列规则。
+            if (JunqiBoard.isRail(r, cols / 2)) {
+                canvas.drawLine(originX + cell * 0.10f, cy(r), originX + cell * (cols - 0.10f), cy(r), rail);
             }
         }
         for (int r = 1; r < rows - 1; r++) {
             if (JunqiBoard.isRail(r, 0)) {
-                canvas.drawLine(cx(0), cy(r), cx(0), cy(r), rail);
+                canvas.drawLine(cx(0), originY + cell * 1.10f, cx(0), originY + cell * (rows - 1.10f), rail);
+                canvas.drawLine(cx(cols - 1), originY + cell * 1.10f, cx(cols - 1), originY + cell * (rows - 1.10f), rail);
+                break;
             }
         }
-        canvas.drawLine(cx(0), cy(1), cx(0), cy(rows - 2), rail);
-        canvas.drawLine(cx(cols - 1), cy(1), cx(cols - 1), cy(rows - 2), rail);
-        // 行营与兵站格
-        float half = spacing * 0.30f;
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                if (JunqiBoard.isCamp(r, c)) {
-                    canvas.drawCircle(cx(c), cy(r), half * 0.8f, mark);
-                } else if (JunqiBoard.isHq(r, c)) {
-                    canvas.drawRect(cx(c) - half * 0.8f, cy(r) - half * 0.8f, cx(c) + half * 0.8f, cy(r) + half * 0.8f, mark);
-                }
-            }
-        }
+
+        // 棋子：宽 0.84 格、高 0.70 格（相邻棋子之间留缝）
         if (board != null) {
-            float size = spacing * 0.62f;
+            float pw = cell * 0.84f, ph = cell * 0.70f, radius = cell * 0.11f;
+            pieceLine.setStrokeWidth(Math.max(1.5f, cell * 0.025f));
             for (int r = 0; r < rows; r++) {
                 for (int c = 0; c < cols; c++) {
                     int color = board.ownerAt(r, c);
@@ -151,22 +172,36 @@ public class JunqiView extends View {
                         continue;
                     }
                     int p = JunqiBoard.idx(r, c);
-                    face.setColor(color == JunqiBoard.RED ? 0xFFFFE0E0 : 0xFFE0E6EA);
-                    RectF rr = new RectF(cx(c) - size, cy(r) - size * 0.78f, cx(c) + size, cy(r) + size * 0.78f);
-                    canvas.drawRoundRect(rr, size * 0.25f, size * 0.25f, face);
+                    float x = cx(c), y = cy(r);
                     boolean back = hidden != null && p < hidden.length && hidden[p];
-                    String label = back ? "" : JunqiBoard.typeName(board.at(r, c));
-                    if (!back && label != null && label.length() > 0) {
-                        text.setColor(color == JunqiBoard.RED ? red.getColor() : black.getColor());
-                        text.setTextSize(size * 0.78f);
-                        canvas.drawText(label, cx(c), cy(r) + size * 0.28f, text);
-                    } else if (back) {
-                        face.setColor(0xFF9E9E9E);
-                        canvas.drawCircle(cx(c), cy(r), size * 0.35f, face);
+                    // 外圈深色边 + 内芯浅色面
+                    pieceLine.setColor(color == JunqiBoard.RED ? 0xFFB71C1C : 0xFF37474F);
+                    face.setStyle(Paint.Style.FILL);
+                    face.setColor(pieceLine.getColor());
+                    RectF outer = new RectF(x - pw / 2f, y - ph / 2f, x + pw / 2f, y + ph / 2f);
+                    canvas.drawRoundRect(outer, radius, radius, face);
+
+                    face.setColor(back
+                            ? 0xFFB0BEC5
+                            : (color == JunqiBoard.RED ? 0xFFFFE3E3 : 0xFFE6ECEF));
+                    RectF inner = new RectF(x - pw * 0.455f, y - ph * 0.44f, x + pw * 0.455f, y + ph * 0.44f);
+                    canvas.drawRoundRect(inner, radius * 0.8f, radius * 0.8f, face);
+
+                    if (back) {
+                        face.setColor(0xFF546E7A);
+                        canvas.drawCircle(x, y, cell * 0.10f, face);
+                    } else {
+                        String label = JunqiBoard.typeName(board.at(r, c));
+                        if (label != null && label.length() > 0) {
+                            text.setColor(color == JunqiBoard.RED ? 0xFFB71C1C : 0xFF263238);
+                            text.setTextSize(cell * 0.32f);
+                            canvas.drawText(label, x, y + cell * 0.113f, text);
+                        }
                     }
                 }
             }
         }
+
         if (lastFrom >= 0) {
             drawCellRing(canvas, lastFrom, 0xFFF9A825);
             drawCellRing(canvas, lastTo, 0xFFF9A825);
@@ -176,14 +211,16 @@ public class JunqiView extends View {
         }
         if (legal != null) {
             for (int p : legal) {
-                canvas.drawCircle(cx(p % cols), cy(p / cols), spacing * 0.12f, dot);
+                canvas.drawCircle(cx(p % cols), cy(p / cols), cell * 0.10f, dot);
             }
         }
+        BoardArt.boardEdge(canvas, 0, 0, getWidth(), getHeight());
     }
 
     private void drawCellRing(Canvas canvas, int p, int color) {
         mark.setColor(color);
-        canvas.drawCircle(cx(p % cols), cy(p / cols), spacing * 0.5f, mark);
+        mark.setStrokeWidth(Math.max(2f, cell * 0.05f));
+        canvas.drawCircle(cx(p % cols), cy(p / cols), cell * 0.47f, mark);
     }
 
     @Override
@@ -192,17 +229,16 @@ public class JunqiView extends View {
             return super.onTouchEvent(e);
         }
         geometry(getWidth(), getHeight());
-        if (spacing <= 0f) {
+        if (cell <= 0f) {
             return super.onTouchEvent(e);
         }
-        int col = Math.round((e.getX() - padX) / spacing);
-        int row = Math.round((e.getY() - padY) / spacing);
+        float x = e.getX(), y = e.getY();
+        if (x < originX || y < originY || x >= originX + cell * cols || y >= originY + cell * rows) {
+            return super.onTouchEvent(e);
+        }
+        int col = (int) ((x - originX) / cell);
+        int row = (int) ((y - originY) / cell);
         if (col < 0 || col >= cols || row < 0 || row >= rows) {
-            return super.onTouchEvent(e);
-        }
-        float dx = e.getX() - cx(col);
-        float dy = e.getY() - cy(row);
-        if (Math.hypot(dx, dy) > spacing * 0.55f) {
             return super.onTouchEvent(e);
         }
         tapListener.onTap(row, col);

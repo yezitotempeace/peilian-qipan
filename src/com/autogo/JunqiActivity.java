@@ -161,13 +161,13 @@ public class JunqiActivity extends Activity {
     private LinearLayout.LayoutParams boardParams() {
         int h = boardSideH > 0 ? boardSideH : dp(screen.boardSizeDp(8));
         int w = boardSideW > 0 ? boardSideW
-                : Math.max(dp(90), Math.round(h * (JunqiBoard.COLS - 1f) / (JunqiBoard.ROWS - 1f)));
+                : Math.max(dp(90), Math.round(h * JunqiBoard.COLS / (float) JunqiBoard.ROWS));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(w, h);
         lp.gravity = Gravity.CENTER_HORIZONTAL;
         return lp;
     }
 
-    /** 按可用空间定棋盘宽高：5×12 的格子是正方形 ⇒ 视图宽高比 = 4:11。 */
+    /** 按可用空间定棋盘宽高：5×12 的方格棋盘，视图宽高比 = 5:12。 */
     private void fitBoardToScreen() {
         if (scroll == null || boardView == null || topChrome == null || bottomChrome == null) {
             return;
@@ -177,8 +177,9 @@ public class JunqiActivity extends Activity {
         if (availW <= 0 || availH <= 0) {
             return;
         }
-        float spanX = JunqiBoard.COLS - 1f;
-        float spanY = JunqiBoard.ROWS - 1f;
+        // 新棋盘按「方格」画：5 列 × 12 行的格子都是正方形，宽高比就是 5:12
+        float spanX = JunqiBoard.COLS;
+        float spanY = JunqiBoard.ROWS;
         int h = Math.min(availH, Math.round(availW * spanY / spanX));
         int w = Math.round(h * spanX / spanY);
         // 下限只到「不会把高度顶出可用空间」的程度：极小屏横屏宁可格子小，也不让棋盘藏到滚动区里

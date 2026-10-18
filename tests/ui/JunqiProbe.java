@@ -10,6 +10,7 @@ public class JunqiProbe {
     public static void main(String[] args) throws Exception {
         JunqiActivity p = newPage();
         JunqiView v = (JunqiView) get(p, "boardView");
+        v.fakeSize(500, 1200);   // 桩里没有真实 layout，自己给视图一个尺寸
         ViewGroup holder = contentOf(p);
 
         chk("新局默认暗棋", Boolean.TRUE, get(p, "dark"));
@@ -18,7 +19,7 @@ public class JunqiProbe {
         chk("水印在位", true, hasWatermark(holder));
 
         draw(v);
-        chk("暗棋下 50 个棋子块", 50, android.graphics.Canvas.RECTS.size());
+        chk("暗棋下 100 个圆角块（50 块棋子 × 边+面）", 100, android.graphics.Canvas.RECTS.size());
         chk("暗棋下不画兵种字", 0, android.graphics.Canvas.TEXTS.size());
 
         click(p, "暗棋 / 明棋");
@@ -160,6 +161,25 @@ public class JunqiProbe {
         // ⑩ 屏幕自适应：布局完成后再算；转屏按真机顺序（回调在前、layout 在后）
         JunqiActivity z = newPage();
         Object zScroll = get(z, "scroll");
+
+        // 首帧初始宽要用「真实屏幕」夹具，否则 0×0 屏会把 4:11 和 5:12 都夹成最小宽 90，测不出区别（审计 110 低-2）
+        JunqiActivity zs = new JunqiActivity();
+        set(zs, "prefs", new android.content.SharedPreferences());
+        android.content.res.Configuration zcfg = new android.content.res.Configuration();
+        zcfg.screenWidthDp = 540;
+        zcfg.screenHeightDp = 960;
+        zcfg.smallestScreenWidthDp = 540;
+        android.util.DisplayMetrics zdm = new android.util.DisplayMetrics();
+        zdm.density = 2f;
+        zdm.widthPixels = 1080;
+        zdm.heightPixels = 1920;
+        set(zs, "resources", new android.content.res.Resources(zcfg, zdm));
+        zs.applicationInfo = new android.content.pm.ApplicationInfo();
+        zs.applicationInfo.nativeLibraryDir = "/nonexistent";
+        call(zs, "onCreate", new Class<?>[]{android.os.Bundle.class}, new android.os.Bundle());
+        android.view.ViewGroup.LayoutParams zslp =
+                (android.view.ViewGroup.LayoutParams) callInherited(get(zs, "boardView"), "getLayoutParams", new Class<?>[]{});
+        chk("首帧初始棋盘宽 437（540×960dp/density2，5:12；4:11 会是 381）", 437, zslp.width);
         callInherited(get(z, "topChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 1080, 300);
         callInherited(get(z, "bottomChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 1080, 600);
         callInherited(zScroll, "fakeLayout", new Class<?>[]{int.class, int.class}, 1080, 1920);
@@ -168,10 +188,10 @@ public class JunqiProbe {
         int zdp16 = ((Integer) call(z, "dp", new Class<?>[]{int.class}, 16)).intValue();
         int availW = 1080 - zdp16;
         int availH = 1920 - 300 - 600 - zdp16;
-        int wantH = Math.min(availH, Math.round(availW * 11f / 4f));
-        int wantW = Math.round(wantH * 4f / 11f);
-        chk("自适应：首帧布局后棋盘高度 = min(可用高, 可用宽×11/4)", wantH, zlp.height);
-        chk("自适应：首帧布局后棋盘宽度按 4:11 推出", wantW, zlp.width);
+        int wantH = Math.min(availH, Math.round(availW * 12f / 5f));
+        int wantW = Math.round(wantH * 5f / 12f);
+        chk("自适应：首帧布局后棋盘高度 = min(可用高, 可用宽×12/5)", wantH, zlp.height);
+        chk("自适应：首帧布局后棋盘宽度按 5:12 推出", wantW, zlp.width);
 
         // 真机顺序：先回调（旧尺寸），再 layout（新尺寸）
         call(z, "onConfigurationChanged", new Class<?>[]{android.content.res.Configuration.class}, new android.content.res.Configuration());
@@ -181,10 +201,10 @@ public class JunqiProbe {
         zlp = (android.view.ViewGroup.LayoutParams) callInherited(get(z, "boardView"), "getLayoutParams", new Class<?>[]{});
         int lAvailW = 1920 - zdp16;
         int lAvailH = 1080 - 200 - 400 - zdp16;
-        int lH = Math.min(lAvailH, Math.round(lAvailW * 11f / 4f));
-        int lW = Math.round(lH * 4f / 11f);
+        int lH = Math.min(lAvailH, Math.round(lAvailW * 12f / 5f));
+        int lW = Math.round(lH * 5f / 12f);
         chk("自适应：转屏（回调在前、layout 在后）后按新尺寸重算", lH, zlp.height);
-        chk("自适应：横屏宽度同样按 4:11", lW, zlp.width);
+        chk("自适应：横屏宽度同样按 5:12", lW, zlp.width);
 
         // 极小屏横屏：minW 夹取不能把高度顶出可用空间
         callInherited(get(z, "topChrome"), "fakeSize", new Class<?>[]{int.class, int.class}, 640, 100);
@@ -193,7 +213,7 @@ public class JunqiProbe {
         zlp = (android.view.ViewGroup.LayoutParams) callInherited(get(z, "boardView"), "getLayoutParams", new Class<?>[]{});
         int sAvailH = 360 - 100 - 150 - zdp16;
         chk("自适应：小屏横屏棋盘不超出可用高度", true, zlp.height <= sAvailH);
-        chk("自适应：小屏横屏宽度也按 4:11", Math.round(zlp.height * 4f / 11f), zlp.width);
+        chk("自适应：小屏横屏宽度也按 5:12", Math.round(zlp.height * 5f / 12f), zlp.width);
 
         // 兜底：聚焦时再算一次；方法被删也要报红而不是崩
         try {
