@@ -1,0 +1,10 @@
+package android.os;
+public class Handler {
+    public static final java.util.List<Runnable> POSTED = new java.util.ArrayList<Runnable>();
+    /** 记下 postDelayed 的延时值。 */
+    public static final java.util.List<Long> DELAYS = new java.util.ArrayList<Long>();
+    public static int removed;
+    public Handler(Looper l) {}
+    public boolean postDelayed(Runnable r, long d) { FakeLog.log("postDelayed:" + d); DELAYS.add(Long.valueOf(d)); POSTED.add(r); return true; }
+    public void removeCallbacks(Runnable r) { removed++; FakeLog.log("removeCallbacks"); }
+}

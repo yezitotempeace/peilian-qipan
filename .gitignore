@@ -1,0 +1,6 @@
+# 构建产物 / build outputs
+autogo.apk
+autogo.apk.idsig
+*.keystore
+build/
+*.class
