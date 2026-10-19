@@ -155,7 +155,7 @@ cp "$PROJ/src/com/autogo/MenuActivity.java" "$PROJ/src/com/autogo/GomokuActivity
    "$PROJ/src/com/autogo/XiangqiReviewActivity.java" \
    "$PROJ/src/com/autogo/JunqiView.java" "$PROJ/src/com/autogo/JunqiActivity.java" \
    "$PROJ/src/com/autogo/Game2048View.java" "$PROJ/src/com/autogo/Game2048Activity.java" \
-   "$PROJ/src/com/autogo/UpdateManager.java" "$PROJ/src/com/autogo/UpdateScheduler.java" \
+   "$PROJ/src/com/autogo/UpdateManager.java" "$PROJ/src/com/autogo/UpdateScheduler.java" "$PROJ/src/com/autogo/MenuBackground.java" \
    "$PROJ/src/com/autogo/GomokuView.java" \
    "$PROJ/src/com/autogo/GomokuReviewActivity.java" "$PROJ/src/com/autogo/WinrateChartView.java" \
    "$PROJ/src/com/autogo/WinrateBarView.java" "$PROJ/src/com/autogo/UiTheme.java" \

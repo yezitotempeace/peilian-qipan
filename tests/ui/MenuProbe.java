@@ -70,8 +70,11 @@ public class MenuProbe {
         check(a.content instanceof android.widget.FrameLayout, "内容视图是浮层（FrameLayout）");
         android.view.ViewGroup holder = (android.view.ViewGroup) a.content;
         checkEq(2, holder.getChildCount(), "浮层里是「页面 + 水印」两个子视图");
-        LinearLayout root = (LinearLayout) holder.getChildAt(0);
-        checkEq(LinearLayout.VERTICAL, root.orientation, "根视图竖排");
+        android.widget.FrameLayout screen = (android.widget.FrameLayout) holder.getChildAt(0);
+        checkEq(2, screen.getChildCount(), "页面层是「装饰背景 + 内容」两层");
+        check(screen.getChildAt(0) instanceof MenuBackground, "第一层是满铺装饰背景");
+        LinearLayout root = (LinearLayout) screen.getChildAt(1);
+        checkEq(LinearLayout.VERTICAL, root.orientation, "内容根视图竖排");
         checkEq(10, root.getChildCount(), "页面 10 行（公告 / 标题 / 围棋 / 五子棋 / 象棋 / 军棋 / 2048 / 提示 / 撑底空隙 / 版本）");
         checkEq("陪练棋盘", textOf(root.getChildAt(1)), "标题文案（软件名）");
         check(root.getChildAt(2) instanceof Button, "第 3 行是按钮");
@@ -115,10 +118,10 @@ public class MenuProbe {
         MenuActivity d = create(Theme.DARK);
         checkEq(1, d.setThemeCount, "深色档：onCreate 里正好套一次窗口主题");
         checkEq(UiTheme.style(true), d.lastTheme, "深色档：套的是深色主题");
-        checkEq(Palette.of(true).background, ((View) ((android.view.ViewGroup) d.content).getChildAt(0)).bgColor, "深色档：页面底色用深色配色");
+        check(((MenuBackground) ((android.view.ViewGroup) ((android.view.ViewGroup) d.content).getChildAt(0)).getChildAt(0)).isDark(), "深色档：装饰背景用深色配色");
         MenuActivity l = create(Theme.LIGHT);
         checkEq(UiTheme.style(false), l.lastTheme, "浅色档：套的是浅色主题");
-        checkEq(Palette.of(false).background, ((View) ((android.view.ViewGroup) l.content).getChildAt(0)).bgColor, "浅色档：页面底色用浅色配色");
+        check(!((MenuBackground) ((android.view.ViewGroup) ((android.view.ViewGroup) l.content).getChildAt(0)).getChildAt(0)).isDark(), "浅色档：装饰背景用浅色配色");
 
         // ④ 系统配置变化（清单声明 configChanges，本页不重建 ⇒ 必须自己重判重铺）
         MenuActivity c = create(Theme.SYSTEM);
@@ -150,12 +153,13 @@ public class MenuProbe {
         // ⑥ 版本号读不到时兜底
         PackageManager.THROW = true;
         MenuActivity t = create(Theme.LIGHT);
-        checkEq("版本 ?（versionCode -1）", textOf(((ViewGroup) ((ViewGroup) t.content).getChildAt(0)).getChildAt(9)), "读版本失败时显示「版本 ?」（versionCode -1）而不是崩");
+        ViewGroup screen6 = (ViewGroup) ((ViewGroup) t.content).getChildAt(0);
+        checkEq("版本 ?（versionCode -1）", textOf(((ViewGroup) screen6.getChildAt(1)).getChildAt(9)), "读版本失败时显示「版本 ?」（versionCode -1）而不是崩");
         PackageManager.THROW = false;
 
         // ⑧ 右上角「公告」按钮与左下角版本行（v127，用户要求）
         MenuActivity n8 = create(Theme.LIGHT);
-        ViewGroup root8 = (ViewGroup) ((android.view.ViewGroup) n8.content).getChildAt(0);
+        ViewGroup root8 = (ViewGroup) ((android.view.ViewGroup) ((android.view.ViewGroup) n8.content).getChildAt(0)).getChildAt(1);
         View top8 = root8.getChildAt(0);
         check(top8 instanceof LinearLayout, "第一行是「公告」所在的那一行");
         LinearLayout topRow8 = (LinearLayout) top8;
@@ -172,7 +176,7 @@ public class MenuProbe {
         checkEq("更新了什么（" + Changelog.latest().version + "）", (android.os.FakeLog.findPrefix("dialog.title:") == null ? "" : android.os.FakeLog.findPrefix("dialog.title:").substring("dialog.title:".length())), "点「公告」弹出的标题带最新版本号");
         String msg8 = android.os.FakeLog.findPrefix("dialog.msg:");
         if (msg8 == null) msg8 = "";   // 按钮没接线时 findPrefix 回 null，要给干净 FAIL 而不是崩
-        check(msg8 != null && msg8.contains("v184") && msg8.contains("v183") && !msg8.contains("v182") && !msg8.contains("v87"), "公告只列最近两个版本（v184、v183），不再列更早版本");
+        check(msg8 != null && msg8.contains("v185") && msg8.contains("v184") && !msg8.contains("v183") && !msg8.contains("v87"), "公告只列最近两个版本（v185、v184），不再列更早版本");
         checkEq("dialog.pos:知道了", android.os.FakeLog.findPrefix("dialog.pos:") == null ? null : android.os.FakeLog.findPrefix("dialog.pos:"), "弹窗有关闭按钮");
         checkEq(Long.valueOf(1L), Long.valueOf(android.os.FakeLog.countPrefix("dialog.show")), "点一次公告只弹一个窗");
 

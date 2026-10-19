@@ -9,6 +9,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -141,7 +142,7 @@ public class MenuActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setGravity(Gravity.CENTER);
-        root.setBackgroundColor(palette.background);
+        root.setBackgroundColor(0x00000000);   // 透明：让后面的装饰背景透出来
         int pad = dp(24);
         root.setPadding(pad, pad, pad, pad);
 
@@ -254,7 +255,16 @@ public class MenuActivity extends Activity {
         root.addView(ver, verLp);
 
         
-        Watermark.wrap(this, root, palette, 6);
+        // 满铺装饰背景（明暗两套），内容层透明叠在上面
+        MenuBackground bg = new MenuBackground(this);
+        bg.setDark(palette.dark);
+        FrameLayout screen = new FrameLayout(this);
+        screen.addView(bg, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        screen.addView(root, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        Watermark.wrap(this, screen, palette, 6);
     }
 
     /**
