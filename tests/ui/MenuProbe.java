@@ -172,7 +172,7 @@ public class MenuProbe {
         checkEq("更新了什么（" + Changelog.latest().version + "）", (android.os.FakeLog.findPrefix("dialog.title:") == null ? "" : android.os.FakeLog.findPrefix("dialog.title:").substring("dialog.title:".length())), "点「公告」弹出的标题带最新版本号");
         String msg8 = android.os.FakeLog.findPrefix("dialog.msg:");
         if (msg8 == null) msg8 = "";   // 按钮没接线时 findPrefix 回 null，要给干净 FAIL 而不是崩
-        check(msg8 != null && msg8.contains("v183") && msg8.contains("v182") && !msg8.contains("v181") && !msg8.contains("v87"), "公告只列最近两个版本（v183、v182），不再列更早版本");
+        check(msg8 != null && msg8.contains("v184") && msg8.contains("v183") && !msg8.contains("v182") && !msg8.contains("v87"), "公告只列最近两个版本（v184、v183），不再列更早版本");
         checkEq("dialog.pos:知道了", android.os.FakeLog.findPrefix("dialog.pos:") == null ? null : android.os.FakeLog.findPrefix("dialog.pos:"), "弹窗有关闭按钮");
         checkEq(Long.valueOf(1L), Long.valueOf(android.os.FakeLog.countPrefix("dialog.show")), "点一次公告只弹一个窗");
 

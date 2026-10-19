@@ -425,6 +425,10 @@ public final class JunqiBoard {
         int atkOwner = owner[from];
         int def = grid[to];
         int defOwner = owner[to];
+        lastAtkType = atk;
+        lastDefType = def;
+        lastResult = 0;
+        lastAttacker = atkOwner;
         history.add(new int[]{fr, fc, tr, tc});
         if (defOwner == EMPTY) {
             move(from, to);
@@ -434,6 +438,7 @@ public final class JunqiBoard {
             endReason = "军旗被夺";
             move(from, to);
             lastBattle = "夺旗";
+            lastResult = atkOwner;
             return true;
         } else if (atk == BOMB || def == BOMB) {
             clear(from);
@@ -443,16 +448,20 @@ public final class JunqiBoard {
             if (atk == ENGINEER) {
                 move(from, to);
                 lastBattle = "工兵挖雷";
+                lastResult = atkOwner;
             } else {
                 clear(from);
                 lastBattle = "踩雷阵亡";
+                lastResult = defOwner;
             }
         } else if (atk > def) {
             move(from, to);
             lastBattle = "吃掉对方";
+            lastResult = atkOwner;
         } else if (atk < def) {
             clear(from);
             lastBattle = "攻击失败阵亡";
+            lastResult = defOwner;
         } else {
             clear(from);
             clear(to);
@@ -467,10 +476,22 @@ public final class JunqiBoard {
     }
 
     private String lastBattle = "";
+    private int lastAtkType;
+    private int lastDefType;
+    private int lastResult;
+    private int lastAttacker;
 
     public String lastBattle() {
         return lastBattle;
     }
+
+    /** 上一手交战双方兵种与结果，供界面把「被吃的对方兵种」翻出来给人看。 */
+    public int lastAtkType() { return lastAtkType; }
+    public int lastDefType() { return lastDefType; }
+    /** 上一手战斗胜方颜色（RED/BLACK）；同归于尽/普通移动为 0。 */
+    public int lastResult() { return lastResult; }
+    /** 上一手进攻方颜色（用于把「对方被吃的兵种」翻出来给人看）。 */
+    public int lastAttacker() { return lastAttacker; }
 
     private void move(int from, int to) {
         grid[to] = grid[from];

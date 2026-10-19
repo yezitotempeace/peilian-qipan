@@ -63,6 +63,35 @@ public class JunqiRevealTest {
         JunqiReveal.resolve(none(), null, null);
         chk("空参数不炸", true, true);
 
+        // 5. 战斗兵种 / 攻方 / 胜方可读（供界面把「被吃的对方兵种」翻出来）
+        JunqiBoard b5 = new JunqiBoard(true);
+        b5.put(5, 0, JunqiBoard.RED, JunqiBoard.COMMANDER);
+        b5.put(4, 0, JunqiBoard.BLACK, JunqiBoard.PLATOON);
+        boolean m5 = b5.play(5, 0, 4, 0);
+        chk("红司令吃黑排长能落子", true, m5);
+        chk("被吃对方兵种=排长", "排长", JunqiBoard.typeName(b5.lastDefType()));
+        chk("进攻方=红", JunqiBoard.RED, b5.lastAttacker());
+        chk("胜方=红", JunqiBoard.RED, b5.lastResult());
+
+        JunqiBoard b6 = new JunqiBoard(true);
+        b6.put(5, 0, JunqiBoard.RED, JunqiBoard.ENGINEER);
+        b6.put(4, 0, JunqiBoard.BLACK, JunqiBoard.MINE);
+        b6.play(5, 0, 4, 0);
+        chk("工兵挖雷：胜方=红", JunqiBoard.RED, b6.lastResult());
+        chk("工兵挖雷：对方兵种=地雷", "地雷", JunqiBoard.typeName(b6.lastDefType()));
+
+        JunqiBoard b7 = new JunqiBoard(true);
+        b7.put(5, 0, JunqiBoard.RED, JunqiBoard.COMMANDER);
+        b7.put(4, 0, JunqiBoard.BLACK, JunqiBoard.COMMANDER);
+        b7.play(5, 0, 4, 0);
+        chk("同级同归于尽：胜方=0", 0, b7.lastResult());
+        chk("同级同归于尽：对方兵种=司令", "司令", JunqiBoard.typeName(b7.lastDefType()));
+
+        JunqiBoard b8 = new JunqiBoard(true);
+        b8.put(5, 0, JunqiBoard.RED, JunqiBoard.COMMANDER);
+        b8.play(5, 0, 4, 0);
+        chk("走到空格：对方兵种=空（不揭示）", JunqiBoard.EMPTY, b8.lastDefType());
+
         System.out.println("军棋暴露规则测试：通过 " + pass + " 项，失败 " + fail + " 项");
         if (fail > 0) {
             System.exit(1);

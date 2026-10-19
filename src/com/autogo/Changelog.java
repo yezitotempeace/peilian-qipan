@@ -19,10 +19,10 @@ public final class Changelog {
 
     /** 最新的排在前面。 */
     private static final Entry[] ENTRIES = {
+        new Entry("v184",
+                "军棋暗棋吃子后，把被吃的对方兵种「翻」出来显示（以前吃子时对方棋子直接消失，看不到是什么）。"),
         new Entry("v183",
                 "军棋棋盘改成两套主题：深色是手机军棋 App 风（深底 + 红黑彩色圆角棋子），浅色是经典木质棋盘（木色 + 木纹棋子）；行营、大本营只画描边，去掉了 60 个兵站小方块。"),
-        new Entry("v182",
-                "公告与仓库只保留最近两个版本：应用内公告只显示最近两个版本的改动，GitHub Releases 也只留最近两个版本（更早的版本本地仍保留）。"),
     };
 
     public static Entry[] entries() {
