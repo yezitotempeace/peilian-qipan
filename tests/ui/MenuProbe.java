@@ -72,7 +72,7 @@ public class MenuProbe {
         checkEq(2, holder.getChildCount(), "浮层里是「页面 + 水印」两个子视图");
         LinearLayout root = (LinearLayout) holder.getChildAt(0);
         checkEq(LinearLayout.VERTICAL, root.orientation, "根视图竖排");
-        checkEq(9, root.getChildCount(), "页面 9 行（公告 / 标题 / 围棋 / 五子棋 / 象棋 / 军棋 / 提示 / 撑底空隙 / 版本）");
+        checkEq(10, root.getChildCount(), "页面 10 行（公告 / 标题 / 围棋 / 五子棋 / 象棋 / 军棋 / 2048 / 提示 / 撑底空隙 / 版本）");
         checkEq("陪练棋盘", textOf(root.getChildAt(1)), "标题文案（软件名）");
         check(root.getChildAt(2) instanceof Button, "第 3 行是按钮");
         checkEq("围　棋", textOf(root.getChildAt(2)), "围棋按钮文案（全角空格）");
@@ -82,12 +82,16 @@ public class MenuProbe {
         checkEq("象　棋", textOf(root.getChildAt(4)), "象棋按钮文案（全角空格）");
         check(root.getChildAt(5) instanceof Button, "第 6 行是按钮");
         checkEq("军　棋", textOf(root.getChildAt(5)), "军棋按钮文案（全角空格）");
-        String hint = textOf(root.getChildAt(6));
+        check(root.getChildAt(6) instanceof Button, "第 7 行是 2048 按钮");
+        checkEq("2048", textOf(root.getChildAt(6)), "2048 按钮文案");
+        String hint = textOf(root.getChildAt(7));
         check(hint.contains("围棋：9 / 13 / 19 路"), "提示行写明围棋路数（实际：" + hint + "）");
         check(hint.contains("五子棋：13 / 15 / 19 路"), "提示行写明五子棋路数（实际：" + hint + "）");
         check(hint.contains("象棋"), "提示行提到象棋（实际：" + hint + "）");
         check(hint.contains("军棋"), "提示行提到军棋（实际：" + hint + "）");
-        checkEq("版本 " + sentinelVersion + "（versionCode " + PackageManager.VERSION_CODE + "）", textOf(root.getChildAt(8)), "版本行读自 PackageManager（含 versionCode）");
+        check(hint.contains("2048"), "提示行提到 2048（实际：" + hint + "）");
+        check(hint.contains("没有彩蛋"), "提示行写明 2048 没有彩蛋（实际：" + hint + "）");
+        checkEq("版本 " + sentinelVersion + "（versionCode " + PackageManager.VERSION_CODE + "）", textOf(root.getChildAt(9)), "版本行读自 PackageManager（含 versionCode）");
 
         // ② 点按分流
         root.getChildAt(2).fakeClick();
@@ -103,6 +107,9 @@ public class MenuProbe {
         root.getChildAt(5).fakeClick();
         check(Activity.lastStarted != null && Activity.lastStarted.target == JunqiActivity.class,
                 "点「军棋」跳 JunqiActivity（实际：" + (Activity.lastStarted == null ? "没跳" : Activity.lastStarted.target.getName()) + "）");
+        root.getChildAt(6).fakeClick();
+        check(Activity.lastStarted != null && Activity.lastStarted.target == Game2048Activity.class,
+                "点「2048」跳 Game2048Activity（实际：" + (Activity.lastStarted == null ? "没跳" : Activity.lastStarted.target.getName()) + "）");
 
         // ③ 主题档：深 / 浅各自落地，且配色跟着走
         MenuActivity d = create(Theme.DARK);
@@ -143,7 +150,7 @@ public class MenuProbe {
         // ⑥ 版本号读不到时兜底
         PackageManager.THROW = true;
         MenuActivity t = create(Theme.LIGHT);
-        checkEq("版本 ?（versionCode -1）", textOf(((ViewGroup) ((ViewGroup) t.content).getChildAt(0)).getChildAt(8)), "读版本失败时显示「版本 ?」（versionCode -1）而不是崩");
+        checkEq("版本 ?（versionCode -1）", textOf(((ViewGroup) ((ViewGroup) t.content).getChildAt(0)).getChildAt(9)), "读版本失败时显示「版本 ?」（versionCode -1）而不是崩");
         PackageManager.THROW = false;
 
         // ⑧ 右上角「公告」按钮与左下角版本行（v127，用户要求）
@@ -163,17 +170,17 @@ public class MenuProbe {
         checkEq("dialog.pos:知道了", android.os.FakeLog.findPrefix("dialog.pos:") == null ? null : android.os.FakeLog.findPrefix("dialog.pos:"), "弹窗有关闭按钮");
         checkEq(Long.valueOf(1L), Long.valueOf(android.os.FakeLog.countPrefix("dialog.show")), "点一次公告只弹一个窗");
 
-        View ver8 = root8.getChildAt(8);
+        View ver8 = root8.getChildAt(9);
         String verText8 = String.valueOf(textOf(ver8));
         check(verText8.startsWith("版本 ") && verText8.contains("（versionCode "), "最后一行是版本信息（含 versionCode）");
         ViewGroup.LayoutParams vlp8 = ver8.getLayoutParams();
         checkEq(android.view.Gravity.LEFT, vlp8 == null ? null : vlp8.gravity, "版本行靠左（左下角）");
-        View spacer8 = root8.getChildAt(7);
+        View spacer8 = root8.getChildAt(8);
         View mark8 = com.autogo.Watermark.lastHolder.getChildAt(1);
         checkEq("穗安", textOf(mark8), "右下角水印写着作者名");
         checkEq(android.view.Gravity.BOTTOM | android.view.Gravity.RIGHT, ((android.widget.FrameLayout.LayoutParams) mark8.getLayoutParams()).gravity, "水印贴右下角（浮层，不占布局高度）");
         check(((android.widget.TextView) mark8).alpha < 1.0f, "水印是半透明的（alpha 0.6）");
-        checkEq(9, root8.getChildCount(), "页面 9 行（水印在浮层里，不占行）");
+        checkEq(10, root8.getChildCount(), "页面 10 行（水印在浮层里，不占行）");
         ViewGroup.LayoutParams slp8 = spacer8.getLayoutParams();
         check(slp8 != null && slp8.weight == 1f, "版本行前面有撑到底部的空隙（weight=1）");
 

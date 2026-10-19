@@ -26,7 +26,7 @@ build_and_run() {   # $1=源码根（含 src/ tests/） $2=工作目录
     "$R/src/com/autogo/GomokuReview.java" "$R/src/com/autogo/LocalGomokuAI.java" "$R/src/com/autogo/RapfiGomokuEngine.java" \
     "$R/src/com/autogo/GomokuLearn.java" "$R/src/com/autogo/AnimMath.java" "$R/src/com/autogo/XiangqiBoard.java" \
     "$R/src/com/autogo/XiangqiAI.java" "$R/src/com/autogo/XiangqiReview.java" \
-    "$R/src/com/autogo/JunqiBoard.java" "$R/src/com/autogo/JunqiAI.java" "$R/src/com/autogo/JunqiLearn.java" "$R/src/com/autogo/JunqiReveal.java" || return 1
+    "$R/src/com/autogo/JunqiBoard.java" "$R/src/com/autogo/JunqiAI.java" "$R/src/com/autogo/JunqiLearn.java" "$R/src/com/autogo/JunqiReveal.java" "$R/src/com/autogo/Game2048.java" || return 1
   "$JAVAC" -encoding UTF-8 -nowarn -cp "$W/fakecls:$W/basecls:$ANDROID_JAR" -d "$W/stubcls" $(find "$R/tests/ui/stub" -name '*.java') || return 1
   "$JAVAC" -encoding UTF-8 -nowarn -cp "$W/fakecls:$W/basecls:$W/stubcls:$ANDROID_JAR" -d "$W/realcls" \
     "$R/src/com/autogo/GomokuActivity.java" "$R/src/com/autogo/GomokuView.java" "$R/src/com/autogo/GomokuReviewActivity.java" \
@@ -35,7 +35,8 @@ build_and_run() {   # $1=源码根（含 src/ tests/） $2=工作目录
     "$R/src/com/autogo/Watermark.java" "$R/src/com/autogo/WinEgg.java" "$R/src/com/autogo/BoardArt.java" \
     "$R/src/com/autogo/XiangqiView.java" "$R/src/com/autogo/XiangqiActivity.java" \
     "$R/src/com/autogo/XiangqiReviewActivity.java" \
-    "$R/src/com/autogo/JunqiView.java" "$R/src/com/autogo/JunqiActivity.java" || return 1
+    "$R/src/com/autogo/JunqiView.java" "$R/src/com/autogo/JunqiActivity.java" \
+    "$R/src/com/autogo/Game2048View.java" "$R/src/com/autogo/Game2048Activity.java" || return 1
   "$JAVAC" -encoding UTF-8 -nowarn -cp "$W/fakecls:$W/basecls:$W/realcls:$W/stubcls:$ANDROID_JAR" -d "$W/tcls" \
     "$R/tests/ui/Driver95.java" || return 1
   LANG=C.UTF-8 LC_ALL=C.UTF-8 "$JAVA" -Xmx256m -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 \

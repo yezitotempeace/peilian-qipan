@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.autogo"
-    android:versionCode="178"
-    android:versionName="1.20261018.178">
+    android:versionCode="179"
+    android:versionName="1.20261019.179">
 
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34" />
 
@@ -47,6 +47,11 @@
 
         <activity
             android:name=".GomokuReviewActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|fontScale|density|locale|layoutDirection|colorMode" />
+
+        <activity
+            android:name=".Game2048Activity"
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|fontScale|density|locale|layoutDirection|colorMode" />
 

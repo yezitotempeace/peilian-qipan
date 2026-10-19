@@ -14,11 +14,14 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
- * 启动选择页：从这里选「围棋」或「五子棋」。
+ * 启动选择页：从这里选「围棋 / 五子棋 / 象棋 / 军棋 / 2048」。
  *
  * 这一页只负责分流，不碰任何一方的对局逻辑：
  *   - 围棋 → {@link MainActivity}（原有对局界面，一行没改）
  *   - 五子棋 → {@link GomokuActivity}
+ *   - 象棋 → {@link XiangqiActivity}
+ *   - 军棋 → {@link JunqiActivity}
+ *   - 2048 → {@link Game2048Activity}
  *
  * 主题走 {@link UiTheme}（与 MainActivity 同一份偏好 "autogo" / "themeMode"、同一套判据），
  * 所以设置页换的主题这一页也跟得上：清单声明了 configChanges，本页不会自己重建，
@@ -180,8 +183,16 @@ public class MenuActivity extends Activity {
         });
         root.addView(junqi, buttonRow(0, 10));
 
+        Button g2048 = bigButton("2048", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MenuActivity.this, Game2048Activity.class));
+            }
+        });
+        root.addView(g2048, buttonRow(0, 10));
+
         TextView hint = new TextView(this);
-        hint.setText("围棋：9 / 13 / 19 路 · KataGo 引擎\n五子棋：13 / 15 / 19 路 · 内置 AI\n象棋：内置三档 AI\n军棋：明棋 / 暗棋 · 内置 AI");
+        hint.setText("围棋：9 / 13 / 19 路 · KataGo 引擎\n五子棋：13 / 15 / 19 路 · 内置 AI\n象棋：内置三档 AI\n军棋：明棋 / 暗棋 · 内置 AI\n2048：4×4 数字合并 · 没有彩蛋");
         hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         hint.setTextColor(palette.textDim);
         hint.setGravity(Gravity.CENTER);
