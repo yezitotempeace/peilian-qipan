@@ -84,6 +84,10 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 
 ## 更新 / Updates
 
+- GitHub Releases 与 App 内公告只保留最近两个版本；更早的版本本地仍保留。
+- GitHub Releases and the in-app changelog keep only the two most recent versions; older ones stay local.
+
+
 - 启动页右上角「更新」：直连 GitHub 仓库最新 Release，手动检查；国内走 gh-proxy.com 镜像，GitHub API 403/超时自动回退。
 - 每 2 小时自动检查（前台计时 + 系统闹钟）；发现新版本可下载。
 - 下载后交系统安装器；安装成功/失败都会删掉缓存安装包，下次启动也清残留。
@@ -98,7 +102,7 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 
 Download from Releases (about 122 MB, bundling the three KataGo networks and the Rapfi engine):
 
-https://github.com/yezitotempeace/peilian-qipan/releases/tag/v181
+https://github.com/yezitotempeace/peilian-qipan/releases/tag/v182
 
 ## 构建 / Build
 
@@ -120,7 +124,7 @@ bash run_tests.sh  # 运行测试 / runs the test suite
 
 ## 版本 / Version
 
-当前 v181 · versionCode 181 · versionName 1.20261019.181
+当前 v182 · versionCode 182 · versionName 1.20261019.182
 
 - 每个版本一个 GitHub Release，旧版本保留、不删除；想回旧版直接去 Releases 下载对应的 APK。
 - App 启动页左下角显示当前 versionName 与 versionCode（设置页也能看到）。
