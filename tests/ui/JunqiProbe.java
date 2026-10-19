@@ -19,7 +19,7 @@ public class JunqiProbe {
         chk("水印在位", true, hasWatermark(holder));
 
         draw(v);
-        chk("暗棋下 96 站点框 + 100 棋子框 = 196", 196, android.graphics.Canvas.RECTS.size());
+        chk("暗棋下 4 大本营框 + 100 棋子框 = 104", 104, android.graphics.Canvas.RECTS.size());
         chk("暗棋下不再写 50 个兵种字，只剩少量站点标记", true, android.graphics.Canvas.TEXTS.size() < 20 && !android.graphics.Canvas.TEXTS.contains("司令"));
 
         click(p, "暗棋 / 明棋");

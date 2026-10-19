@@ -105,6 +105,7 @@ public class JunqiActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         boardView = new JunqiView(this);
+        boardView.setDark(palette.dark);
         boardView.setAnimationsEnabled(true);
         boardView.setBoard(board);
         boardView.setHidden(hiddenArray());

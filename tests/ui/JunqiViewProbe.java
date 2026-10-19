@@ -48,7 +48,7 @@ public class JunqiViewProbe {
         draw(empty);
         chk("空盘只画行营10/大本营4/山界2/前线3 = 19 个标记字，不写 60 个兵站", 19, Canvas.TEXTS.size());
         chk("空盘画 20 个行营圆（填+描边）+ 4 个山界圆 = 24", 24, Canvas.CIRCLES.size());
-        chk("空盘画 50 个兵站/大本营（兵站双描边）", 96, Canvas.RECTS.size());
+        chk("空盘只画 4 个大本营描边框（不再画 60 个兵站小方块）", 4, Canvas.RECTS.size());
 
         JunqiBoard std = new JunqiBoard();
         std.setupStandard(new Random(7));
@@ -57,7 +57,7 @@ public class JunqiViewProbe {
         draw(v);
         chk("标准开局至少 50 个兵种字", true, Canvas.TEXTS.size() >= 50);
         chk("标准开局不再画 60 个「兵站」字（总数 < 65）", true, Canvas.TEXTS.size() < 65);
-        chk("标准开局 96 站点框 + 100 棋子框 / 24 圆（行营+山界）", "196/24", Canvas.RECTS.size() + "/" + Canvas.CIRCLES.size());
+        chk("标准开局 4 大本营框 + 100 棋子框 / 24 圆（行营+山界）", "104/24", Canvas.RECTS.size() + "/" + Canvas.CIRCLES.size());
 
         // 铁路：4 条横 + 2 条竖 + 中线 1 小段；线是黑底白虚线，从站点后面穿过
         float[] g0 = geom(500, 1000);
@@ -98,7 +98,7 @@ public class JunqiViewProbe {
         draw(v);
         chk("暗棋：不再画 50 个兵种字，只剩站点标记", true, Canvas.TEXTS.size() <= 15 && !Canvas.TEXTS.contains("司令"));
         chk("暗棋：背面圆 50 + 行营 20 + 山界 4 = 74", 74, Canvas.CIRCLES.size());
-        chk("暗棋：站点框 96 + 棋子框 100", 196, Canvas.RECTS.size());
+        chk("暗棋：大本营框 4 + 棋子框 100", 104, Canvas.RECTS.size());
 
         v.setHidden(null);
         v.setSelected(5, 2);

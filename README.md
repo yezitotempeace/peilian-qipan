@@ -55,6 +55,7 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 - You play Red against the computer. Start in open or hidden mode; you can switch during the game.
 - Railway, camp and headquarters rules; in hidden mode a piece is only revealed after a battle.
 - New game, resign, difficulty and back.
+- Two board themes: dark uses the "app" style (dark navy with red/black rounded pieces), light uses a classic wood board; camps and HQ draw as outlines only.
 
 ## 2048
 
@@ -102,7 +103,7 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 
 Download from Releases (about 122 MB, bundling the three KataGo networks and the Rapfi engine):
 
-https://github.com/yezitotempeace/peilian-qipan/releases/tag/v182
+https://github.com/yezitotempeace/peilian-qipan/releases/tag/v183
 
 ## 构建 / Build
 
@@ -124,7 +125,7 @@ bash run_tests.sh  # 运行测试 / runs the test suite
 
 ## 版本 / Version
 
-当前 v182 · versionCode 182 · versionName 1.20261019.182
+当前 v183 · versionCode 183 · versionName 1.20261020.183
 
 - 每个版本一个 GitHub Release，旧版本保留、不删除；想回旧版直接去 Releases 下载对应的 APK。
 - App 启动页左下角显示当前 versionName 与 versionCode（设置页也能看到）。
