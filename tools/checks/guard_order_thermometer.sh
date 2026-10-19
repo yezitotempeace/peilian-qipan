@@ -36,7 +36,7 @@ build_and_run() {   # $1=源码根（含 src/ tests/） $2=工作目录
     "$R/src/com/autogo/XiangqiView.java" "$R/src/com/autogo/XiangqiActivity.java" \
     "$R/src/com/autogo/XiangqiReviewActivity.java" \
     "$R/src/com/autogo/JunqiView.java" "$R/src/com/autogo/JunqiActivity.java" \
-    "$R/src/com/autogo/Game2048View.java" "$R/src/com/autogo/Game2048Activity.java" || return 1
+    "$R/src/com/autogo/Game2048View.java" "$R/src/com/autogo/Game2048Activity.java" "$R/src/com/autogo/UpdateManager.java" "$R/src/com/autogo/UpdateScheduler.java" || return 1
   "$JAVAC" -encoding UTF-8 -nowarn -cp "$W/fakecls:$W/basecls:$W/realcls:$W/stubcls:$ANDROID_JAR" -d "$W/tcls" \
     "$R/tests/ui/Driver95.java" || return 1
   LANG=C.UTF-8 LC_ALL=C.UTF-8 "$JAVA" -Xmx256m -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 \

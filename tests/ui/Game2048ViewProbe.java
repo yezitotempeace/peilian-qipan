@@ -36,6 +36,15 @@ public class Game2048ViewProbe {
         chk("13 个数字文字", 13, Canvas.TEXTS.size());
         chk("有 2048 文字", true, Canvas.TEXTS.contains("2048"));
 
+        g.load(new int[]{0,2,0,4, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 0);
+        v.setAnimationsEnabled(true);
+        g.move(Game2048.LEFT);
+        v.onMoved();
+        draw(v);
+        g.move(Game2048.LEFT); // 已经靠左，无效；不能因 anims 清空而白屏
+        draw(v);
+        chk("无效滑动后画面仍有 3 个数字块（2/4/新子）", 3, Canvas.TEXTS.size());
+
         final int[] got = new int[]{-1};
         v.setOnSwipe(new Game2048View.OnSwipe() {
             public void onSwipe(int dir) { got[0] = dir; }

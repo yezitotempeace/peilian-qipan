@@ -49,6 +49,14 @@ public class Game2048Test {
         chk("2 2 4 左移：没有一次并成 8", false, once.at(0,0) == 8);
         chk("2 2 4 左移：得分 4", 4, once.score());
 
+        java.util.List<Game2048.MoveAnim> anims = once.lastAnims();
+        chk("2 2 4 左移产生 3 条动画记录", 3, anims.size());
+        int mergedTo0 = 0;
+        for (Game2048.MoveAnim a : anims) {
+            if (a.to == 0 && a.merged) mergedTo0++;
+        }
+        chk("两个 2 都合并到第 0 格（2 条 merged）", 2, mergedTo0);
+
         Game2048 twice = new Game2048(22);
         twice.load(board(4,4,8,8, 0,0,0,0, 0,0,0,0, 0,0,0,0), 0);
         twice.move(Game2048.LEFT);

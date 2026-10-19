@@ -69,21 +69,21 @@ public class JunqiView extends View {
 
     private void init() {
         setFocusable(true);
-        bg.setColor(0xFFF6F1E7);
+        bg.setColor(0xFF2B3D2C);
         bg.setStyle(Paint.Style.FILL);
         road.setStyle(Paint.Style.STROKE);
-        road.setColor(0x883B3B3B);
+        road.setColor(0x99D8C28A);
         railBase.setStyle(Paint.Style.STROKE);
         railBase.setColor(0xFF161616);
         railDash.setStyle(Paint.Style.STROKE);
         railDash.setColor(0xFFFFFFFF);
         stationFill.setStyle(Paint.Style.FILL);
-        stationFill.setColor(0xFFFFFDF8);
+        stationFill.setColor(0xFFE9D9B8);
         stationLine.setStyle(Paint.Style.STROKE);
-        stationLine.setColor(0xFF2B2B2B);
+        stationLine.setColor(0xFF3B2E1A);
         hqFill.setStyle(Paint.Style.FILL);
-        hqFill.setColor(0xFF1B1B1B);
-        text.setColor(0xFF222222);
+        hqFill.setColor(0xFF5B1A1A);
+        text.setColor(0xFF3B2E1A);
         text.setTextAlign(Paint.Align.CENTER);
         text.setFakeBoldText(true);
         face.setStyle(Paint.Style.FILL);
@@ -91,9 +91,9 @@ public class JunqiView extends View {
         mark.setStyle(Paint.Style.STROKE);
         dot.setStyle(Paint.Style.FILL);
         camp.setStyle(Paint.Style.FILL);
-        camp.setColor(0xFFFFFFFF);
+        camp.setColor(0xFFE9D9B8);
         mountain.setStyle(Paint.Style.FILL);
-        mountain.setColor(0xFFFFFDF8);
+        mountain.setColor(0xFFE9D9B8);
     }
 
     public void setBoard(JunqiBoard b) {
@@ -258,21 +258,21 @@ public class JunqiView extends View {
                     canvas.drawCircle(x, y, stationW * 0.5f, camp);
                     canvas.drawCircle(x, y, stationW * 0.5f, stationLine);
                     if (!occupied) {
-                        drawCellText(canvas, "行营", x, y, stationH * 0.52f, 0xFF2B2B2B);
+                        drawCellText(canvas, "行营", x, y, stationH * 0.56f, 0xFF3B2E1A);
                     }
                 } else if (hqCell) {
                     float hw = stationW * 1.5f;   // 实体大本营 150×50，比兵站宽一半
                     RectF rf = new RectF(x - hw / 2f, y - stationH / 2f, x + hw / 2f, y + stationH / 2f);
                     canvas.drawRoundRect(rf, stationH * 0.25f, stationH * 0.25f, hqFill);
                     if (!occupied) {
-                        drawCellText(canvas, "大本营", x, y, stationH * 0.42f, 0xFFFFFFFF);
+                        drawCellText(canvas, "大本营", x, y, stationH * 0.42f, 0xFFFFE9B0);
                     }
                 } else {
                     RectF rf = new RectF(x - stationW / 2f, y - stationH / 2f, x + stationW / 2f, y + stationH / 2f);
                     canvas.drawRoundRect(rf, stationH * 0.25f, stationH * 0.25f, stationFill);
                     canvas.drawRoundRect(rf, stationH * 0.25f, stationH * 0.25f, stationLine);
                     if (!occupied) {
-                        drawCellText(canvas, "兵站", x, y, stationH * 0.52f, 0xFF2B2B2B);
+                        drawCellText(canvas, "兵站", x, y, stationH * 0.56f, 0xFF3B2E1A);
                     }
                 }
             }
@@ -332,13 +332,13 @@ public class JunqiView extends View {
         float pw = stationW * 0.94f, ph = stationH * 0.94f;
         float radius = ph * 0.26f;
         pieceLine.setStrokeWidth(Math.max(1.5f, cw * 0.018f));
-        pieceLine.setColor(color == JunqiBoard.RED ? 0xFFB71C1C : 0xFF263238);
+        pieceLine.setColor(color == JunqiBoard.RED ? 0xFFB3261E : 0xFF1F2A30);
         face.setStyle(Paint.Style.FILL);
         face.setColor(pieceLine.getColor());
         RectF outer = new RectF(x - pw / 2f, y - ph / 2f, x + pw / 2f, y + ph / 2f);
         canvas.drawRoundRect(outer, radius, radius, face);
-        face.setColor(back ? 0xFFB0BEC5
-                : (color == JunqiBoard.RED ? 0xFFFFE3E3 : 0xFFE6ECEF));
+        face.setColor(back ? 0xFF9E8F72
+                : (color == JunqiBoard.RED ? 0xFFFFE0B2 : 0xFFE8E2D2));
         RectF inner = new RectF(x - pw * 0.45f, y - ph * 0.42f, x + pw * 0.45f, y + ph * 0.42f);
         canvas.drawRoundRect(inner, radius * 0.7f, radius * 0.7f, face);
         if (back) {
@@ -347,8 +347,8 @@ public class JunqiView extends View {
         } else {
             String label = JunqiBoard.typeName(type);
             if (label != null && label.length() > 0) {
-                text.setColor(color == JunqiBoard.RED ? 0xFFB71C1C : 0xFF263238);
-                text.setTextSize(ph * 0.64f);
+                text.setColor(color == JunqiBoard.RED ? 0xFF8E1B16 : 0xFF1F2A30);
+                text.setTextSize(ph * 0.72f);
                 canvas.drawText(label, x, y + ph * 0.23f, text);
             }
         }
@@ -360,11 +360,11 @@ public class JunqiView extends View {
             float x = cx(c);
             canvas.drawCircle(x, y, cw * 0.30f, mountain);
             canvas.drawCircle(x, y, cw * 0.30f, stationLine);
-            drawCellText(canvas, "山界", x, y, stationH * 0.50f, 0xFF2B2B2B);
+            drawCellText(canvas, "山界", x, y, stationH * 0.50f, 0xFF3B2E1A);
         }
         // 中线第 1/3/5 列是前线；第 2/4 列是山界
         for (int c : new int[]{0, 2, 4}) {
-            drawCellText(canvas, "前线", cx(c), y, stationH * 0.46f, 0xFF2B2B2B);
+            drawCellText(canvas, "前线", cx(c), y, stationH * 0.46f, 0xFFFFE9B0);
         }
     }
 

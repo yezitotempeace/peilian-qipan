@@ -59,6 +59,7 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 ## 2048
 
 - 4×4；上下左右滑动，相同数字合并，合并得分；每次有效移动生成一个 2 或 4。
+- 旧块有滑动动画，合并/新子会弹一下。
 - 达到 2048 可以继续冲更高分；没有可走的格子才结束。
 - 得分、最高分、重开；关掉再进恢复上一局。
 - **没有彩蛋。**
@@ -72,13 +73,23 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 
 - 启动页选择棋种；内置公告可查看每一版更新；左下角显示版本号。
 - 深浅色外观跟随系统；横竖屏、大小屏自动适配。
-- 完全离线：应用清单没有申请网络权限。
+- 对局离线；只有「更新」会联网（INTERNET 权限）。
 - 仅 arm64-v8a；minSdk 26（Android 8.0）/ targetSdk 34。
 
 - Pick a game on the launch screen; the in-app changelog lists every release; the version is shown at the bottom-left.
 - Follows the system light/dark theme; adapts to orientation and screen size.
-- Fully offline: the app declares no network permission.
+- Play stays offline; only the update checker uses the network (INTERNET permission).
 - arm64-v8a only; minSdk 26 (Android 8.0) / targetSdk 34.
+
+## 更新 / Updates
+
+- 启动页右上角「更新」：直连 GitHub 仓库最新 Release，手动检查。
+- 每 2 小时自动检查（前台计时 + 系统闹钟）；发现新版本可下载。
+- 下载后交系统安装器；安装成功/失败都会删掉缓存安装包，下次启动也清残留。
+
+- The "Update" button at the top-right of the launch screen checks the latest GitHub Release directly.
+- It also checks every 2 hours (foreground timer + system alarm), and can download a new APK.
+- The download is handed to the system installer; the cached APK is deleted after install (or on next launch).
 
 ## 安装 / Install
 
@@ -86,7 +97,7 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 
 Download from Releases (about 122 MB, bundling the three KataGo networks and the Rapfi engine):
 
-https://github.com/yezitotempeace/peilian-qipan/releases/tag/v179
+https://github.com/yezitotempeace/peilian-qipan/releases/tag/v180
 
 ## 构建 / Build
 
@@ -108,7 +119,7 @@ bash run_tests.sh  # 运行测试 / runs the test suite
 
 ## 版本 / Version
 
-当前 v179 · versionCode 179 · versionName 1.20261019.179
+当前 v180 · versionCode 180 · versionName 1.20261019.180
 
 - 每个版本一个 GitHub Release，旧版本保留、不删除；想回旧版直接去 Releases 下载对应的 APK。
 - App 启动页左下角显示当前 versionName 与 versionCode（设置页也能看到）。

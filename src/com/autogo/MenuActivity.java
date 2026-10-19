@@ -2,7 +2,6 @@ package com.autogo;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -12,6 +11,9 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+import android.app.ProgressDialog;
+import android.content.Intent;
 
 /**
  * 启动选择页：从这里选「围棋 / 五子棋 / 象棋 / 军棋 / 2048」。
@@ -44,6 +46,18 @@ public class MenuActivity extends Activity {
         }
     };
 
+    /** 每 2 小时检查一次更新（前台）；手动按钮随时可查。 */
+    private static final long UPDATE_INTERVAL_MS = 2 * 3600 * 1000L;
+    private Button updateButton;
+    private boolean checkingUpdate;
+    private final Runnable updateTick = new Runnable() {
+        @Override
+        public void run() {
+            checkUpdates(false);
+            ui.postDelayed(this, UPDATE_INTERVAL_MS);
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,6 +66,9 @@ public class MenuActivity extends Activity {
         palette = Palette.of(dark);
         screen = Screen.read(this);
         buildUi();
+        UpdateManager.cleanup(this);
+        scheduleBackgroundUpdate();
+        showPendingUpdate();
     }
 
     /** 系统深浅色变了：清单里声明了 uiMode，本页不会被重建，得自己重判、重铺。 */
@@ -72,6 +89,9 @@ public class MenuActivity extends Activity {
         maybeAutoSwitchTheme();
         ui.removeCallbacks(themeTick);
         ui.postDelayed(themeTick, 60_000L);
+        ui.removeCallbacks(updateTick);
+        ui.postDelayed(updateTick, UPDATE_INTERVAL_MS);
+        showPendingUpdate();
         // 另外，从设置页回来时档位本身可能变了：这一种要换窗口主题，让系统按新主题重建本页
         boolean now = UiTheme.dark(this);
         if (now != dark) {
@@ -84,6 +104,7 @@ public class MenuActivity extends Activity {
     protected void onPause() {
         super.onPause();
         ui.removeCallbacks(themeTick);
+        ui.removeCallbacks(updateTick);
     }
 
     /**
@@ -141,7 +162,24 @@ public class MenuActivity extends Activity {
                 showChangelog();
             }
         });
-        topRow.addView(notice, textRow(0, 0));
+        topRow.addView(notice, topButton());
+
+        updateButton = new Button(this);
+        updateButton.setText("更新");
+        updateButton.setAllCaps(false);
+        updateButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, screen.buttonTextSp() - 2);
+        updateButton.setTextColor(palette.buttonText);
+        updateButton.setBackgroundTintList(ColorStateList.valueOf(palette.buttonBg));
+        updateButton.setPadding(dp(10), dp(4), dp(10), dp(4));
+        updateButton.setMinimumWidth(0);
+        updateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                checkUpdates(true);
+            }
+        });
+        topRow.addView(updateButton, topButton());
+
         root.addView(topRow, textRow(0, 4));
 
         TextView title = new TextView(this);
@@ -218,6 +256,116 @@ public class MenuActivity extends Activity {
         Watermark.wrap(this, root, palette, 6);
     }
 
+    /**
+     * 直连 GitHub 仓库检查更新。manual=true 时无更新/失败也提示；自动检查静默。
+     * 结果写 lastUpdateCheck；新版本显示在右上角「更新」按钮上。
+     */
+    private void checkUpdates(final boolean manual) {
+        if (checkingUpdate) {
+            return;
+        }
+        long last = getSharedPreferences("autogo", MODE_PRIVATE).getLong("lastUpdateCheck", 0L);
+        if (!manual && System.currentTimeMillis() - last < UPDATE_INTERVAL_MS) {
+            return;
+        }
+        checkingUpdate = true;
+        final ProgressDialog progress;
+        if (manual) {
+            progress = new ProgressDialog(this);
+            progress.setMessage("正在检查更新…");
+            progress.setCancelable(false);
+            progress.show();
+        } else {
+            progress = null;
+        }
+        UpdateManager.check(this, new UpdateManager.Callback() {
+            @Override
+            public void onResult(UpdateManager.Info info, String error) {
+                checkingUpdate = false;
+                if (progress != null) {
+                    progress.dismiss();
+                }
+                getSharedPreferences("autogo", MODE_PRIVATE).edit()
+                        .putLong("lastUpdateCheck", System.currentTimeMillis())
+                        .apply();
+                if (error != null) {
+                    if (manual) {
+                        Toast.makeText(MenuActivity.this, "检查更新失败：" + error, Toast.LENGTH_LONG).show();
+                    }
+                    return;
+                }
+                if (info == null) {
+                    return;
+                }
+                if (info.upToDate) {
+                    clearAvailableUpdate();
+                    if (updateButton != null) {
+                        updateButton.setText("更新");
+                    }
+                    if (manual) {
+                        Toast.makeText(MenuActivity.this, "已是最新版本 " + info.version, Toast.LENGTH_SHORT).show();
+                    }
+                    return;
+                }
+                if (updateButton != null) {
+                    updateButton.setText("更新 · " + info.version);
+                }
+                if (manual) {
+                    showUpdateDialog(info);
+                }
+            }
+        });
+    }
+
+    /** 后台检查到的新版本，回到菜单时把按钮点亮；不主动弹窗。 */
+    private void showPendingUpdate() {
+        if (updateButton == null) {
+            return;
+        }
+        String version = getSharedPreferences("autogo", MODE_PRIVATE)
+                .getString("availableUpdateVersion", "");
+        if (version == null || version.length() == 0) {
+            return;
+        }
+        int pending = UpdateManager.versionCodeFromTag(version);
+        if (pending <= versionCode()) {
+            clearAvailableUpdate();
+            return;
+        }
+        updateButton.setText("更新 · " + version);
+    }
+
+    private void clearAvailableUpdate() {
+        getSharedPreferences("autogo", MODE_PRIVATE).edit()
+                .remove("availableUpdateVersion")
+                .remove("availableUpdateUrl")
+                .remove("availableUpdateNotes")
+                .apply();
+    }
+
+    /** 后台检查：排下一次；由 receiver 查完再排，重启/强停后下次打开会补排。 */
+    private void scheduleBackgroundUpdate() {
+        UpdateScheduler.schedule(this);
+    }
+
+    private void showUpdateDialog(final UpdateManager.Info info) {
+        String notes = info.notes == null ? "" : info.notes;
+        if (notes.length() > 800) {
+            notes = notes.substring(0, 800) + "…";
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("发现新版本 " + info.version)
+                .setMessage(notes)
+                .setPositiveButton("下载更新", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int w) {
+                        UpdateManager.downloadAndInstall(MenuActivity.this, info);
+                    }
+                })
+                .setNegativeButton("以后", null)
+                .show();
+    }
+
     /** 右上角「公告」：把 Changelog 里的条目摊在弹窗里。 */
     private void showChangelog() {
         AlertDialog.Builder b = new AlertDialog.Builder(this);
@@ -236,6 +384,14 @@ public class MenuActivity extends Activity {
         b.setBackgroundTintList(ColorStateList.valueOf(palette.buttonBg));
         b.setOnClickListener(l);
         return b;
+    }
+
+    /** 右上角两个小按钮：各自按文字宽，别在水平行里吃满/被挤成 0。 */
+    private LinearLayout.LayoutParams topButton() {
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        p.setMargins(dp(4), 0, dp(4), 0);
+        return p;
     }
 
     /** 按钮行：整行宽、固定 64dp 高，手指好按。 */

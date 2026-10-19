@@ -1,5 +1,7 @@
 package com.autogo;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -21,6 +23,16 @@ public class Game2048 {
     private boolean over;
     private int lastSpawn = -1;
     private final boolean[] merged = new boolean[SIZE * SIZE];
+    private final List<MoveAnim> anims = new ArrayList<MoveAnim>();
+
+    /** 一步里每个原始块的去向，供 UI 做滑动动画。from/to 是 0..15 索引。 */
+    public static class MoveAnim {
+        public final int from, to, value;
+        public final boolean merged;
+        MoveAnim(int from, int to, int value, boolean merged) {
+            this.from = from; this.to = to; this.value = value; this.merged = merged;
+        }
+    }
 
     public Game2048() {
         this(new Random());
@@ -42,6 +54,7 @@ public class Game2048 {
         won = false;
         over = false;
         lastSpawn = -1;
+        anims.clear();
         spawn();
         spawn();
     }
@@ -58,6 +71,7 @@ public class Game2048 {
     public boolean over() { return over; }
     public int lastSpawnIndex() { return lastSpawn; }
     public boolean mergedAt(int index) { return index >= 0 && index < merged.length && merged[index]; }
+    public List<MoveAnim> lastAnims() { return anims; }
 
     public int[] snapshot() { return cells.clone(); }
 
@@ -71,6 +85,7 @@ public class Game2048 {
         won = false;
         over = false;
         lastSpawn = -1;
+        anims.clear();
         java.util.Arrays.fill(merged, false);
         for (int v : cells) {
             if (v >= WIN) {
@@ -86,64 +101,60 @@ public class Game2048 {
             return false;
         }
         java.util.Arrays.fill(merged, false);
+        anims.clear();
         lastSpawn = -1;
-        boolean moved = false;
+        int[] before = cells.clone();
         int gained = 0;
-        if (dir == LEFT || dir == RIGHT) {
-            for (int r = 0; r < SIZE; r++) {
-                int[] line = new int[SIZE];
-                for (int c = 0; c < SIZE; c++) {
-                    line[c] = dir == LEFT ? at(r, c) : at(r, SIZE - 1 - c);
-                }
-                int[] out = new int[SIZE];
-                boolean[] mg = new boolean[SIZE];
-                int n = slide(line, out, mg);
-                for (int c = 0; c < SIZE; c++) {
-                    int value = out[c];
-                    int target = dir == LEFT ? c : SIZE - 1 - c;
-                    int idx = r * SIZE + target;
-                    if (cells[idx] != value) {
-                        moved = true;
-                    }
-                    cells[idx] = value;
-                    if (mg[c]) {
-                        merged[idx] = true;
-                        gained += value;
-                    }
+        for (int line = 0; line < SIZE; line++) {
+            int count = 0;
+            int[] vals = new int[SIZE];
+            int[] froms = new int[SIZE];
+            for (int pos = 0; pos < SIZE; pos++) {
+                int idx = cellIndex(dir, line, pos);
+                if (cells[idx] != 0) {
+                    vals[count] = cells[idx];
+                    froms[count] = idx;
+                    count++;
                 }
             }
-        } else {
-            for (int c = 0; c < SIZE; c++) {
-                int[] line = new int[SIZE];
-                for (int r = 0; r < SIZE; r++) {
-                    line[r] = dir == UP ? at(r, c) : at(SIZE - 1 - r, c);
+            List<Out> outs = new ArrayList<Out>();
+            for (int i = 0; i < count; i++) {
+                Out last = outs.isEmpty() ? null : outs.get(outs.size() - 1);
+                if (last != null && last.value == vals[i] && !last.merged) {
+                    last.value *= 2;
+                    last.merged = true;
+                    last.srcVals.add(Integer.valueOf(vals[i]));
+                    last.srcIdx.add(Integer.valueOf(froms[i]));
+                    gained += last.value;
+                } else {
+                    Out o = new Out(vals[i]);
+                    o.srcVals.add(Integer.valueOf(vals[i]));
+                    o.srcIdx.add(Integer.valueOf(froms[i]));
+                    outs.add(o);
                 }
-                int[] out = new int[SIZE];
-                boolean[] mg = new boolean[SIZE];
-                slide(line, out, mg);
-                for (int r = 0; r < SIZE; r++) {
-                    int value = out[r];
-                    int target = dir == UP ? r : SIZE - 1 - r;
-                    int idx = target * SIZE + c;
-                    if (cells[idx] != value) {
-                        moved = true;
-                    }
-                    cells[idx] = value;
-                    if (mg[r]) {
-                        merged[idx] = true;
-                        gained += value;
-                    }
+            }
+            for (int pos = 0; pos < SIZE; pos++) {
+                cells[cellIndex(dir, line, pos)] = 0;
+            }
+            for (int oi = 0; oi < outs.size(); oi++) {
+                Out o = outs.get(oi);
+                int dest = cellIndex(dir, line, oi);
+                cells[dest] = o.value;
+                if (o.merged) {
+                    merged[dest] = true;
+                }
+                for (int k = 0; k < o.srcIdx.size(); k++) {
+                    anims.add(new MoveAnim(o.srcIdx.get(k).intValue(), dest,
+                            o.srcVals.get(k).intValue(), o.merged));
                 }
             }
         }
-        if (!moved) {
+        if (java.util.Arrays.equals(before, cells)) {
+            anims.clear();
             return false;
         }
         score += gained;
         spawn();
-        if (score > 0) {
-            // 分数不参与胜负，只是记分
-        }
         for (int v : cells) {
             if (v >= WIN) {
                 won = true;
@@ -151,6 +162,21 @@ public class Game2048 {
         }
         over = !canMove();
         return true;
+    }
+
+    private static int cellIndex(int dir, int line, int pos) {
+        if (dir == LEFT) return line * SIZE + pos;
+        if (dir == RIGHT) return line * SIZE + (SIZE - 1 - pos);
+        if (dir == UP) return pos * SIZE + line;
+        return (SIZE - 1 - pos) * SIZE + line;
+    }
+
+    private static class Out {
+        int value;
+        boolean merged;
+        final List<Integer> srcVals = new ArrayList<Integer>();
+        final List<Integer> srcIdx = new ArrayList<Integer>();
+        Out(int value) { this.value = value; }
     }
 
     /**

@@ -12,6 +12,10 @@ public class Intent {
     public Intent putExtra(String k, String[] v) { return put(k, v); }
     public static Intent last;
     public Intent() { target = null; }
+    public Intent(String action) { target = null; this.action = action; }
+    public Intent(String action, android.net.Uri uri) { target = null; this.action = action; }
+    public String action;
+    public Intent setPackage(String p) { return this; }
     public int getIntExtra(String k, int def) { Object v = extras.get(k); return v instanceof Integer ? (Integer) v : def; }
     public boolean getBooleanExtra(String k, boolean def) { Object v = extras.get(k); return v instanceof Boolean ? (Boolean) v : def; }
     public String getStringExtra(String k) { Object v = extras.get(k); return v instanceof String ? (String) v : null; }

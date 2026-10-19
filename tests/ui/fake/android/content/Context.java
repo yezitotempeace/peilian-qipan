@@ -1,9 +1,15 @@
 package android.content;
 public class Context {
     public static final String CLIPBOARD_SERVICE = "clipboard";
+    public static final String ALARM_SERVICE = "alarm";
 
     /** 学习库要写文件：给假 Context 一个临时目录（每个进程一个）。 */
     private static java.io.File filesDir;
+    public java.io.File getCacheDir() {
+        java.io.File d = new java.io.File(System.getProperty("java.io.tmpdir"), "fake-cache-" + ProcessHandle.current().pid());
+        if (!d.isDirectory()) d.mkdirs();
+        return d;
+    }
     public java.io.File getFilesDir() {
         if (filesDir == null) {
             filesDir = new java.io.File(System.getProperty("java.io.tmpdir"), "fake-files-" + ProcessHandle.current().pid());

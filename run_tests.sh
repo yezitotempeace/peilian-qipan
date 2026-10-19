@@ -155,6 +155,7 @@ cp "$PROJ/src/com/autogo/MenuActivity.java" "$PROJ/src/com/autogo/GomokuActivity
    "$PROJ/src/com/autogo/XiangqiReviewActivity.java" \
    "$PROJ/src/com/autogo/JunqiView.java" "$PROJ/src/com/autogo/JunqiActivity.java" \
    "$PROJ/src/com/autogo/Game2048View.java" "$PROJ/src/com/autogo/Game2048Activity.java" \
+   "$PROJ/src/com/autogo/UpdateManager.java" "$PROJ/src/com/autogo/UpdateScheduler.java" \
    "$PROJ/src/com/autogo/GomokuView.java" \
    "$PROJ/src/com/autogo/GomokuReviewActivity.java" "$PROJ/src/com/autogo/WinrateChartView.java" \
    "$PROJ/src/com/autogo/WinrateBarView.java" "$PROJ/src/com/autogo/UiTheme.java" \
@@ -177,8 +178,8 @@ javac -encoding UTF-8 -nowarn -d "$OUT/ui/testcls" -cp "$OUT/ui/fakecls:$OUT/ui/
   "$PROJ/tests/ui/Driver95.java" "$PROJ/tests/ui/ViewProbe.java" "$PROJ/tests/ui/ReviewProbe.java" \
   "$PROJ/tests/ui/MenuProbe.java" "$PROJ/tests/ui/XiangqiViewProbe.java" "$PROJ/tests/ui/JunqiViewProbe.java" "$PROJ/tests/ui/JunqiProbe.java" \
   "$PROJ/tests/ui/XiangqiReviewProbe.java" "$PROJ/tests/ui/XiangqiProbe.java" \
-  "$PROJ/tests/ui/WatermarkProbe.java" "$PROJ/tests/ui/WinEggTest.java" "$PROJ/tests/ui/Game2048ViewProbe.java" "$PROJ/tests/ui/Game2048PageProbe.java"
-for t in Driver95 ViewProbe ReviewProbe MenuProbe XiangqiViewProbe JunqiViewProbe JunqiProbe XiangqiReviewProbe XiangqiProbe WatermarkProbe WinEggTest Game2048ViewProbe Game2048PageProbe; do
+  "$PROJ/tests/ui/WatermarkProbe.java" "$PROJ/tests/ui/WinEggTest.java" "$PROJ/tests/ui/Game2048ViewProbe.java" "$PROJ/tests/ui/Game2048PageProbe.java" "$PROJ/tests/ui/UpdateManagerTest.java"
+for t in Driver95 ViewProbe ReviewProbe MenuProbe XiangqiViewProbe JunqiViewProbe JunqiProbe XiangqiReviewProbe XiangqiProbe WatermarkProbe WinEggTest Game2048ViewProbe Game2048PageProbe UpdateManagerTest; do
   java -cp "$OUT/ui/fakecls:$OUT/ui/realcls:$OUT/ui/stubcls:$OUT/ui/testcls:$OUT/classes" com.autogo.$t
   rc=$?
   if [ $rc -ne 0 ]; then

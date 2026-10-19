@@ -141,11 +141,11 @@ public class MenuProbe {
         int postedBefore = Handler.POSTED.size();
         lifecycle(r, "onResume", new Class<?>[]{});
         checkEq(themesBefore, r.setThemeCount, "非自动档回到前台：不换主题");
-        checkEq(postedBefore + 1, Handler.POSTED.size(), "回到前台：注册了一分钟一次的检查");
-        checkEq(Long.valueOf(60000L), Handler.DELAYS.get(Handler.DELAYS.size() - 1), "回到前台注册的延时是 60000 毫秒（一分钟）");
+        checkEq(postedBefore + 2, Handler.POSTED.size(), "回到前台：注册主题检查 + 两小时更新检查");
+        checkEq(Long.valueOf(7200000L), Handler.DELAYS.get(Handler.DELAYS.size() - 1), "回到前台注册的更新检查延时是 7200000 毫秒（两小时）");
         int removedBefore = Handler.removed;
         lifecycle(r, "onPause", new Class<?>[]{});
-        checkEq(removedBefore + 1, Handler.removed, "离开前台：注销检查（不留常驻回调）");
+        checkEq(removedBefore + 2, Handler.removed, "离开前台：注销主题/更新检查（不留常驻回调）");
 
         // ⑥ 版本号读不到时兜底
         PackageManager.THROW = true;
@@ -161,6 +161,12 @@ public class MenuProbe {
         LinearLayout topRow8 = (LinearLayout) top8;
         checkEq(android.view.Gravity.RIGHT, topRow8.gravity, "公告行靠右（右上角）");
         checkEq("公告", textOf(topRow8.getChildAt(0)), "右上角按钮写着「公告」");
+        checkEq(2, topRow8.getChildCount(), "右上角有「公告 / 更新」两个按钮");
+        checkEq("更新", textOf(topRow8.getChildAt(1)), "右上角按钮写着「更新」");
+        checkEq(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, topRow8.getChildAt(0).getLayoutParams().width,
+                "「公告」按钮按内容宽，不占满整行");
+        checkEq(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, topRow8.getChildAt(1).getLayoutParams().width,
+                "「更新」按钮按内容宽，不会被挤成 0 宽");
         android.os.FakeLog.clear();
         topRow8.getChildAt(0).fakeClick();
         checkEq("更新了什么（" + Changelog.latest().version + "）", (android.os.FakeLog.findPrefix("dialog.title:") == null ? "" : android.os.FakeLog.findPrefix("dialog.title:").substring("dialog.title:".length())), "点「公告」弹出的标题带最新版本号");
