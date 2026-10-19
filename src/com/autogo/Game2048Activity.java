@@ -2,6 +2,8 @@ package com.autogo;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -61,6 +63,13 @@ public class Game2048Activity extends Activity {
         overShown = prefs().getBoolean("2048overshown", false);
     }
 
+    /** 主题/字号/转屏等配置变化时整页重铺，保证深色下棋盘和页面都不发白。 */
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        recreate();
+    }
+
     private void save() {
         StringBuilder sb = new StringBuilder();
         int[] cells = game.snapshot();
@@ -98,6 +107,8 @@ public class Game2048Activity extends Activity {
         restart.setText("重开");
         restart.setAllCaps(false);
         restart.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        restart.setTextColor(palette.buttonText);
+        restart.setBackgroundTintList(ColorStateList.valueOf(palette.buttonBg));
         restart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -125,6 +136,7 @@ public class Game2048Activity extends Activity {
         root.addView(scores, scoresLp);
 
         view = new Game2048View(this);
+        view.setDark(palette.dark);
         view.setGame(game);
         view.setOnSwipe(new Game2048View.OnSwipe() {
             @Override

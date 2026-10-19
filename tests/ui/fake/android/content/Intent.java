@@ -1,5 +1,6 @@
 package android.content;
 public class Intent {
+    public static final String ACTION_VIEW = "android.intent.action.VIEW";
     public final Class<?> target;
     public final java.util.Map<String, Object> extras = new java.util.HashMap<String, Object>();
     public Intent(Context ctx, Class<?> t) { target = t; android.os.FakeLog.log("new Intent:" + t.getName()); }

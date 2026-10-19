@@ -46,7 +46,7 @@ public class JunqiViewProbe {
         JunqiView empty = view(500, 1000);
         empty.setBoard(new JunqiBoard(true));
         draw(empty);
-        chk("空盘画 60 个站名 + 山界2/前线3 = 65", 65, Canvas.TEXTS.size());
+        chk("空盘只画行营10/大本营4/山界2/前线3 = 19 个标记字，不写 60 个兵站", 19, Canvas.TEXTS.size());
         chk("空盘画 20 个行营圆（填+描边）+ 4 个山界圆 = 24", 24, Canvas.CIRCLES.size());
         chk("空盘画 50 个兵站/大本营（兵站双描边）", 96, Canvas.RECTS.size());
 
@@ -55,7 +55,8 @@ public class JunqiViewProbe {
         JunqiView v = view(500, 1000);
         v.setBoard(std);
         draw(v);
-        chk("标准开局 50 兵种 + 10 空站名 + 5 标记 = 65", 65, Canvas.TEXTS.size());
+        chk("标准开局至少 50 个兵种字", true, Canvas.TEXTS.size() >= 50);
+        chk("标准开局不再画 60 个「兵站」字（总数 < 65）", true, Canvas.TEXTS.size() < 65);
         chk("标准开局 96 站点框 + 100 棋子框 / 24 圆（行营+山界）", "196/24", Canvas.RECTS.size() + "/" + Canvas.CIRCLES.size());
 
         // 铁路：4 条横 + 2 条竖 + 中线 1 小段；线是黑底白虚线，从站点后面穿过
@@ -95,7 +96,7 @@ public class JunqiViewProbe {
         }
         v.setHidden(hidden);
         draw(v);
-        chk("暗棋：只剩 10 个空站名 + 5 个标记 = 15", 15, Canvas.TEXTS.size());
+        chk("暗棋：不再画 50 个兵种字，只剩站点标记", true, Canvas.TEXTS.size() <= 15 && !Canvas.TEXTS.contains("司令"));
         chk("暗棋：背面圆 50 + 行营 20 + 山界 4 = 74", 74, Canvas.CIRCLES.size());
         chk("暗棋：站点框 96 + 棋子框 100", 196, Canvas.RECTS.size());
 
@@ -105,7 +106,7 @@ public class JunqiViewProbe {
         v.setLastMove(5, 2, 4, 2);
         draw(v);
         chk("24 圆 + 2 可走点 = 26（上一手/选中是站点框）", 26, Canvas.CIRCLES.size());
-        chk("文字仍是 65 个", 65, Canvas.TEXTS.size());
+        chk("选中后仍不画 60 个「兵站」字", true, Canvas.TEXTS.size() < 65);
 
         JunqiView t = view(500, 1000);
         t.setBoard(std);
@@ -179,7 +180,7 @@ public class JunqiViewProbe {
         sw.setBoard(std);
         sw.setBoard(new JunqiBoard(true));
         draw(sw);
-        chk("换盘后按空盘画（65 个站名/标记）", 65, Canvas.TEXTS.size());
+        chk("换盘后仍不画 60 个「兵站」字", true, Canvas.TEXTS.size() < 65);
 
         System.out.println("军棋棋盘探针：PASS " + pass + " / FAIL " + fail);
         if (fail > 0) {

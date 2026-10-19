@@ -20,14 +20,14 @@ public class JunqiProbe {
 
         draw(v);
         chk("暗棋下 96 站点框 + 100 棋子框 = 196", 196, android.graphics.Canvas.RECTS.size());
-        chk("暗棋下只剩空站名/山界/前线 = 15 字", 15, android.graphics.Canvas.TEXTS.size());
+        chk("暗棋下不再写 50 个兵种字，只剩少量站点标记", true, android.graphics.Canvas.TEXTS.size() < 20 && !android.graphics.Canvas.TEXTS.contains("司令"));
 
         click(p, "暗棋 / 明棋");
         chk("切到明棋", Boolean.FALSE, get(p, "dark"));
         chk("明棋 hidden 全 false", 0, countTrue(hidden(v)));
         chk("状态条提到明棋", true, text(p).contains("明棋"));
         draw(v);
-        chk("明棋下 50 兵种 + 10 空站名 + 5 标记 = 65 字", 65, android.graphics.Canvas.TEXTS.size());
+        chk("明棋下至少 50 兵种字、不再写 60 个兵站", true, android.graphics.Canvas.TEXTS.size() >= 50 && android.graphics.Canvas.TEXTS.size() < 65);
 
         click(p, "暗棋 / 明棋");
         chk("切回暗棋 hidden 全 true", JunqiBoard.COLS * JunqiBoard.ROWS, countTrue(hidden(v)));

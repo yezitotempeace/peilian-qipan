@@ -31,17 +31,31 @@ public class Game2048View extends View {
     private final Paint cell = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint tile = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private boolean dark;
 
     public Game2048View(Context c) { super(c); init(); }
     public Game2048View(Context c, AttributeSet a) { super(c, a); init(); }
 
     private void init() {
-        bg.setColor(0xFFFAF8EF);
-        board.setColor(0xFFBBADA0);
-        cell.setColor(0xFFCDC1B4);
+        applyPalette();
         text.setTextAlign(Paint.Align.CENTER);
         text.setFakeBoldText(true);
         setFocusable(true);
+    }
+
+    /** 深色/浅色两套底色；方块与数字仍用经典 2048 配色，夜里不刺眼。 */
+    public void setDark(boolean dark) {
+        if (this.dark != dark) {
+            this.dark = dark;
+            applyPalette();
+            invalidate();
+        }
+    }
+
+    private void applyPalette() {
+        bg.setColor(dark ? 0xFF1F1F1F : 0xFFFAF8EF);
+        board.setColor(dark ? 0xFF2E2C28 : 0xFFBBADA0);
+        cell.setColor(dark ? 0xFF3C3A32 : 0xFFCDC1B4);
     }
 
     public void setGame(Game2048 g) { game = g; animActive = false; invalidate(); }
@@ -73,7 +87,7 @@ public class Game2048View extends View {
             for (int c = 0; c < 4; c++) {
                 float x = left + gap + c * (cellSize + gap);
                 float y = top + gap + r * (cellSize + gap);
-                cell.setColor(0xFFCDC1B4);
+                cell.setColor(dark ? 0xFF3C3A32 : 0xFFCDC1B4);
                 canvas.drawRoundRect(new RectF(x, y, x + cellSize, y + cellSize),
                         cellSize * 0.12f, cellSize * 0.12f, cell);
             }

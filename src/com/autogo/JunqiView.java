@@ -271,9 +271,8 @@ public class JunqiView extends View {
                     RectF rf = new RectF(x - stationW / 2f, y - stationH / 2f, x + stationW / 2f, y + stationH / 2f);
                     canvas.drawRoundRect(rf, stationH * 0.25f, stationH * 0.25f, stationFill);
                     canvas.drawRoundRect(rf, stationH * 0.25f, stationH * 0.25f, stationLine);
-                    if (!occupied) {
-                        drawCellText(canvas, "兵站", x, y, stationH * 0.56f, 0xFF3B2E1A);
-                    }
+                    // 普通兵站不写「兵站」：实体棋盘只有行营/大本营/山界有字，
+                    // 六十个重复小字会像表格；空站点保留米色小方块就够了。
                 }
             }
         }

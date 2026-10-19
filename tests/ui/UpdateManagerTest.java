@@ -36,6 +36,8 @@ public class UpdateManagerTest {
         long next = UpdateScheduler.nextTrigger(last, last + 1000L);
         chk("upToDate 后下一次约 2h（不是 60s）", true, next >= last + UpdateScheduler.INTERVAL_MS - 1000L);
 
+        chk("直连 API 仍是 GitHub", true, UpdateManager.API.startsWith("https://api.github.com/"));
+        chk("国内镜像前缀是 gh-proxy.com", true, UpdateManager.PROXY.startsWith("https://gh-proxy.com/"));
         System.out.println("更新解析测试：通过 " + pass + " 项，失败 " + fail + " 项");
         if (fail > 0) System.exit(1);
     }

@@ -69,6 +69,17 @@ public class Game2048ViewProbe {
         v.onTouchEvent(MotionEvent.up(305, 302));
         chk("轻点不动不触发滑动", -1, got[0]);
 
+        // 深色：空盘只有「棋盘底 + 16 个底格」，底色不发白、画布正常
+        Game2048 gDark = new Game2048(1);
+        gDark.load(new int[16], 0);
+        Game2048View vd = new Game2048View(new android.content.Context());
+        vd.fakeSize(600, 600);
+        vd.setDark(true);
+        vd.setGame(gDark);
+        draw(vd);
+        chk("深色空盘仍画 17 个圆角矩形（棋盘底 + 16 底格）", 17, Canvas.RECTS.size());
+        chk("深色空盘没有数字文字", 0, Canvas.TEXTS.size());
+
         System.out.println("2048 棋盘探针：PASS " + pass + " / FAIL " + fail);
         if (fail > 0) System.exit(1);
     }

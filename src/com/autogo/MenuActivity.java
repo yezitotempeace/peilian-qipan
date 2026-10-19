@@ -14,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.net.Uri;
 
 /**
  * 启动选择页：从这里选「围棋 / 五子棋 / 象棋 / 军棋 / 2048」。
@@ -290,7 +291,7 @@ public class MenuActivity extends Activity {
                         .apply();
                 if (error != null) {
                     if (manual) {
-                        Toast.makeText(MenuActivity.this, "检查更新失败：" + error, Toast.LENGTH_LONG).show();
+                        showUpdateError(error);
                     }
                     return;
                 }
@@ -346,6 +347,24 @@ public class MenuActivity extends Activity {
     /** 后台检查：排下一次；由 receiver 查完再排，重启/强停后下次打开会补排。 */
     private void scheduleBackgroundUpdate() {
         UpdateScheduler.schedule(this);
+    }
+
+    /** 检查失败时给一条手动路：直接打开仓库 Release 页。 */
+    private void showUpdateError(String error) {
+        new AlertDialog.Builder(this)
+                .setTitle("检查更新失败")
+                .setMessage(error + "\n\n可以打开仓库手动下载最新 APK。")
+                .setPositiveButton("打开仓库", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface d, int w) {
+                        try {
+                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(UpdateManager.REPO_PAGE)));
+                        } catch (Exception ignored) {
+                        }
+                    }
+                })
+                .setNegativeButton("知道了", null)
+                .show();
     }
 
     private void showUpdateDialog(final UpdateManager.Info info) {

@@ -31,6 +31,9 @@ import java.util.regex.Pattern;
 public final class UpdateManager {
 
     public static final String API = "https://api.github.com/repos/yezitotempeace/peilian-qipan/releases/latest";
+    /** 国内可直连的 GitHub 代理；403/超时时改用，下载也走它。 */
+    public static final String PROXY = "https://gh-proxy.com/";
+    public static final String REPO_PAGE = "https://github.com/yezitotempeace/peilian-qipan/releases";
     public static final String ACTION_INSTALL_STATUS = "com.autogo.UPDATE_INSTALL_STATUS";
     public static final String EXTRA_FILE = "update_file";
 
@@ -70,29 +73,35 @@ public final class UpdateManager {
                 String error = null;
                 Info info = null;
                 HttpURLConnection conn = null;
-                try {
-                    conn = (HttpURLConnection) new URL(API).openConnection();
-                    conn.setConnectTimeout(4000);
-                    conn.setReadTimeout(6000);
-                    conn.setRequestProperty("Accept", "application/vnd.github+json");
-                    conn.setRequestProperty("User-Agent", "PeilianQipan-Update");
-                    int code = conn.getResponseCode();
-                    if (code != 200) {
-                        throw new IllegalStateException("HTTP " + code);
+                String[] endpoints = new String[]{PROXY + API, API};
+                for (String endpoint : endpoints) {
+                    try {
+                        conn = (HttpURLConnection) new URL(endpoint).openConnection();
+                        conn.setConnectTimeout(4000);
+                        conn.setReadTimeout(6000);
+                        conn.setRequestProperty("Accept", "application/vnd.github+json");
+                        conn.setRequestProperty("User-Agent", "PeilianQipan-Update");
+                        int code = conn.getResponseCode();
+                        if (code != 200) {
+                            throw new IllegalStateException("HTTP " + code);
+                        }
+                        StringBuilder sb = new StringBuilder();
+                        InputStream in = conn.getInputStream();
+                        byte[] buf = new byte[8192];
+                        int n;
+                        while ((n = in.read(buf)) > 0) {
+                            sb.append(new String(buf, 0, n, "UTF-8"));
+                        }
+                        in.close();
+                        info = parseJson(sb.toString(), current);
+                        error = null;
+                        break;
+                    } catch (Exception e) {
+                        error = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                    } finally {
+                        if (conn != null) conn.disconnect();
+                        conn = null;
                     }
-                    StringBuilder sb = new StringBuilder();
-                    InputStream in = conn.getInputStream();
-                    byte[] buf = new byte[8192];
-                    int n;
-                    while ((n = in.read(buf)) > 0) {
-                        sb.append(new String(buf, 0, n, "UTF-8"));
-                    }
-                    in.close();
-                    info = parseJson(sb.toString(), current);
-                } catch (Exception e) {
-                    error = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-                } finally {
-                    if (conn != null) conn.disconnect();
                 }
                 final Info fi = info;
                 final String fe = error;
@@ -173,30 +182,37 @@ public final class UpdateManager {
             public void run() {
                 File out = new File(activity.getCacheDir(), "update.apk");
                 String error = null;
-                HttpURLConnection conn = null;
-                try {
-                    conn = (HttpURLConnection) new URL(info.apkUrl).openConnection();
-                    conn.setConnectTimeout(15000);
-                    conn.setReadTimeout(60000);
-                    conn.setRequestProperty("User-Agent", "PeilianQipan-Update");
-                    if (conn.getResponseCode() != 200) {
-                        throw new IllegalStateException("HTTP " + conn.getResponseCode());
+                String[] sources = info.apkUrl.startsWith(PROXY)
+                        ? new String[]{info.apkUrl}
+                        : new String[]{PROXY + info.apkUrl, info.apkUrl};
+                for (String source : sources) {
+                    HttpURLConnection conn = null;
+                    try {
+                        conn = (HttpURLConnection) new URL(source).openConnection();
+                        conn.setConnectTimeout(15000);
+                        conn.setReadTimeout(60000);
+                        conn.setRequestProperty("User-Agent", "PeilianQipan-Update");
+                        if (conn.getResponseCode() != 200) {
+                            throw new IllegalStateException("HTTP " + conn.getResponseCode());
+                        }
+                        InputStream in = conn.getInputStream();
+                        FileOutputStream fos = new FileOutputStream(out);
+                        byte[] buf = new byte[65536];
+                        int n;
+                        while ((n = in.read(buf)) > 0) {
+                            fos.write(buf, 0, n);
+                        }
+                        fos.close();
+                        in.close();
+                        error = null;
+                        break;
+                    } catch (Exception e) {
+                        error = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                        //noinspection ResultOfMethodCallIgnored
+                        out.delete();
+                    } finally {
+                        if (conn != null) conn.disconnect();
                     }
-                    InputStream in = conn.getInputStream();
-                    FileOutputStream fos = new FileOutputStream(out);
-                    byte[] buf = new byte[65536];
-                    int n;
-                    while ((n = in.read(buf)) > 0) {
-                        fos.write(buf, 0, n);
-                    }
-                    fos.close();
-                    in.close();
-                } catch (Exception e) {
-                    error = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-                    //noinspection ResultOfMethodCallIgnored
-                    out.delete();
-                } finally {
-                    if (conn != null) conn.disconnect();
                 }
                 final String fe = error;
                 MAIN.post(new Runnable() {
