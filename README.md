@@ -68,12 +68,10 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 - 深色模式：棋盘底/空格换深灰，夜里不发白。
 - 达到 2048 可以继续冲更高分；没有可走的格子才结束。
 - 得分、最高分、重开；关掉再进恢复上一局。
-- **没有彩蛋。**
 
 - 4×4; swipe in any direction, equal tiles merge and score; every effective move spawns a 2 or 4.
 - Reaching 2048 wins, and you can keep playing; the game ends only when no move is left.
 - Score, best score and restart; the current game is restored when you come back.
-- **No easter egg.**
 
 ## 通用 / General
 
@@ -107,7 +105,7 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 
 Download from Releases (about 122 MB, bundling the three KataGo networks and the Rapfi engine):
 
-https://github.com/yezitotempeace/peilian-qipan/releases/tag/v187
+https://github.com/yezitotempeace/peilian-qipan/releases/tag/v188
 
 ## 构建 / Build
 
@@ -129,7 +127,7 @@ bash run_tests.sh  # 运行测试 / runs the test suite
 
 ## 版本 / Version
 
-当前 v187 · versionCode 187 · versionName 1.20261020.187
+当前 v188 · versionCode 188 · versionName 1.20261020.188
 
 - 每个版本一个 GitHub Release，旧版本保留、不删除；想回旧版直接去 Releases 下载对应的 APK。
 - App 启动页左下角显示当前 versionName 与 versionCode（设置页也能看到）。

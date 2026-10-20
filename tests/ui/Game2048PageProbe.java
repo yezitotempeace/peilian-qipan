@@ -10,7 +10,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.lang.reflect.Field;
 
-/** 2048 页面：入口文案、没有彩蛋、滑动得分、重开。 */
+/** 2048 页面：入口文案、滑动得分、重开。 */
 public class Game2048PageProbe {
 
     static int pass, fail;
@@ -46,7 +46,7 @@ public class Game2048PageProbe {
         FrameLayout holder = (FrameLayout) a.content;
         LinearLayout root = (LinearLayout) holder.getChildAt(0);
         chk("页面标题是 2048", true, hasText(root, "2048"));
-        chk("提示写明没有彩蛋", true, hasText(root, "没有彩蛋"));
+        chk("提示写明滑动规则", true, hasText(root, "滑动合并相同数字"));
         chk("得分从 0 开始", true, hasText(root, "得分 0"));
 
         Game2048 g = new Game2048(1);

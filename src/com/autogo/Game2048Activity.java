@@ -150,7 +150,7 @@ public class Game2048Activity extends Activity {
         root.addView(view, boardLp);
 
         hint = new TextView(this);
-        hint.setText("滑动合并相同数字；达到 2048 可继续。这个游戏没有彩蛋。");
+        hint.setText("滑动合并相同数字；达到 2048 可继续。");
         hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         hint.setTextColor(palette.textDim);
         hint.setGravity(Gravity.CENTER);

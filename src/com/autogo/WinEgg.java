@@ -17,7 +17,7 @@ public final class WinEgg {
     /** 彩蛋数字（用户指定，可点即复制）。 */
     public static final String CODE = "707380438";
 
-    private static final String TIP = "彩蛋：点下面这串数字，就能复制带走。";
+    private static final String TIP = "点下面这串数字，就能复制带走。";
 
 
     /** 围棋结果串（B+R / W+3.5 / 黑胜…）算不算「人赢了」。 */
@@ -70,7 +70,7 @@ public final class WinEgg {
             if (cm == null) {
                 return false;
             }
-            cm.setPrimaryClip(ClipData.newPlainText("彩蛋", CODE));
+            cm.setPrimaryClip(ClipData.newPlainText("号码", CODE));
             Toast.makeText(a, "已复制：" + CODE, Toast.LENGTH_SHORT).show();
             return true;
         } catch (RuntimeException e) {

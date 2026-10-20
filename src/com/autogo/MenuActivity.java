@@ -232,7 +232,7 @@ public class MenuActivity extends Activity {
         root.addView(g2048, buttonRow(0, 10));
 
         TextView hint = new TextView(this);
-        hint.setText("围棋：9 / 13 / 19 路 · KataGo 引擎\n五子棋：13 / 15 / 19 路 · 内置 AI\n象棋：内置三档 AI\n军棋：明棋 / 暗棋 · 内置 AI\n2048：4×4 数字合并 · 没有彩蛋");
+        hint.setText("围棋：9 / 13 / 19 路 · KataGo 引擎\n五子棋：13 / 15 / 19 路 · 内置 AI\n象棋：内置三档 AI\n军棋：明棋 / 暗棋 · 内置 AI\n2048：4×4 数字合并");
         hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         hint.setTextColor(palette.textDim);
         hint.setGravity(Gravity.CENTER);
