@@ -95,10 +95,13 @@ public final class JunqiBoard {
             int base = setupRows(color);          // 红 6、黑 0
             int backRow = color == RED ? ROWS - 1 : 0;
             int frontRow = color == RED ? base : base + 5;
+            // 摆子格 = 兵站 + 大本营（行营开局留空：安全区不能一上来就塞子，符合正规军棋）
             List<Integer> all = new ArrayList<Integer>();
             for (int row = base; row < base + 6; row++) {
                 for (int col = 0; col < COLS; col++) {
-                    all.add(idx(row, col));
+                    if (!isCamp(row, col)) {
+                        all.add(idx(row, col));
+                    }
                 }
             }
             // 军旗：底线两个大本营之一

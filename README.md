@@ -58,7 +58,8 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 - Two board themes: dark uses the "app" style (dark navy with red/black rounded pieces), light uses a classic wood board; camps and HQ draw as outlines only.
 - In hidden mode, after a capture the defeated enemy piece type is now revealed (previously it vanished without showing what it was).
 - Main menu now has a full themed decorative background (faded Go board + stones, a Gomoku five-in-a-row, "楚河 汉界" + 帅/将, semi-transparent 2048 tiles, a Junqi railway line) in dark and light variants instead of a flat color.
-- Junqi animation: pieces slide in with a scale pop, a red burst marks captures, and a defeated piece flips face-up (back → front) to reveal its rank before fading.
+- Junqi animation: pieces slide in with a scale pop, a red burst marks captures, and a defeated piece flips face-up (back → front) to reveal its rank before shrinking away.
+- Standard Junqi rules: in hidden mode you now see your own pieces (only the opponent's are hidden until a battle); camps start empty (they are safe zones); the flip no longer leaves a ghost over the capturing piece.
 
 ## 2048
 
@@ -106,7 +107,7 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 
 Download from Releases (about 122 MB, bundling the three KataGo networks and the Rapfi engine):
 
-https://github.com/yezitotempeace/peilian-qipan/releases/tag/v186
+https://github.com/yezitotempeace/peilian-qipan/releases/tag/v187
 
 ## 构建 / Build
 
@@ -128,7 +129,7 @@ bash run_tests.sh  # 运行测试 / runs the test suite
 
 ## 版本 / Version
 
-当前 v186 · versionCode 186 · versionName 1.20261020.186
+当前 v187 · versionCode 187 · versionName 1.20261020.187
 
 - 每个版本一个 GitHub Release，旧版本保留、不删除；想回旧版直接去 Releases 下载对应的 APK。
 - App 启动页左下角显示当前 versionName 与 versionCode（设置页也能看到）。

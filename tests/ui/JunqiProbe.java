@@ -14,23 +14,23 @@ public class JunqiProbe {
         ViewGroup holder = contentOf(p);
 
         chk("新局默认暗棋", Boolean.TRUE, get(p, "dark"));
-        chk("暗棋 hidden 全 true", JunqiBoard.COLS * JunqiBoard.ROWS, countTrue(hidden(v)));
+        chk("暗棋只藏对方 25 子（己方全可见）", 25, countTrue(hidden(v)));
         chk("状态条提到暗棋", true, text(p).contains("暗棋"));
         chk("水印在位", true, hasWatermark(holder));
 
         draw(v);
         chk("暗棋下 4 大本营框 + 100 棋子框 = 104", 104, android.graphics.Canvas.RECTS.size());
-        chk("暗棋下不再写 50 个兵种字，只剩少量站点标记", true, android.graphics.Canvas.TEXTS.size() < 20 && !android.graphics.Canvas.TEXTS.contains("司令"));
+        chk("暗棋：看得见己方兵种（含司令）、看不见对方", true, android.graphics.Canvas.TEXTS.size() >= 38 && android.graphics.Canvas.TEXTS.size() <= 44 && android.graphics.Canvas.TEXTS.contains("司令"));
 
         click(p, "暗棋 / 明棋");
         chk("切到明棋", Boolean.FALSE, get(p, "dark"));
         chk("明棋 hidden 全 false", 0, countTrue(hidden(v)));
         chk("状态条提到明棋", true, text(p).contains("明棋"));
         draw(v);
-        chk("明棋下至少 50 兵种字、不再写 60 个兵站", true, android.graphics.Canvas.TEXTS.size() >= 50 && android.graphics.Canvas.TEXTS.size() < 65);
+        chk("明棋下 50 兵种字 + 行营/山界/前线标记", true, android.graphics.Canvas.TEXTS.size() >= 60 && android.graphics.Canvas.TEXTS.size() <= 68 && android.graphics.Canvas.TEXTS.contains("司令"));
 
         click(p, "暗棋 / 明棋");
-        chk("切回暗棋 hidden 全 true", JunqiBoard.COLS * JunqiBoard.ROWS, countTrue(hidden(v)));
+        chk("切回暗棋仍只藏对方 25 子", 25, countTrue(hidden(v)));
 
         // ⑥ 暗棋交战暴露：走到空格不暴露、吃子才暴露
         JunqiBoard cb = new JunqiBoard(true);   // 空盘（true = 不摆开局）

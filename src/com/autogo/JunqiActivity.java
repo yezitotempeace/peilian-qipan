@@ -269,7 +269,11 @@ public class JunqiActivity extends Activity {
     private boolean[] hiddenArray() {
         boolean[] h = new boolean[revealed.length];
         for (int i = 0; i < revealed.length; i++) {
-            h[i] = !revealed[i];
+            // 暗棋（标准口径）：只藏「对方」的棋子，己方始终看得见；明棋全可见。
+            // revealed[i]=true 表示该格对方棋子已被交战暴露过。
+            h[i] = dark
+                    && board.ownerAt(JunqiBoard.rowOf(i), JunqiBoard.colOf(i)) == JunqiBoard.BLACK
+                    && !revealed[i];
         }
         return h;
     }

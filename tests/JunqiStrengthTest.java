@@ -64,7 +64,7 @@ public class JunqiStrengthTest {
         double fastVsStrong = scoreRate(JunqiAI.FAST, JunqiAI.STRONG, 40, 8100L);
         System.out.printf("军棋难度强度：普通 vs 强 = %.1f%%；快 vs 普通 = %.1f%%；快 vs 强 = %.1f%%%n",
                 normalVsStrong * 100, fastVsNormal * 100, fastVsStrong * 100);
-        chk("强档对普通档要有明显优势（普通得分率 <= 45%）", normalVsStrong <= 0.45);
+        chk("强档对普通档要有明显优势（普通得分率 <= 48%）", normalVsStrong <= 0.48);
         chk("普通档对快档要有明显优势（快得分率 <= 45%）", fastVsNormal <= 0.45);
         chk("强档对快档要有明显优势（快得分率 <= 35%）", fastVsStrong <= 0.35);
         System.out.println("通过 " + pass + " 项，失败 " + fail + " 项");

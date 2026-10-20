@@ -56,7 +56,7 @@ public class JunqiViewProbe {
         v.setBoard(std);
         draw(v);
         chk("标准开局至少 50 个兵种字", true, Canvas.TEXTS.size() >= 50);
-        chk("标准开局不再画 60 个「兵站」字（总数 < 65）", true, Canvas.TEXTS.size() < 65);
+        chk("标准开局 50 兵种字 + 15 标记（不写 60 个兵站）", true, Canvas.TEXTS.size() >= 60 && Canvas.TEXTS.size() <= 68);
         chk("标准开局 4 大本营框 + 100 棋子框 / 24 圆（行营+山界）", "104/24", Canvas.RECTS.size() + "/" + Canvas.CIRCLES.size());
 
         // 铁路：4 条横 + 2 条竖 + 中线 1 小段；线是黑底白虚线，从站点后面穿过
@@ -106,7 +106,7 @@ public class JunqiViewProbe {
         v.setLastMove(5, 2, 4, 2);
         draw(v);
         chk("24 圆 + 2 可走点 = 26（上一手/选中是站点框）", 26, Canvas.CIRCLES.size());
-        chk("选中后仍不画 60 个「兵站」字", true, Canvas.TEXTS.size() < 65);
+        chk("选中后仍不画 60 个「兵站」字", true, Canvas.TEXTS.size() <= 68);
 
         JunqiView t = view(500, 1000);
         t.setBoard(std);

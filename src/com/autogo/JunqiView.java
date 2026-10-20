@@ -34,9 +34,8 @@ public class JunqiView extends View {
     private long animStart;
     private int animFrom = -1;
     private int animTo = -1;
-    private boolean flipActive;
-    private long flipStart;
-    private int flipRow = -1, flipCol = -1, flipColor, flipType;
+    /** 正在翻转显露的阵亡棋子：{row, col, color, type, startMs}。 */
+    private final java.util.ArrayList<float[]> flips = new java.util.ArrayList<float[]>();
 
     private final Paint bg = new Paint();
     private final Paint road = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -165,14 +164,9 @@ public class JunqiView extends View {
         invalidate();
     }
 
-    /** 吃子/被吃后，把阵亡的棋子「背面→正面」翻过来给人看，然后消失。 */
+    /** 吃子/被吃后，把阵亡的棋子「背面→正面」翻过来给人看，然后缩小消失。 */
     public void revealFlip(int row, int col, int color, int type) {
-        flipRow = row;
-        flipCol = col;
-        flipColor = color;
-        flipType = type;
-        flipStart = System.currentTimeMillis();
-        flipActive = true;
+        flips.add(new float[]{row, col, color, type, System.currentTimeMillis()});
         invalidate();
     }
 
@@ -382,28 +376,32 @@ public class JunqiView extends View {
     }
 
     private void drawFlip(Canvas canvas) {
-        if (!flipActive || flipRow < 0) {
+        if (flips.isEmpty()) {
             return;
         }
-        float p = AnimMath.progress(flipStart, System.currentTimeMillis(), AnimMath.FLIP_MS);
-        if (p >= 1f) {
-            flipActive = false;
-            flipRow = -1;
-            return;
+        long now = System.currentTimeMillis();
+        for (int i = flips.size() - 1; i >= 0; i--) {
+            float[] f = flips.get(i);
+            float p = AnimMath.progress((long) f[4], now, AnimMath.FLIP_MS);
+            if (p >= 1f) {
+                flips.remove(i);
+            } else {
+                drawFlipPiece(canvas, (int) f[0], (int) f[1], (int) f[2], (int) f[3], p);
+            }
         }
-        drawFlipPiece(canvas, flipRow, flipCol, flipColor, flipType, p);
-        postInvalidateOnAnimation();
+        postInvalidateOnAnimation();   // 继续下一帧；全部翻完后再刷一帧清掉残影
     }
 
     private void drawFlipPiece(Canvas canvas, int row, int col, int color, int type, float p) {
         float ang = p * (float) Math.PI;              // 0..π：先压扁背面，再展开正面
         float sx = Math.abs((float) Math.cos(ang));   // 宽度 1→0→1
         boolean faceUp = p >= 0.5f;
-        float pw = stationW * 0.98f, ph = stationH * 0.98f;
+        float shrink = p > 0.72f ? Math.max(0f, 1f - (p - 0.72f) / 0.28f) : 1f;  // 收尾缩小到消失
+        float pw = stationW * 0.98f * shrink, ph = stationH * 0.98f * shrink;
         float w = pw * sx;
         float radius = ph * 0.26f * sx;
         float x = cx(col), y = cy(row);
-        y -= (float) Math.sin(ang) * ph * 0.5f;       // 翻的时候抬起来
+        y -= (float) Math.sin(ang) * stationH * 0.6f;   // 翻的时候抬起来
         boolean red = color == JunqiBoard.RED;
         int edge = dark ? (red ? 0xFF8A2A26 : 0xFF5D7A99) : 0xFF2E1F10;
         int body = dark ? (red ? 0xFFD64541 : 0xFF2C3E50) : (red ? 0xFFB5483A : 0xFF4A3B2C);
@@ -424,12 +422,6 @@ public class JunqiView extends View {
         } else {
             face.setColor(backdot);
             canvas.drawCircle(x, y, ph * 0.22f, face);
-        }
-        if (p > 0.8f) {   // 收尾淡出
-            float a = (p - 0.8f) / 0.2f;
-            face.setColor(((int) (a * 255) << 24) | (bg.getColor() & 0xFFFFFF));
-            canvas.drawRoundRect(new RectF(x - pw / 2f, y - ph / 2f, x + pw / 2f, y + ph / 2f),
-                    ph * 0.26f, ph * 0.26f, face);
         }
     }
 
