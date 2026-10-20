@@ -285,10 +285,7 @@ public class JunqiActivity extends Activity {
         JunqiReveal.resolve(revealed, before,
                 new int[]{JunqiBoard.idx(mv[0], mv[1]), JunqiBoard.idx(mv[2], mv[3])});
         sync();
-        String bs = battleStatus();
-        if (bs != null) {
-            toast(bs);
-        }
+        animateBattleReveal(mv[0], mv[1], mv[2], mv[3]);
         if (ok && board.gameOver()) {
             finishGame();
         } else {
@@ -382,10 +379,7 @@ public class JunqiActivity extends Activity {
         selected = -1;
         legal = new int[0];
         sync();
-        String bs = battleStatus();
-        if (bs != null) {
-            toast(bs);
-        }
+        animateBattleReveal(fr, fc, tr, tc);
         if (board.gameOver()) {
             finishGame();
         } else {
@@ -523,37 +517,22 @@ public class JunqiActivity extends Activity {
         }
     }
 
-    /** 上一手若发生交战，把对方被吃的兵种「翻」出来给人看。 */
-    private String battleStatus() {
-        int def = board.lastDefType();
-        if (def == JunqiBoard.EMPTY) {
-            return null;   // 只是移动，不揭示
+    /** 上一手若发生交战，把阵亡的棋子「背面→正面」翻过来给人看。 */
+    private void animateBattleReveal(int fr, int fc, int tr, int tc) {
+        if (board.lastDefType() == JunqiBoard.EMPTY) {
+            return;   // 只是移动，不翻
         }
-        int atk = board.lastAtkType();
         int atkOwner = board.lastAttacker();
+        int defOwner = JunqiBoard.opponent(atkOwner);
         int res = board.lastResult();
-        String an = JunqiBoard.typeName(atk);
-        String dn = JunqiBoard.typeName(def);
-        if (def == JunqiBoard.FLAG) {
-            return atkOwner == JunqiBoard.RED ? "你夺下对方军旗，胜利！" : "你的军旗被夺，本局结束。";
+        if (res == atkOwner) {
+            boardView.revealFlip(tr, tc, defOwner, board.lastDefType());   // 对方被吃
+        } else if (res == defOwner) {
+            boardView.revealFlip(fr, fc, atkOwner, board.lastAtkType());   // 自己被吃
+        } else {
+            boardView.revealFlip(tr, tc, defOwner, board.lastDefType());   // 同归于尽/炸弹：两个都翻
+            boardView.revealFlip(fr, fc, atkOwner, board.lastAtkType());
         }
-        if (def == JunqiBoard.MINE) {
-            if (res == JunqiBoard.RED) {
-                return "工兵挖掉对方「地雷」";
-            }
-            return "你的「" + an + "」踩到地雷阵亡";
-        }
-        if (res == JunqiBoard.RED) {
-            return atkOwner == JunqiBoard.RED
-                    ? "你吃掉对方「" + dn + "」"
-                    : "对方「" + an + "」被你的「" + dn + "」吃掉";
-        }
-        if (res == JunqiBoard.BLACK) {
-            return atkOwner == JunqiBoard.BLACK
-                    ? "你的「" + dn + "」被对方「" + an + "」吃掉"
-                    : "你的「" + an + "」被对方「" + dn + "」吃掉";
-        }
-        return "「" + an + "」与「" + dn + "」同归于尽";
     }
 
     private void toast(String s) {

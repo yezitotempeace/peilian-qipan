@@ -7,6 +7,8 @@ public final class AnimMath {
     public static final long MOVE_MS = 220;
     /** 吃子闪光时长。 */
     public static final long FLASH_MS = 320;
+    /** 军棋吃子「背面→正面」翻牌时长。 */
+    public static final long FLIP_MS = 560;
     /** 彩蛋弹出时长。 */
     public static final long EGG_MS = 280;
 

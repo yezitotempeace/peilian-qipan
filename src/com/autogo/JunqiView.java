@@ -34,6 +34,9 @@ public class JunqiView extends View {
     private long animStart;
     private int animFrom = -1;
     private int animTo = -1;
+    private boolean flipActive;
+    private long flipStart;
+    private int flipRow = -1, flipCol = -1, flipColor, flipType;
 
     private final Paint bg = new Paint();
     private final Paint road = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -162,6 +165,17 @@ public class JunqiView extends View {
         invalidate();
     }
 
+    /** 吃子/被吃后，把阵亡的棋子「背面→正面」翻过来给人看，然后消失。 */
+    public void revealFlip(int row, int col, int color, int type) {
+        flipRow = row;
+        flipCol = col;
+        flipColor = color;
+        flipType = type;
+        flipStart = System.currentTimeMillis();
+        flipActive = true;
+        invalidate();
+    }
+
     public void setInputEnabled(boolean on) { inputEnabled = on; invalidate(); }
     public void setOnCellTap(OnCellTap l) { tapListener = l; }
 
@@ -211,6 +225,7 @@ public class JunqiView extends View {
         drawMountains(canvas);
         drawStations(canvas);
         drawPieces(canvas);
+        drawFlip(canvas);
         drawMarks(canvas);
 
         BoardArt.boardEdge(canvas, 0, 0, w, h);
@@ -347,18 +362,83 @@ public class JunqiView extends View {
                 float x = AnimMath.lerp(cx(animFrom % cols), cx(tc), e);
                 float y = AnimMath.lerp(cy(animFrom / cols), cy(tr), e);
                 boolean back = hidden != null && animTo < hidden.length && hidden[animTo];
-                drawPiece(canvas, x, y, mover, board.at(tr, tc), back);
+                // 落子带缩放：从小到大落下，滑动不再是纯位移
+                drawPiece(canvas, x, y, mover, board.at(tr, tc), back, 0.72f + 0.28f * e);
             }
             float fa = 0.55f * (1f - animP);
             mark.setColor(((int) (fa * 255) << 24) | 0x00FFB300);
             mark.setStrokeWidth(Math.max(2f, cw * 0.04f));
             canvas.drawCircle(cx(tc), cy(tr), stationW * (0.55f + 0.35f * AnimMath.easeOut(animP)), mark);
+            // 吃子（交战）再叠一个红色爆点，让「吃掉对方」这一下看得见
+            if (board.lastDefType() != JunqiBoard.EMPTY) {
+                float bp = AnimMath.easeOut(animP);
+                int ba = (int) (0.55f * (1f - animP) * 255);
+                mark.setColor((ba << 24) | 0x00FF5A3C);
+                mark.setStrokeWidth(Math.max(3f, cw * 0.06f));
+                canvas.drawCircle(cx(tc), cy(tr), stationW * (0.5f + 1.0f * bp), mark);
+            }
             postInvalidateOnAnimation();
         }
     }
 
+    private void drawFlip(Canvas canvas) {
+        if (!flipActive || flipRow < 0) {
+            return;
+        }
+        float p = AnimMath.progress(flipStart, System.currentTimeMillis(), AnimMath.FLIP_MS);
+        if (p >= 1f) {
+            flipActive = false;
+            flipRow = -1;
+            return;
+        }
+        drawFlipPiece(canvas, flipRow, flipCol, flipColor, flipType, p);
+        postInvalidateOnAnimation();
+    }
+
+    private void drawFlipPiece(Canvas canvas, int row, int col, int color, int type, float p) {
+        float ang = p * (float) Math.PI;              // 0..π：先压扁背面，再展开正面
+        float sx = Math.abs((float) Math.cos(ang));   // 宽度 1→0→1
+        boolean faceUp = p >= 0.5f;
+        float pw = stationW * 0.98f, ph = stationH * 0.98f;
+        float w = pw * sx;
+        float radius = ph * 0.26f * sx;
+        float x = cx(col), y = cy(row);
+        y -= (float) Math.sin(ang) * ph * 0.5f;       // 翻的时候抬起来
+        boolean red = color == JunqiBoard.RED;
+        int edge = dark ? (red ? 0xFF8A2A26 : 0xFF5D7A99) : 0xFF2E1F10;
+        int body = dark ? (red ? 0xFFD64541 : 0xFF2C3E50) : (red ? 0xFFB5483A : 0xFF4A3B2C);
+        int backc = dark ? 0xFF546E7A : 0xFF9E8F72;
+        int backdot = dark ? 0xFF7A8FA3 : 0xFF6B5740;
+        int txt = dark ? 0xFFFFFFFF : (red ? 0xFF7A2A20 : 0xFF2E1F10);
+        face.setStyle(Paint.Style.FILL);
+        face.setColor(edge);
+        RectF outer = new RectF(x - w / 2f, y - ph / 2f, x + w / 2f, y + ph / 2f);
+        canvas.drawRoundRect(outer, radius, radius, face);
+        face.setColor(faceUp ? body : backc);
+        RectF inner = new RectF(x - w * 0.45f, y - ph * 0.42f, x + w * 0.45f, y + ph * 0.42f);
+        canvas.drawRoundRect(inner, radius * 0.7f, radius * 0.7f, face);
+        if (faceUp) {
+            text.setColor(txt);
+            text.setTextSize(ph * 0.72f);
+            canvas.drawText(JunqiBoard.typeName(type), x, y + ph * 0.23f, text);
+        } else {
+            face.setColor(backdot);
+            canvas.drawCircle(x, y, ph * 0.22f, face);
+        }
+        if (p > 0.8f) {   // 收尾淡出
+            float a = (p - 0.8f) / 0.2f;
+            face.setColor(((int) (a * 255) << 24) | (bg.getColor() & 0xFFFFFF));
+            canvas.drawRoundRect(new RectF(x - pw / 2f, y - ph / 2f, x + pw / 2f, y + ph / 2f),
+                    ph * 0.26f, ph * 0.26f, face);
+        }
+    }
+
     private void drawPiece(Canvas canvas, float x, float y, int color, int type, boolean back) {
-        float pw = stationW * 0.94f, ph = stationH * 0.94f;
+        drawPiece(canvas, x, y, color, type, back, 1f);
+    }
+
+    private void drawPiece(Canvas canvas, float x, float y, int color, int type, boolean back, float scl) {
+        float pw = stationW * 0.94f * scl, ph = stationH * 0.94f * scl;
         float radius = ph * 0.26f;
         boolean red = color == JunqiBoard.RED;
         int edge = dark ? (red ? 0xFF8A2A26 : 0xFF5D7A99) : 0xFF2E1F10;
