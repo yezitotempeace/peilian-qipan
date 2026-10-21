@@ -141,3 +141,6 @@ This project is licensed under the **GNU Affero General Public License v3.0 (AGP
 
 > AGPL-3.0 的核心要求：如果你修改了本项目并通过网络向他人提供服务，必须以同样的 AGPL-3.0 许可证公开你的修改。
 > Under AGPL-3.0, if you modify this software and make it available to others over a network, you must release your modifications under the same license.
+
+第三方组件声明见 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)（KataGo 为 MIT、Rapfi 为 GPL-3.0）。
+Third-party component notices: see [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) (KataGo MIT, Rapfi GPL-3.0).
