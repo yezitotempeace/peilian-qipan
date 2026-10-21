@@ -1,8 +1,8 @@
 # 陪练棋盘 / Peilian Qipan
 
-陪练棋盘是一款 Android 棋类练习应用，一个 App 里包含围棋、五子棋、象棋、军棋四种棋，外加 2048；全部对局都在本机离线完成。
+陪练棋盘是一款 Android 棋类练习应用，一个 App 里包含围棋、五子棋、象棋、军棋、数独，外加 2048；全部对局都在本机离线完成。
 
-Peilian Qipan is an Android board-game practice app. It bundles four board games — Go, Gomoku, Xiangqi (Chinese chess) and Junqi (Army chess) — plus 2048, and runs entirely offline on the device.
+Peilian Qipan is an Android board-game practice app. It bundles Go, Gomoku, Xiangqi (Chinese chess), Junqi (Army chess) and Sudoku, plus 2048, and runs entirely offline on the device.
 
 ## 围棋 / Go
 
@@ -72,6 +72,20 @@ Peilian Qipan is an Android board-game practice app. It bundles four board games
 - 4×4; swipe in any direction, equal tiles merge and score; every effective move spawns a 2 or 4.
 - Reaching 2048 wins, and you can keep playing; the game ends only when no move is left.
 - Score, best score and restart; the current game is restored when you come back.
+
+## 数独 / Sudoku
+
+- 9×9 标准数独：每行、每列、每个 3×3 宫都是 1–9 各一次，题目保证唯一解。
+- 三档难度：简单（46 个提示数，全程靠基础推理）、普通（32 个提示数）、困难（提示数压到 26 以内，必须反复试填，非常难）。
+- 填写时同一行 / 同一列 / 同一宫都不能出现相同数字；重复的格子会标红提示（不拦你填）。
+- 笔记（候选数）、提示、撤销、计时、重开；退出再进接着填。
+- 关卡全部在本机随机生成，离线可玩；竖屏上下排、横屏左右排，小屏也不会挤。
+
+- Standard 9×9 Sudoku: every row, column and 3×3 box holds 1–9 exactly once; every puzzle has a unique solution.
+- Three difficulties: Easy (46 givens, pure basic reasoning), Normal (32 givens) and Hard (26 givens or fewer, requires repeated trial — genuinely hard).
+- The digit you enter may not repeat in its row, column or box; a conflicting cell turns red but the input is still accepted.
+- Pencil marks (candidates), hint, undo, timer and restart; your game is restored when you come back.
+- Puzzles are generated locally and work offline; the layout stacks vertically in portrait and side-by-side in landscape.
 
 ## 通用 / General
 

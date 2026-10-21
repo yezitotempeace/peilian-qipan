@@ -23,7 +23,7 @@ import android.content.Intent;
 import android.net.Uri;
 
 /**
- * 启动选择页：从这里选「围棋 / 五子棋 / 象棋 / 军棋 / 2048」。
+ * 启动选择页：从这里选「围棋 / 五子棋 / 象棋 / 军棋 / 2048 / 数独」。
  *
  * 这一页只负责分流，不碰任何一方的对局逻辑：
  *   - 围棋 → {@link MainActivity}（原有对局界面，一行没改）
@@ -31,6 +31,7 @@ import android.net.Uri;
  *   - 象棋 → {@link XiangqiActivity}
  *   - 军棋 → {@link JunqiActivity}
  *   - 2048 → {@link Game2048Activity}
+ *   - 数独 → {@link SudokuActivity}
  *
  * 主题走 {@link UiTheme}（与 MainActivity 同一份偏好 "autogo" / "themeMode"、同一套判据），
  * 所以设置页换的主题这一页也跟得上：清单声明了 configChanges，本页不会自己重建，
@@ -236,8 +237,16 @@ public class MenuActivity extends Activity {
         });
         root.addView(g2048, buttonRow(0, 10));
 
+        Button sudoku = bigButton("数　独", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MenuActivity.this, SudokuActivity.class));
+            }
+        });
+        root.addView(sudoku, buttonRow(0, 10));
+
         TextView hint = new TextView(this);
-        hint.setText("围棋：9 / 13 / 19 路 · KataGo 引擎\n五子棋：13 / 15 / 19 路 · 内置 AI\n象棋：内置三档 AI\n军棋：明棋 / 暗棋 · 内置 AI\n2048：4×4 数字合并");
+        hint.setText("围棋：9 / 13 / 19 路 · KataGo 引擎\n五子棋：13 / 15 / 19 路 · 内置 AI\n象棋：内置三档 AI\n军棋：明棋 / 暗棋 · 内置 AI\n2048：4×4 数字合并\n数独：9×9 逻辑填数 · 三档");
         hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         hint.setTextColor(palette.textDim);
         hint.setGravity(Gravity.CENTER);

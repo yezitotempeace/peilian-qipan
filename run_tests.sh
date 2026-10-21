@@ -52,6 +52,7 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/src/com/autogo/GomokuLearn.java" \
    "$PROJ/src/com/autogo/AnimMath.java" \
    "$PROJ/src/com/autogo/Game2048.java" \
+   "$PROJ/src/com/autogo/SudokuGame.java" \
    "$PROJ/src/com/autogo/RapfiGomokuEngine.java" \
    "$PROJ/tests/BoardTest.java" \
    "$PROJ/tests/GtpTest.java" \
@@ -66,6 +67,7 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/tests/JunqiTest.java" "$PROJ/tests/JunqiAITest.java" "$PROJ/tests/JunqiRevealTest.java" \
    "$PROJ/tests/JunqiStrengthTest.java" "$PROJ/tests/JunqiLearnTest.java" \
    "$PROJ/tests/Game2048Test.java" \
+   "$PROJ/tests/SudokuTest.java" \
    "$PROJ/tests/XiangqiTrendTest.java" \
    "$PROJ/tests/RapfiGomokuTest.java" \
    "$OUT/src/"
@@ -92,6 +94,7 @@ java -cp "$OUT/classes" JunqiLearnTest
 java -cp "$OUT/classes" JunqiRevealTest
 java -cp "$OUT/classes" JunqiTest  # 军棋规则（5×12 / 铁路 / 行营 / 战斗 / 胜负）
 java -cp "$OUT/classes" Game2048Test  # 2048 规则（4×4 / 合并一次 / 生成 / 胜负）
+java -cp "$OUT/classes" SudokuTest  # 数独（生成 / 唯一解 / 三档难度 / 行列宫冲突 / 笔记 / 撤销 / 存档）
 java -cp "$OUT/classes" XiangqiTrendTest  # 象棋复盘走势文案 / 未终局前缀
 
 echo
@@ -155,6 +158,7 @@ cp "$PROJ/src/com/autogo/MenuActivity.java" "$PROJ/src/com/autogo/GomokuActivity
    "$PROJ/src/com/autogo/XiangqiReviewActivity.java" \
    "$PROJ/src/com/autogo/JunqiView.java" "$PROJ/src/com/autogo/JunqiActivity.java" \
    "$PROJ/src/com/autogo/Game2048View.java" "$PROJ/src/com/autogo/Game2048Activity.java" \
+   "$PROJ/src/com/autogo/SudokuView.java" "$PROJ/src/com/autogo/SudokuActivity.java" "$PROJ/src/com/autogo/SudokuGame.java" \
    "$PROJ/src/com/autogo/UpdateManager.java" "$PROJ/src/com/autogo/UpdateScheduler.java" "$PROJ/src/com/autogo/MenuBackground.java" \
    "$PROJ/src/com/autogo/GomokuView.java" \
    "$PROJ/src/com/autogo/GomokuReviewActivity.java" "$PROJ/src/com/autogo/WinrateChartView.java" \
@@ -178,8 +182,9 @@ javac -encoding UTF-8 -nowarn -d "$OUT/ui/testcls" -cp "$OUT/ui/fakecls:$OUT/ui/
   "$PROJ/tests/ui/Driver95.java" "$PROJ/tests/ui/ViewProbe.java" "$PROJ/tests/ui/ReviewProbe.java" \
   "$PROJ/tests/ui/MenuProbe.java" "$PROJ/tests/ui/XiangqiViewProbe.java" "$PROJ/tests/ui/JunqiViewProbe.java" "$PROJ/tests/ui/JunqiProbe.java" \
   "$PROJ/tests/ui/XiangqiReviewProbe.java" "$PROJ/tests/ui/XiangqiProbe.java" \
-  "$PROJ/tests/ui/WatermarkProbe.java" "$PROJ/tests/ui/WinEggTest.java" "$PROJ/tests/ui/Game2048ViewProbe.java" "$PROJ/tests/ui/Game2048PageProbe.java" "$PROJ/tests/ui/UpdateManagerTest.java"
-for t in Driver95 ViewProbe ReviewProbe MenuProbe XiangqiViewProbe JunqiViewProbe JunqiProbe XiangqiReviewProbe XiangqiProbe WatermarkProbe WinEggTest Game2048ViewProbe Game2048PageProbe UpdateManagerTest; do
+  "$PROJ/tests/ui/WatermarkProbe.java" "$PROJ/tests/ui/WinEggTest.java" "$PROJ/tests/ui/Game2048ViewProbe.java" "$PROJ/tests/ui/Game2048PageProbe.java" "$PROJ/tests/ui/UpdateManagerTest.java" \
+  "$PROJ/tests/ui/SudokuPageProbe.java"
+for t in Driver95 ViewProbe ReviewProbe MenuProbe XiangqiViewProbe JunqiViewProbe JunqiProbe XiangqiReviewProbe XiangqiProbe WatermarkProbe WinEggTest Game2048ViewProbe Game2048PageProbe UpdateManagerTest SudokuPageProbe; do
   java -cp "$OUT/ui/fakecls:$OUT/ui/realcls:$OUT/ui/stubcls:$OUT/ui/testcls:$OUT/classes" com.autogo.$t
   rc=$?
   if [ $rc -ne 0 ]; then
@@ -348,13 +353,13 @@ PYEOF
 echo
 # ---- 水印接线守卫：九个页面都必须挂右下角水印 ----
 WM_MISS=0
-for f in MenuActivity MainActivity ReviewActivity GomokuActivity GomokuReviewActivity XiangqiActivity XiangqiReviewActivity JunqiActivity Game2048Activity; do
+for f in MenuActivity MainActivity ReviewActivity GomokuActivity GomokuReviewActivity XiangqiActivity XiangqiReviewActivity JunqiActivity Game2048Activity SudokuActivity; do
     if ! python3 -c "import re,sys; s=open(sys.argv[1],encoding='utf-8').read(); s=re.sub(r'/\\*.*?\\*/','',s,flags=re.S); s=re.sub(r'//[^\n]*','',s); sys.exit(0 if re.search(r'^\\s*Watermark\\.wrap\\(',s,re.M) else 1)" "$PROJ/src/com/autogo/$f.java"; then
         echo "守卫失败：$f.java 没有调用 Watermark.wrap（水印缺失）"
         WM_MISS=1
     fi
 done
 if [ "$WM_MISS" -ne 0 ]; then exit 1; fi
-echo "水印接线：九个页面都挂了右下角水印 ✓"
+echo "水印接线：十个页面都挂了右下角水印 ✓"
 
 echo "套件结束：全部通过（含第 6 节温度计）"

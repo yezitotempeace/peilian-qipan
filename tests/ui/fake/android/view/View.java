@@ -26,6 +26,7 @@ public class View {
     public ViewGroup.LayoutParams getLayoutParams() { return lp; }
     public void setVisibility(int v) { android.os.FakeLog.log("setVisibility:" + v); }
     public void setMinimumWidth(int w) {}
+    public void setMinimumHeight(int h) {}
     public android.view.ViewPropertyAnimator animate() { return new android.view.ViewPropertyAnimator(); }
 
     public void postInvalidateOnAnimation() {}
