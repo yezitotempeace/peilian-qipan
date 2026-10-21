@@ -132,3 +132,12 @@ bash run_tests.sh  # 运行测试 / runs the test suite
 - 每个版本一个 GitHub Release，旧版本保留、不删除；想回旧版直接去 Releases 下载对应的 APK。
 - App 启动页左下角显示当前 versionName 与 versionCode（设置页也能看到）。
 - Each version gets its own GitHub Release; older releases are kept. The app shows the current versionName / versionCode at the bottom-left of the launch screen (and on the settings page).
+
+## 许可证 / License
+
+本项目采用 **GNU Affero General Public License v3.0 (AGPL-3.0)** 许可，全文见 [`LICENSE`](LICENSE)。
+
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)** — see [`LICENSE`](LICENSE).
+
+> AGPL-3.0 的核心要求：如果你修改了本项目并通过网络向他人提供服务，必须以同样的 AGPL-3.0 许可证公开你的修改。
+> Under AGPL-3.0, if you modify this software and make it available to others over a network, you must release your modifications under the same license.
