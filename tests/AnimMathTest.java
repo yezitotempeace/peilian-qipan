@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 yezitotempeace
+ */
+
 import com.autogo.AnimMath;
 
 /** 动画纯数学：端点、钳制、缓动、插值、进度。 */

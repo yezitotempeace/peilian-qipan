@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 yezitotempeace
+ */
+
 package android.content.res;
 public class Configuration {
     public static final int UI_MODE_NIGHT_MASK = 0x30;

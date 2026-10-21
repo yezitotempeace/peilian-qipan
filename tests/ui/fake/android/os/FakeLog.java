@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 yezitotempeace
+ */
+
 package android.os;
 /** 记录所有被我伪装的 Android API 调用，便于断言「谁被调了几次」。 */
 public final class FakeLog {

@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 yezitotempeace
+ */
+
 package android.view;
 public class View {
     public static final int VISIBLE = 0, INVISIBLE = 4, GONE = 8;

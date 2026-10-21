@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 yezitotempeace
+ */
+
 package android.graphics;
 public class Canvas {
     /** 桩测用：记录所有 drawRoundRect 的矩形（全屏返回按钮就画在这）。 */

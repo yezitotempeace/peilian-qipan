@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 yezitotempeace
+ */
+
 package android.app;
 public class AlarmManager {
     public static final int ELAPSED_REALTIME = 3;

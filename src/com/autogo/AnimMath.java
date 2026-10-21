@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 yezitotempeace
+ */
+
 package com.autogo;
 
 /** 动画用的纯数学：缓动 + 插值。不依赖 Android，方便 JVM 单测。 */

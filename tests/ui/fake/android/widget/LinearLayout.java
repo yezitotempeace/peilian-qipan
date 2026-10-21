@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 yezitotempeace
+ */
+
 package android.widget;
 public class LinearLayout extends android.view.ViewGroup {
     public static final int VERTICAL = 1;

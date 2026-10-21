@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 yezitotempeace
+ */
+
 import com.autogo.Game2048;
 
 /** 2048 纯逻辑：滑动、合并一次、得分、生成、胜负。 */

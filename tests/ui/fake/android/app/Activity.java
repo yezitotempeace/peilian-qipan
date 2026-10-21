@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 yezitotempeace
+ */
+
 package android.app;
 public class Activity extends android.content.Context {
     public static final java.util.List<Runnable> UI_QUEUE = new java.util.ArrayList<Runnable>();

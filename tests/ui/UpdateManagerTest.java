@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2026 yezitotempeace
+ */
+
 package com.autogo;
 
 /** 更新 JSON 解析/版本比较（不联网）。 */
