@@ -59,6 +59,10 @@ public class GomokuView extends View {
     private Palette palette = Palette.of(false);
 
     private float padX, padY, spacing, stoneRadius;
+    /** 缓存：避免 onDraw 每帧分配。 */
+    private final RectF tmpRect = new RectF();
+    /** 坐标标签缓存，recompute 时按当前路数预算好。 */
+    private String[] cachedColLabels, cachedRowLabels;
 
     public GomokuView(Context context) {
         super(context);
@@ -201,6 +205,12 @@ public class GomokuView extends View {
         labelPaint.setTextSize(Math.max(10f, labelRoom * 0.62f));
         winPaint.setStrokeWidth(Math.max(2f, spacing * 0.14f));
         rebuildStoneShaders();
+        cachedColLabels = new String[n];
+        cachedRowLabels = new String[n];
+        for (int i = 0; i < n; i++) {
+            cachedColLabels[i] = String.valueOf(GomokuBoard.GTP_COLS.charAt(i));
+            cachedRowLabels[i] = String.valueOf(n - i);
+        }
     }
 
     @Override
@@ -210,8 +220,8 @@ public class GomokuView extends View {
         final int n = board.size;
         if (spacing <= 0) recompute(getWidth(), getHeight());
 
-        RectF full = new RectF(0, 0, getWidth(), getHeight());
-        canvas.drawRect(full, woodPaint);
+        tmpRect.set(0, 0, getWidth(), getHeight());
+        canvas.drawRect(tmpRect, woodPaint);
         BoardArt.boardEdge(canvas, 0f, 0f, getWidth(), getHeight());
 
         float left = padX, top = padY;
@@ -234,8 +244,8 @@ public class GomokuView extends View {
 
         // 坐标（列 A..，行从下往上数）
         for (int i = 0; i < n; i++) {
-            canvas.drawText(String.valueOf(GomokuBoard.GTP_COLS.charAt(i)), left + i * spacing, top - spacing * 0.28f, labelPaint);
-            canvas.drawText(String.valueOf(n - i), left - spacing * 0.62f, top + i * spacing + labelPaint.getTextSize() * 0.35f, labelPaint);
+            canvas.drawText(cachedColLabels[i], left + i * spacing, top - spacing * 0.28f, labelPaint);
+            canvas.drawText(cachedRowLabels[i], left - spacing * 0.62f, top + i * spacing + labelPaint.getTextSize() * 0.35f, labelPaint);
         }
 
         // 推荐点（复盘用）

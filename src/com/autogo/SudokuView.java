@@ -40,6 +40,8 @@ public class SudokuView extends View {
     private final Paint thickLine = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint digit = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint note = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** 数字 1-9 的字符串缓存，避免 onDraw 每帧 String.valueOf。 */
+    private static final String[] DIGIT_STR = {"0","1","2","3","4","5","6","7","8","9"};
 
     public SudokuView(Context c) { super(c); init(); }
 
@@ -195,7 +197,7 @@ public class SudokuView extends View {
                             : (dark ? 0xFF6FA8FF : 0xFF1565C0)));
                     digit.setFakeBoldText(game.isGiven(r, c));
                     digit.setTextSize(cs * 0.62f);
-                    canvas.drawText(String.valueOf(v), cx, cy + cs * 0.22f, digit);
+                    canvas.drawText(DIGIT_STR[v], cx, cy + cs * 0.22f, digit);
                 } else {
                     int mask = game.noteMask(r, c);
                     if (mask != 0) {
@@ -216,7 +218,7 @@ public class SudokuView extends View {
             int idx = d - 1;
             float nx = x + (idx % 3) * cs / 3f + cs / 6f;
             float ny = y + (idx / 3) * cs / 3f + cs / 6f;
-            canvas.drawText(String.valueOf(d), nx, ny + cs * 0.09f, note);
+            canvas.drawText(DIGIT_STR[d], nx, ny + cs * 0.09f, note);
         }
     }
 

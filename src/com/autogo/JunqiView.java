@@ -63,6 +63,9 @@ public class JunqiView extends View {
 
     private float cw, ch, ox, oy;
     private float stationW, stationH;
+    /** 可复用的临时 RectF，避免 onDraw 每帧分配。 */
+    private final RectF tmpR1 = new RectF();
+    private final RectF tmpR2 = new RectF();
     private static final int cols = JunqiBoard.COLS;
     private static final int rows = JunqiBoard.ROWS;
     private static final float BOARD_W_UNITS = 4.8f;   // 4 个列距 + 左右各 0.4
@@ -310,8 +313,8 @@ public class JunqiView extends View {
                     }
                 } else if (hqCell) {
                     float hw = stationW * 1.5f;   // 大本营比兵站宽一半，只画描边框
-                    RectF rf = new RectF(x - hw / 2f, y - stationH / 2f, x + hw / 2f, y + stationH / 2f);
-                    canvas.drawRoundRect(rf, stationH * 0.25f, stationH * 0.25f, hqFill);
+                    tmpR1.set(x - hw / 2f, y - stationH / 2f, x + hw / 2f, y + stationH / 2f);
+                    canvas.drawRoundRect(tmpR1, stationH * 0.25f, stationH * 0.25f, hqFill);
                     if (!occupied) {
                         drawCellText(canvas, "大本营", x, y, stationH * 0.42f, inkHq);
                     }
@@ -415,11 +418,11 @@ public class JunqiView extends View {
         int txt = dark ? 0xFFFFFFFF : (red ? 0xFF7A2A20 : 0xFF2E1F10);
         face.setStyle(Paint.Style.FILL);
         face.setColor(edge);
-        RectF outer = new RectF(x - w / 2f, y - ph / 2f, x + w / 2f, y + ph / 2f);
-        canvas.drawRoundRect(outer, radius, radius, face);
+        tmpR1.set(x - w / 2f, y - ph / 2f, x + w / 2f, y + ph / 2f);
+        canvas.drawRoundRect(tmpR1, radius, radius, face);
         face.setColor(faceUp ? body : backc);
-        RectF inner = new RectF(x - w * 0.45f, y - ph * 0.42f, x + w * 0.45f, y + ph * 0.42f);
-        canvas.drawRoundRect(inner, radius * 0.7f, radius * 0.7f, face);
+        tmpR2.set(x - w * 0.45f, y - ph * 0.42f, x + w * 0.45f, y + ph * 0.42f);
+        canvas.drawRoundRect(tmpR2, radius * 0.7f, radius * 0.7f, face);
         if (faceUp) {
             text.setColor(txt);
             text.setTextSize(ph * 0.72f);
@@ -446,11 +449,11 @@ public class JunqiView extends View {
         pieceLine.setColor(edge);
         face.setStyle(Paint.Style.FILL);
         face.setColor(edge);
-        RectF outer = new RectF(x - pw / 2f, y - ph / 2f, x + pw / 2f, y + ph / 2f);
-        canvas.drawRoundRect(outer, radius, radius, face);
+        tmpR1.set(x - pw / 2f, y - ph / 2f, x + pw / 2f, y + ph / 2f);
+        canvas.drawRoundRect(tmpR1, radius, radius, face);
         face.setColor(back ? (dark ? 0xFF546E7A : 0xFF9E8F72) : body);
-        RectF innerR = new RectF(x - pw * 0.45f, y - ph * 0.42f, x + pw * 0.45f, y + ph * 0.42f);
-        canvas.drawRoundRect(innerR, radius * 0.7f, radius * 0.7f, face);
+        tmpR2.set(x - pw * 0.45f, y - ph * 0.42f, x + pw * 0.45f, y + ph * 0.42f);
+        canvas.drawRoundRect(tmpR2, radius * 0.7f, radius * 0.7f, face);
         if (back) {
             face.setColor(dark ? 0xFF7A8FA3 : 0xFF6B5740);
             canvas.drawCircle(x, y, ph * 0.22f, face);
@@ -497,9 +500,9 @@ public class JunqiView extends View {
         int r = p / cols, c = p % cols;
         mark.setColor(color);
         mark.setStrokeWidth(Math.max(2f, cw * 0.035f));
-        RectF rf = new RectF(cx(c) - stationW * 0.62f, cy(r) - stationH * 0.72f,
+        tmpR1.set(cx(c) - stationW * 0.62f, cy(r) - stationH * 0.72f,
                 cx(c) + stationW * 0.62f, cy(r) + stationH * 0.72f);
-        canvas.drawRoundRect(rf, stationH * 0.3f, stationH * 0.3f, mark);
+        canvas.drawRoundRect(tmpR1, stationH * 0.3f, stationH * 0.3f, mark);
     }
 
     @Override

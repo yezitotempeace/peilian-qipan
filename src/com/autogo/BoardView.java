@@ -67,6 +67,10 @@ public class BoardView extends View {
     private Palette palette = Palette.of(false);
 
     private float padX, padY, spacing, stoneRadius;
+    /** 缓存：避免 onDraw 每帧分配。 */
+    private final RectF tmpRect = new RectF();
+    /** 坐标标签缓存（列 A-T、行 1-19），onSizeChanged 时按当前路数预算好。 */
+    private String[] cachedColLabels, cachedRowLabels;
 
     public BoardView(Context context) {
         super(context);
@@ -228,6 +232,13 @@ public class BoardView extends View {
         textPaint.setTextSize(spacing * 0.52f);
         labelPaint.setTextSize(Math.max(10f, labelRoom * 0.62f));
         rebuildStoneShaders();
+        // 预算坐标标签字符串，避免 onDraw 每帧 String.valueOf
+        cachedColLabels = new String[n];
+        cachedRowLabels = new String[n];
+        for (int i = 0; i < n; i++) {
+            cachedColLabels[i] = String.valueOf(Board.GTP_COLS.charAt(i));
+            cachedRowLabels[i] = String.valueOf(n - i);
+        }
     }
 
     @Override
@@ -237,8 +248,8 @@ public class BoardView extends View {
         final int n = board.size;
         if (spacing <= 0) recompute(getWidth(), getHeight());
 
-        RectF full = new RectF(0, 0, getWidth(), getHeight());
-        canvas.drawRect(full, woodPaint);
+        tmpRect.set(0, 0, getWidth(), getHeight());
+        canvas.drawRect(tmpRect, woodPaint);
         BoardArt.boardEdge(canvas, 0f, 0f, getWidth(), getHeight());
 
         float left = padX, top = padY;
@@ -275,8 +286,8 @@ public class BoardView extends View {
 
         // 坐标
         for (int i = 0; i < n; i++) {
-            canvas.drawText(String.valueOf(Board.GTP_COLS.charAt(i)), left + i * spacing, top - spacing * 0.28f, labelPaint);
-            canvas.drawText(String.valueOf(n - i), left - spacing * 0.62f, top + i * spacing + labelPaint.getTextSize() * 0.35f, labelPaint);
+            canvas.drawText(cachedColLabels[i], left + i * spacing, top - spacing * 0.28f, labelPaint);
+            canvas.drawText(cachedRowLabels[i], left - spacing * 0.62f, top + i * spacing + labelPaint.getTextSize() * 0.35f, labelPaint);
         }
 
         // 引擎候选点提示

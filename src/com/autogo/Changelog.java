@@ -24,10 +24,10 @@ public final class Changelog {
 
     /** 最新的排在前面。 */
     private static final Entry[] ENTRIES = {
+        new Entry("v190",
+                "全面优化：README 精简（审计流水移入 docs/）；所有棋盘视图 onDraw 减少对象分配（RectF / String 缓存复用），渲染更流畅。"),
         new Entry("v189",
                 "新增「数独」：9×9 标准数独，简单 / 普通 / 困难三档；困难档做到极难（提示数压到 26 以内，必须反复试填才能解）；填写时同一行、同一列、同一宫都不能出现相同数字，重复只标红不拦；支持笔记、提示、撤销、计时，关卡全部本地随机生成、可离线玩。"),
-        new Entry("v188",
-                "界面与公告文案精简：主菜单、2048 页的提示更简洁，去掉与玩法无关的说明。"),
     };
 
     public static Entry[] entries() {
