@@ -192,8 +192,9 @@ public class JunqiView extends View {
         ch = unit * 0.6f;
         ox = (w - 4.8f * cw) / 2f + 0.4f * cw;
         oy = (h - 8.4f * cw) / 2f + 0.5f * ch;   // 上边距半行；中线另有 2 行空带
-        stationW = cw * 0.40f;
-        stationH = ch / 3f;
+        // 棋子占格宽 85%、格高 75%，让整盘看起来满而不挤（正规军棋比例）
+        stationW = cw * 0.85f;
+        stationH = ch * 0.75f;
     }
 
     private int lastW = -1, lastH = -1;
@@ -312,7 +313,7 @@ public class JunqiView extends View {
                         drawCellText(canvas, "行营", x, y, stationH * 0.56f, ink);
                     }
                 } else if (hqCell) {
-                    float hw = stationW * 1.5f;   // 大本营比兵站宽一半，只画描边框
+                    float hw = stationW * 1.15f;   // 大本营略宽于普通棋子
                     tmpR1.set(x - hw / 2f, y - stationH / 2f, x + hw / 2f, y + stationH / 2f);
                     canvas.drawRoundRect(tmpR1, stationH * 0.25f, stationH * 0.25f, hqFill);
                     if (!occupied) {

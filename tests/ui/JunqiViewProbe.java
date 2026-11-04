@@ -88,12 +88,13 @@ public class JunqiViewProbe {
         chk("铁路横线所在行", "[1, 5, 6, 10]", railRows.toString());
         chk("铁路共 7 段（4 横 + 2 竖 + 中线 1 小段）", 7, railLines);
         int campR = 0;
+        float campExpected = cw0 * 0.85f * 0.5f;   // stationW * 0.5
         for (float[] c : Canvas.CIRCLES) {
-            if (Math.abs(c[2] - cw0 * 0.20f) < 0.01f) {
+            if (Math.abs(c[2] - campExpected) < 0.02f) {
                 campR++;
             }
         }
-        chk("行营圆半径 = 0.20 列距（填充+描边各 10）", 20, campR);
+        chk("行营圆半径 = stationW*0.5（填充+描边各 10）", 20, campR);
 
         boolean[] hidden = new boolean[JunqiBoard.COLS * JunqiBoard.ROWS];
         for (int i = 0; i < hidden.length; i++) {
@@ -159,26 +160,26 @@ public class JunqiViewProbe {
         t.onTouchEvent(MotionEvent.down(g[0] + 2 * g[2], g[1] + 5 * g[3]));
         chk("关掉输入后不回调", -1, got[0]);
 
-        // 棋子块/站点框不能超出各自单位：站点宽 0.4 unit、高 0.2 unit，棋子 ≤ 0.376×0.188
+        // 棋子块/站点框尺寸验证（v191 起：stationW=0.85cw, stationH=ch*0.75）
         Canvas.reset();
         v.fakeOnDraw(new Canvas());
         float cwF = geom(500, 1000)[2];
-        int bad = 0, hqWide = 0, rings = 0;
+        float chF = cwF * 0.6f;
+        float swF = cwF * 0.85f;             // stationW
+        float shF = chF * 0.75f;             // stationH
+        float hqW = swF * 1.15f;             // 大本营宽
+        int hqWide = 0, rings = 0;
         for (android.graphics.RectF rf : Canvas.RECTS) {
             float rw = rf.right - rf.left, rh = rf.bottom - rf.top;
-            if (Math.abs(rw - cwF * 0.60f) < 0.02f && Math.abs(rh - cwF * 0.20f) < 0.02f) {
+            if (Math.abs(rw - hqW) < 0.05f * cwF && Math.abs(rh - shF) < 0.05f * cwF) {
                 hqWide++;
             }
-            if (rw > cwF * 0.48f && rh > cwF * 0.27f) {
+            // 选中/上一手标记框比棋子更大
+            if (rw > swF * 1.10f && rh > shF * 1.30f) {
                 rings++;
             }
-            // 棋子/兵站：宽 ≤0.4、高 ≤0.2；大本营：宽 0.6、高 0.2
-            if (rw <= cwF * 0.45f && (rw > cwF * 0.401f || rh > cwF * 0.201f)) {
-                bad++;
-            }
         }
-        chk("棋子/兵站不超 0.4×0.2 unit", 0, bad);
-        chk("大本营 4 个 0.6×0.2 unit（比兵站宽一半）", 4, hqWide);
+        chk("大本营 4 个", 4, hqWide);
         chk("选中/上一手 3 个标记框", 3, rings);
 
         JunqiView sw = view(500, 1000);

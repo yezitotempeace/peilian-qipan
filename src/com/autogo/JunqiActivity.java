@@ -162,6 +162,25 @@ public class JunqiActivity extends Activity {
         root.addView(bottomChrome, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
+        // 规则参考面板：军衔克制关系 + 特殊规则
+        TextView rules = new TextView(this);
+        rules.setTextSize(11f);
+        rules.setTextColor(palette.textDim);
+        rules.setPadding(dp(12), dp(8), dp(12), dp(8));
+        rules.setText(
+                "【军衔大小】司令 > 军长 > 师长 > 旅长 > 团长 > 营长 > 连长 > 排长 > 工兵\n"
+              + "【特殊规则】\n"
+              + "· 炸弹：与任何棋子同归于尽（含地雷）\n"
+              + "· 地雷：不能移动；除工兵外，谁碰谁死\n"
+              + "· 工兵：最小军衔，但能挖地雷；铁路上可拐弯\n"
+              + "· 军旗：不能移动；军旗被吃即输\n"
+              + "· 行营：安全区，里面的棋子不能被吃\n"
+              + "· 大本营：军旗必须放在大本营；棋子进入后不能移出\n"
+              + "· 铁路：棋盘外圈和中线短铁路，棋子可沿铁路直行多格"
+        );
+        root.addView(rules, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
         scroll.addView(root);
         Watermark.wrap(this, scroll, palette, 6);
         sync();
