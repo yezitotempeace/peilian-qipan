@@ -27,14 +27,19 @@ public class JunqiProbe {
         chk("暗棋下 4 大本营框 + 100 棋子框 = 104", 104, android.graphics.Canvas.RECTS.size());
         chk("暗棋：看得见己方兵种（含司令）、看不见对方", true, android.graphics.Canvas.TEXTS.size() >= 38 && android.graphics.Canvas.TEXTS.size() <= 44 && android.graphics.Canvas.TEXTS.contains("司令"));
 
-        click(p, "暗棋 / 明棋");
+        click(p, "切换模式");
         chk("切到明棋", Boolean.FALSE, get(p, "dark"));
         chk("明棋 hidden 全 false", 0, countTrue(hidden(v)));
         chk("状态条提到明棋", true, text(p).contains("明棋"));
         draw(v);
         chk("明棋下 50 兵种字 + 行营/山界/前线标记", true, android.graphics.Canvas.TEXTS.size() >= 60 && android.graphics.Canvas.TEXTS.size() <= 68 && android.graphics.Canvas.TEXTS.contains("司令"));
 
-        click(p, "暗棋 / 明棋");
+        click(p, "切换模式");   // 明棋 → 翻棋
+        chk("翻棋模式", Boolean.TRUE, get(p, "flipMode"));
+        chk("翻棋下全部 hidden（50 子全扣着）", 50, countTrue(hidden(v)));
+        chk("状态条提到翻棋", true, text(p).contains("翻棋"));
+
+        click(p, "切换模式");   // 翻棋 → 暗棋
         chk("切回暗棋仍只藏对方 25 子", 25, countTrue(hidden(v)));
 
         // ⑥ 暗棋交战暴露：走到空格不暴露、吃子才暴露

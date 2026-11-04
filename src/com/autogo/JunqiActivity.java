@@ -31,6 +31,12 @@ public class JunqiActivity extends Activity {
     private JunqiAI ai = new JunqiAI();
     private final boolean[] revealed = new boolean[JunqiBoard.COLS * JunqiBoard.ROWS];
     private boolean dark = true;
+    /** 翻棋模式：开局全扣，点击翻开，翻开后双方都能看到。 */
+    private boolean flipMode;
+    /** 翻棋模式下每个格子是否已被翻开（翻开后永久可见）。 */
+    private final boolean[] flipped = new boolean[JunqiBoard.COLS * JunqiBoard.ROWS];
+    /** 游戏模式：0=暗棋、1=明棋、2=翻棋。 */
+    private int gameMode = 0;
     private int level = JunqiAI.NORMAL;
     private boolean aiThinking;
     private boolean resigned;
@@ -68,10 +74,16 @@ public class JunqiActivity extends Activity {
         board = new JunqiBoard();
         board.setupStandard(new Random(SEED));
         startBoard = board.copy();
-        // 明棋：整盘都看得见（连空格也算「已暴露」，避免界面把空格画成背面）；
-        // 暗棋：一开始全部不可见，交战过的格子才露出来（JunqiReveal.resolve）。
-        // 初始「已暴露」表交给 JunqiReveal 生成：页面里不出现任何 revealed[...] 的赋值
-        JunqiReveal.reset(revealed, dark);
+        // 模式初始化
+        dark = gameMode == 0;         // 暗棋
+        flipMode = gameMode == 2;     // 翻棋
+        if (flipMode) {
+            // 翻棋：全部扣着，flipped 全 false
+            java.util.Arrays.fill(flipped, false);
+            JunqiReveal.reset(revealed, true);  // 全隐藏（等同暗棋初始）
+        } else {
+            JunqiReveal.reset(revealed, dark);
+        }
         selected = -1;
         legal = new int[0];
         aiThinking = false;
@@ -144,14 +156,15 @@ public class JunqiActivity extends Activity {
                                 setStatus("难度：" + levelName() + "（下一手生效）");
                             }
                         }}));
-        bottomChrome.addView(buttonRow(new String[]{"暗棋 / 明棋", "返回"},
+        bottomChrome.addView(buttonRow(new String[]{"切换模式", "返回"},
                 new View.OnClickListener[]{
                         new View.OnClickListener() {
                             public void onClick(View v) {
-                                dark = !dark;
+                                gameMode = (gameMode + 1) % 3;
                                 newGame();
                                 sync();
-                                setStatus(dark ? "已换成暗棋（双方看不清对方兵种）。" : "已换成明棋（双方都看得到兵种）。");
+                                String[] names = {"暗棋（只看不见对方）", "明棋（双方都看得到）", "翻棋（全部扣着，点击翻开）"};
+                                setStatus("已切换为" + names[gameMode] + "。");
                             }
                         },
                         new View.OnClickListener() {
@@ -184,7 +197,7 @@ public class JunqiActivity extends Activity {
         scroll.addView(root);
         Watermark.wrap(this, scroll, palette, 6);
         sync();
-        setStatus(dark ? "你执红先走。当前是暗棋。" : "你执红先走。当前是明棋。");
+        setStatus(modeName() + "　你执红先走。");
         // 布局完成后按真实可用空间算棋盘（首帧、转屏、分屏都走这里；比 post 可靠）
         scroll.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override
@@ -286,18 +299,23 @@ public class JunqiActivity extends Activity {
         } else if (aiThinking) {
             setStatus("电脑思考中…");
         } else {
-            setStatus(dark ? "你执红先走。当前是暗棋。" : "你执红先走。当前是明棋。");
+            setStatus(modeName() + "　你执红先走。");
         }
     }
 
     private boolean[] hiddenArray() {
         boolean[] h = new boolean[revealed.length];
         for (int i = 0; i < revealed.length; i++) {
-            // 暗棋（标准口径）：只藏「对方」的棋子，己方始终看得见；明棋全可见。
-            // revealed[i]=true 表示该格对方棋子已被交战暴露过。
-            h[i] = dark
-                    && board.ownerAt(JunqiBoard.rowOf(i), JunqiBoard.colOf(i)) == JunqiBoard.BLACK
-                    && !revealed[i];
+            if (flipMode) {
+                // 翻棋：没翻开的棋子全部隐藏（不分敌我）
+                h[i] = board.ownerAt(JunqiBoard.rowOf(i), JunqiBoard.colOf(i)) != JunqiBoard.EMPTY
+                        && !flipped[i];
+            } else {
+                // 暗棋（标准口径）：只藏「对方」的棋子，己方始终看得见；明棋全可见。
+                h[i] = dark
+                        && board.ownerAt(JunqiBoard.rowOf(i), JunqiBoard.colOf(i)) == JunqiBoard.BLACK
+                        && !revealed[i];
+            }
         }
         return h;
     }
@@ -306,12 +324,22 @@ public class JunqiActivity extends Activity {
         return level == JunqiAI.FAST ? "快" : level == JunqiAI.STRONG ? "强" : "普通";
     }
 
+    private String modeName() {
+        return flipMode ? "翻棋模式。" : dark ? "暗棋模式。" : "明棋模式。";
+    }
+
     /** AI 一手真正落地（线程回调与探针共用这一条路径）。 */
     void finishAiMove(int[] mv) {
         JunqiBoard before = board.copy();
         boolean ok = board.play(mv[0], mv[1], mv[2], mv[3]);
-        JunqiReveal.resolve(revealed, before,
-                new int[]{JunqiBoard.idx(mv[0], mv[1]), JunqiBoard.idx(mv[2], mv[3])});
+        int fromIdx = JunqiBoard.idx(mv[0], mv[1]);
+        int toIdx = JunqiBoard.idx(mv[2], mv[3]);
+        // 翻棋模式：AI 走子后翻开状态跟着走
+        if (flipMode) {
+            flipped[toIdx] = flipped[fromIdx];
+            flipped[fromIdx] = false;
+        }
+        JunqiReveal.resolve(revealed, before, new int[]{fromIdx, toIdx});
         sync();
         animateBattleReveal(mv[0], mv[1], mv[2], mv[3]);
         if (ok && board.gameOver()) {
@@ -353,6 +381,13 @@ public class JunqiActivity extends Activity {
         }
         int p = JunqiBoard.idx(row, col);
         int owner = board.ownerAt(row, col);
+
+        // 翻棋模式：点击未翻开的棋子 → 翻开（算一手）
+        if (flipMode && owner != JunqiBoard.EMPTY && !flipped[p]) {
+            flipPiece(row, col, p);
+            return;
+        }
+
         if (selected >= 0 && contains(legal, p)) {
             play(JunqiBoard.rowOf(selected), JunqiBoard.colOf(selected), row, col);
             return;
@@ -363,9 +398,30 @@ public class JunqiActivity extends Activity {
             sync();
             return;
         }
+        // 翻棋模式下只有翻开的己方棋子才能选中走子
+        if (flipMode && !flipped[p]) {
+            return;
+        }
         selected = p;
         legal = movesFrom(p);
         sync();
+    }
+
+    /** 翻棋模式：翻开一个棋子（算一手），然后换电脑走。 */
+    private void flipPiece(int row, int col, int p) {
+        flipped[p] = true;
+        selected = -1;
+        legal = new int[0];
+        // 播放翻牌动画
+        int owner = board.ownerAt(row, col);
+        int type = board.at(row, col);
+        boardView.revealFlip(row, col, owner, type);
+        sync();
+        setStatus("翻开了 " + (owner == JunqiBoard.RED ? "红方" : "黑方") + " " + JunqiBoard.typeName(type));
+        // 翻牌后换电脑走
+        if (!board.gameOver()) {
+            startAiTurn();
+        }
     }
 
     private int[] movesFrom(int from) {
@@ -403,6 +459,11 @@ public class JunqiActivity extends Activity {
             toast("这一手不能走。");
             return;
         }
+        // 翻棋模式：棋子移走后，翻开状态跟着走
+        if (flipMode) {
+            flipped[mv[1]] = flipped[mv[0]];
+            flipped[mv[0]] = false;
+        }
         JunqiReveal.resolve(revealed, before, mv);
         selected = -1;
         legal = new int[0];
@@ -419,6 +480,88 @@ public class JunqiActivity extends Activity {
         aiThinking = true;
         boardView.setInputEnabled(false);
         setStatus("电脑思考中…");
+
+        if (flipMode) {
+            // 翻棋模式下 AI 的回合：50% 概率翻一个未翻的子，50% 概率走一步已翻的子
+            // 如果没有未翻的子就只走，没有可走的已翻子就只翻
+            final boolean[] flipSnap = flipped.clone();
+            final JunqiBoard snapshot = board.copy();
+            final int count = board.history().size();
+            Thread t = new Thread(new Runnable() {
+                public void run() {
+                    // 收集未翻开的子
+                    java.util.List<Integer> unflipped = new java.util.ArrayList<Integer>();
+                    for (int i = 0; i < flipSnap.length; i++) {
+                        if (!flipSnap[i] && snapshot.ownerAt(JunqiBoard.rowOf(i), JunqiBoard.colOf(i)) != JunqiBoard.EMPTY) {
+                            unflipped.add(i);
+                        }
+                    }
+                    // 收集可走的已翻子（黑方）
+                    java.util.List<int[]> moves = snapshot.legalMoves(JunqiBoard.BLACK);
+                    java.util.List<int[]> flippedMoves = new java.util.ArrayList<int[]>();
+                    for (int[] m : moves) {
+                        if (flipSnap[m[0]]) {
+                            flippedMoves.add(m);
+                        }
+                    }
+
+                    final boolean doFlip;
+                    if (unflipped.isEmpty()) {
+                        doFlip = false;
+                    } else if (flippedMoves.isEmpty()) {
+                        doFlip = true;
+                    } else {
+                        doFlip = new Random().nextInt(3) == 0;  // 1/3 概率翻，2/3 概率走
+                    }
+
+                    if (doFlip) {
+                        final int pick = unflipped.get(new Random().nextInt(unflipped.size()));
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                aiThinking = false;
+                                if (!alive || board == null || board.gameOver()) return;
+                                boardView.setInputEnabled(true);
+                                int r = JunqiBoard.rowOf(pick), c = JunqiBoard.colOf(pick);
+                                flipped[pick] = true;
+                                int owner = board.ownerAt(r, c);
+                                int type = board.at(r, c);
+                                boardView.revealFlip(r, c, owner, type);
+                                sync();
+                                setStatus("电脑翻开了 " + (owner == JunqiBoard.RED ? "红方" : "黑方") + " " + JunqiBoard.typeName(type) + "。轮到你走。");
+                            }
+                        });
+                    } else if (!flippedMoves.isEmpty()) {
+                        final int[] mv = flippedMoves.get(new Random().nextInt(flippedMoves.size()));
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                aiThinking = false;
+                                if (!alive || board == null || board.gameOver() || board.history().size() != count) return;
+                                boardView.setInputEnabled(true);
+                                int fr = mv[0] / JunqiBoard.COLS, fc = mv[0] % JunqiBoard.COLS;
+                                int tr = mv[1] / JunqiBoard.COLS, tc = mv[1] % JunqiBoard.COLS;
+                                // 吃子后被吃/吃掉的子也标记为翻开
+                                flipped[mv[1]] = true;
+                                finishAiMove(new int[]{fr, fc, tr, tc});
+                            }
+                        });
+                    } else {
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                aiThinking = false;
+                                if (!alive) return;
+                                boardView.setInputEnabled(true);
+                                setStatus("电脑无子可走。");
+                                finishGame();
+                            }
+                        });
+                    }
+                }
+            }, "junqi-ai-flip");
+            t.setDaemon(true);
+            t.start();
+            return;
+        }
+
         final JunqiBoard snapshot = board.copy();
         final boolean[] rev = revealed.clone();
         final int count = board.history().size();

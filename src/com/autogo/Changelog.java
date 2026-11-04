@@ -24,10 +24,10 @@ public final class Changelog {
 
     /** 最新的排在前面。 */
     private static final Entry[] ENTRIES = {
+        new Entry("v192",
+                "军棋新增「翻棋」模式：开局所有棋子全部扣着，点击翻开（有翻牌动画），翻开后双方都能看到；可翻或走，电脑也会翻棋。三种模式循环切换：暗棋→明棋→翻棋。"),
         new Entry("v191",
                 "军棋大改：棋子放大至格宽 85%（正规军棋比例）；棋盘下方新增规则参考面板（军衔大小、炸弹/地雷/工兵/军旗/行营/铁路等特殊规则一览）。"),
-        new Entry("v190",
-                "全面优化：README 精简（审计流水移入 docs/）；所有棋盘视图 onDraw 减少对象分配（RectF / String 缓存复用），渲染更流畅。"),
     };
 
     public static Entry[] entries() {
