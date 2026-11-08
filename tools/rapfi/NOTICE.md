@@ -33,6 +33,10 @@ cmake --build native-build -j8
 cmake -S rapfi -B android-build -DCMAKE_TOOLCHAIN_FILE=/tmp/gomoku-strong/android-toolchain.cmake -DUSE_NEON=ON -DUSE_NEON_DOTPROD=ON -DRAPFI_ANDROID_BUILD=ON
 cmake --build android-build -j8
 ```
+> **交付方式（v197 起）**：产物改名为 `librapfi.so` 放 `jniLibs/arm64-v8a/`，构建时由 `build.sh`
+> 复制进 APK 的 `assets/engine/rapfi`；运行时 `NativeExe` 释放到应用私有目录再执行
+> （不再从 `nativeLibraryDir` 起，见 README 3.2 节）。
+
 产物 `android-build/pbrain-rapfi`（3.68 MB），`readelf -d` 只需 libm/libdl/libc（与 libkatago.so 同形）。
 已拷成 `/tmp/gomoku-strong/out/librapfi-arm64-android` 与 `/tmp/gomoku-strong/out/pbrain-rapfi-linux-aarch64`。
 

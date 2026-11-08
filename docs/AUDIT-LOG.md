@@ -3230,3 +3230,38 @@ trap 'rc=$?; if [ "$rc" -ne 0 ]; then echo "构建失败：上一条命令失败
 - 存档：题面 / 填数 / 笔记 / 难度 / 耗时都存本地，退出再进接着填。
 - 测试：`SudokuTest` 66 项（生成合法性 / 唯一解 / 三档难度 / 行列宫冲突 / 笔记 / 撤销 / 存档 / 同种子可复现），`SudokuPageProbe` 58 项（结构 / 竖横屏适配 / 各种尺寸的棋盘与命中 / 绘制条数与数字 / 冲突标红 / 笔记 / 提示 / 撤销 / 难度切换 / 重开弹窗 / 存档）。
 
+
+## CR. v191–v194：军棋显示与翻棋
+
+- 军棋棋盘按正规军棋样式重画；补齐「什么吃什么、什么克什么」的旁注与动画。
+- 新增真·翻棋模式：全部棋子背面朝上，谁翻谁揭晓、双方同步可见；散布布局修正。
+- v192→v193→v194 反复修翻牌动画（翻了翻回背面、两个同时翻、无动画）。
+
+## CS. v195：修翻牌动画精度 + 五子棋/象棋引擎
+
+- 翻牌动画「无动画 / 翻回背面 / 两个同时翻」根因：把 `System.currentTimeMillis()`（约 1.76e12）
+  存进 `float[]`，float 精度对这么大数只剩 ~131072ms 的粒度，把 560ms 的动画时间全抹平了。
+  改成 `FlipAnim` 类用 `long startMs` 存时间戳，动画恢复正常（实测棋子宽度 74.9→26.3→72.9）。
+- 五子棋引擎太弱：Rapfi 其实早已打包（`jniLibs/arm64-v8a/librapfi.so`），但只在「强档 + 15 路」才用；
+  默认「普通」走的是内置 AI。改为 15 路时**所有档位都用 Rapfi**（13/19 路仍退回内置，Rapfi 只支持 15 路）。
+  状态条难度名在 Rapfi 不可用时诚实标注「（内置）」。
+- 象棋开局总是那几步：根因是确定性搜索 + 只算子力的评估，固定局面就固定出招。
+  加 12 种真实开局体系（中炮/仙人指路/飞相/起马/过宫炮/边车各两式），开局前 10 手从书里挑；
+  60 局测试里首招从 2 种变成 12 种。
+
+## CT. v196 / v197：象棋外部强引擎 + 学习库 + 彩蛋收口 + 引擎装载修正
+
+- **v196**：象棋接入 ElephantEye（象眼）3.31 —— 纯 alpha-beta、无神经网络权重、Android arm64 二进制仅 513 KB。
+  交叉编译踩了两坑：`x86asm.h`/`rc4prng.h` 只认 `__arm__` 不认 `__aarch64__`（加分支走可移植查表）；
+  bionic 无 `sys/timeb.h`（改 `gettimeofday`）。走 UCCI 协议（`ucci`→`ucciok`、`position fen`、`go time`、`bestmove`），
+  `rank = ROWS-1-row`、`file='a'+col`。三档都优先引擎（400/1200/3000 ms），失败退回内置 AI。
+  同时新增 `XiangqiLearn` 学习库（特征 = 兵种+起点区域+终点区域+吃子+过河；跨局按历史胜率加权；
+  `XiangqiLearnTest` 27 项）。
+- **彩蛋收口**：`WinEgg.eggAllowed(level, strongLevel)` 由「非快档」改为「只在最强档」。四棋种 + 围棋网络三档统一。
+  相应改 `WinEggTest`、`JunqiProbe`、`XiangqiProbe` 断言。
+- **v197**：Rapfi / ElephantEye 从 `lib/`（nativeLibraryDir）改走 `assets/engine/` + `NativeExe`
+  释放到 `filesDir` 再 `chmod 700` 执行，绕开不同 ROM 对安装目录 exec 的不一致；启用前**真起一次进程走一步自检**，
+  不再只信 `File.canExecute()`（测不出 SELinux 拦截）。`libeleye.so` 补进仓库 `jniLibs/`。
+  `build.sh` 改为构建时从 `jniLibs` 复制引擎到临时 assets 目录再 aapt2（不在 lib/ 里塞）。
+  套件 1706 项全过。
+- **未实测**：引擎在这台真机上是否真被拉起、相对内置 AI 的实际增强幅度 —— 需装机确认（自检失败自动退回，不会假象）。

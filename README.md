@@ -2,14 +2,19 @@
 
 **简介 / Introduction（中英）**
 
-陪练棋盘是一个 Android 六合一棋类练习 App：**围棋**（KataGo 真引擎，9/13/19 路）、**五子棋**（内置 AI，可选外部 Rapfi 引擎）、**象棋**（内置三档 AI + 逐手复盘）、**军棋**（明棋 / 暗棋，人执红、电脑执黑）、**2048**（4×4 数字合并）、**数独**（9×9，简单 / 普通 / 困难三档，困难档极难）。
+陪练棋盘是一个 Android 六合一棋类练习 App：**围棋**（KataGo 真引擎，9/13/19 路）、**五子棋**（Rapfi 强引擎，13/15/19 路；15 路吃满外部引擎，其余退回内置 AI）、**象棋**（ElephantEye「象眼」强引擎 + 学习库 + 逐手复盘）、**军棋**（明棋 / 暗棋，人执红、电脑执黑，三档 AI + 学习库）、**2048**（4×4 数字合并）、**数独**（9×9，简单 / 普通 / 困难三档，困难档极难）。
 
-Peilian Qipan (Board-Game Practice) is an all-in-one Android app for four board games: **Go** (real KataGo engine, 9/13/19), **Gomoku** (built-in AI, optional external Rapfi engine), **Xiangqi** (Chinese chess; three AI levels + move-by-move review) and **Junqi** (Army chess; open or hidden mode, you play red against the computer).
+Peilian Qipan (Board-Game Practice) is an all-in-one Android app for six board games: **Go** (real KataGo engine, 9/13/19), **Gomoku** (Rapfi engine, 13/15/19; strong engine on 15×15, falls back to built-in AI otherwise), **Xiangqi** (Chinese chess; ElephantEye engine + experience learning + move-by-move review), **Junqi** (Army chess; open or hidden mode, three AI levels + learning), **2048** (4×4 merge) and **Sudoku** (9×9, three levels).
 
-- 版本 / Version: **v190**（`1.20261020.190`，versionCode 190）
-- 构建 / Build: `bash build.sh`（需要 `assets/` 里三个 KataGo 权重、`jniLibs/arm64-v8a/` 的 `.so`）
-- 测试 / Test: `bash run_tests.sh`（JVM 用例 **1724 项**，最近一次全过）
+- 版本 / Version: **v197**（`1.20261108.197`，versionCode 197）
+- 构建 / Build: `bash build.sh`（需要 `assets/` 里三个 KataGo 权重、`jniLibs/arm64-v8a/` 的 `libkatago.so` / `librapfi.so` / `libeleye.so`）
+- 测试 / Test: `bash run_tests.sh`（JVM 用例 **1706 项**，最近一次全过）
 - 安装包 / APK: 构建产物 `autogo.apk`（约 122 MB，已签名，minSdk 26 / targetSdk 34）；同版本 APK 见仓库 **Releases**
+
+> **外部引擎装载方式（v197 起）**：五子棋 Rapfi、象棋 ElephantEye 两个引擎二进制打包进 APK 的 `assets/engine/`，
+> 首次运行时由 `NativeExe` 释放到应用私有目录（`filesDir`）再 `chmod 700` 执行，绕开系统对
+> 安装目录（`nativeLibraryDir`）的 exec 限制；启用前会真的起一次进程自检，失败则退回内置 AI。
+> 围棋 KataGo 仍走 `nativeLibraryDir/libkatago.so`（已在真机验证可执行）。
 
 ---
 
@@ -113,17 +118,41 @@ App 里**每个档位各自记住自己的 visits**（切到 b18 用 40，切回
 
 ## 三、引擎是怎么塞进 App 的
 
+本项目一共装了三台外部引擎，用两种方式装载：
+
+### 3.1 围棋 KataGo —— `nativeLibraryDir` 方式
+
 KataGo 官方 release 只有 x86_64，Android 上也不能跑 glibc 二进制，所以：
 
 1. **用 NDK 的 sysroot + 系统原生 clang 交叉编译**出 aarch64-android 的 katago
    （NDK 自带的 clang 只有 linux-x86_64 prebuilt，在这台 aarch64 机器上根本起不来）
 2. 二进制命名成 `libkatago.so` 放进 `jniLibs/arm64-v8a/`，
    manifest 里开 `android:extractNativeLibs="true"`，
-   系统会把它释放到 `nativeLibraryDir` —— **只有那个目录允许 App 执行文件**
+   系统会把它释放到 `nativeLibraryDir` —— 这个目录带 `apk_data_file` 标签，
+   AOSP 的 `app.te` 明确 `allow appdomain apk_data_file:file ... x_file_perms`，**允许 App 执行**
 3. App 用 `ProcessBuilder` 把它当子进程拉起，走 GTP 文本协议通信
 
-第 2 条是这套方案的关键，参考实现是 `youtubedl-android`（同样把 Python 可执行文件
-命名成 `libpython.so` 再 exec）。
+这条链路已在真机（Honor / Android 16）上验证 KataGo 能正常对弈。
+
+### 3.2 五子棋 Rapfi / 象棋 ElephantEye —— `assets` 释放方式（v197 起）
+
+这两个引擎（以及将来任何外部引擎）不再放进 `lib/`，而是：
+
+1. 二进制作为 `assets/engine/rapfi`、`assets/engine/eleeye` 打进 APK（构建时由 `build.sh`
+   从 `jniLibs/arm64-v8a/` 复制到临时 assets 目录再交给 aapt2）
+2. 首次运行时 `NativeExe.prepare()` 把它**释放到应用私有目录**（`filesDir`，SELinux 标签
+   `app_data_file`，属 App 自己，允许 exec），再 `chmod 700`
+3. 真正起一次进程、走一步自检，通过才启用；失败（进程起不来 / 超时 / 通信断）就**退回内置 AI**
+
+**为什么不用 `nativeLibraryDir` 装这两个**：KataGo 那条路在真机上虽然可行，但不同 ROM 对
+`apk_data_file` 的 exec 策略并不完全一致，而且只要有一个环节不满足就整条路作废；
+把二进制释放到 App 自己的 `filesDir` 是 Android 上跑外部可执行程序最稳的做法，也便于日后
+更新引擎（删了重放即可，不必重新打包）。同时废弃了「只用 `File.canExecute()` 判断可用」
+的旧逻辑 —— `canExecute()` 只看权限位，测不出 SELinux 拦截，会「检查通过、运行时失败」，
+现在一律以「真跑一次自检」为准。
+
+> 两个引擎都是纯 alpha-beta 搜索、不含神经网络的轻量程序：Rapfi 约 3.7 MB，
+> ElephantEye 约 513 KB，对 122 MB 的 APK 体积影响可忽略。
 
 ---
 
@@ -173,12 +202,13 @@ make -C KataGo/cpp/build-android -j4
 autogo-android/
 ├── AndroidManifest.xml
 ├── build.sh                构建脚本（含上面那些坑的处理）
-├── run_tests.sh            装机前能跑的全部自动化验证（1209 项 = 398 + 156 + 47 + 101 + 58 + 74 + 77 + 298）
+├── run_tests.sh            装机前能跑的全部自动化验证（1706 项 = 逻辑 1200 + 界面层探针 506）
 ├── make_icons.py           纯标准库生成启动图标
 ├── assets/                 三个权重（b6c96 5 MB / b10c128 14 MB / b18c384nbt 93 MB）
 ├── tools/rapfi/            外部引擎的宿主编译版 + 构建记录（NOTICE.md：上游 commit 与两处补丁）
 ├── jniLibs/arm64-v8a/libkatago.so   交叉编译出的引擎（9.5 MB）
-├── jniLibs/arm64-v8a/librapfi.so    可选的外部五子棋引擎（3.7 MB，同样从 nativeLibraryDir 执行）
+├── jniLibs/arm64-v8a/librapfi.so    外部五子棋引擎 Rapfi（3.7 MB，打包进 assets 后释放执行）
+├── jniLibs/arm64-v8a/libeleye.so    外部象棋引擎 ElephantEye 象眼（513 KB，同上）
 ├── res/                    图标与字符串
 ├── tests/
 │   ├── BoardTest.java     398 项：规则 / SGF 读写 / 分析解析 / 布局尺寸 / 棋盘几何
@@ -188,6 +218,9 @@ autogo-android/
 │   ├── GomokuLearnTest.java   58 项：学习库（哈希稳定 / 记战绩与失误 / 候选挑选 / 只读 / 存档往返 / 淘汰清理）
 │   ├── XiangqiTest.java       67 项：象棋规则（各子走法正反 / 蹩马腿 / 塞象眼 / 炮翻山 / 过河兵 / 九宫限制 / 将帅照面 / 将军·将死·困毙 / 非法着法不改局面 / copy 独立）
 │   ├── XiangqiAITest.java     17 项：三档难度夹取 / 吃白送的车 / 确定性 / 只读棋盘 / 一步杀 / 评估符号与互补 / 终局与空盘返回 null
+│   ├── XiangqiLearnTest.java  27 项：学习库（特征跨局一致 / 区域与过河判定 / 样本不足不加权 / 连胜正加权·连败负加权 / 存档往返 / 坏文件容错）＋ 引擎坐标与 FEN 换算
+│   ├── XiangqiReviewTest.java 34 项：象棋复盘（逐手胜率 / 失误排行 / 推荐点 / 视角换算 / 空谱与终局）
+│   ├── XiangqiTrendTest.java  10 项：象棋趋势/统计（走势与汇总口径）
 │   ├── ui/XiangqiViewProbe.java 22 项：线 34 / 圆 128 / 文字 53、列标 A..I、红黑棋子字、选中与上一手、触摸命中与 0.55 格容差
 │   ├── GomokuReviewTest.java  101 项：复盘（胜率换算 / 逐手亏损 / 推荐点 / 结论口径 / 非法手顺 / 开禁手复盘旧手顺 / 自对弈整局）
 │   ├── RapfiGomokuTest.java    74 项：外部强引擎适配层（对着真 pbrain-rapfi 跑 Gomocup 协议；外加行序、半行卡死、超时重起与「忽略 TERM 的引擎也会被超时 / close() 真的收掉」钉桩；外加「管道塞满、没人读时 close() 也不卡，而且跳过 END」的钉桩；外加「重起出来的那个引擎也会被最后一次 close() 按 pid 收掉」的钉桩；跑不了就算失败）
@@ -209,17 +242,17 @@ autogo-android/
     ├── Analysis.java       解析 kata-genmove_analyze 的 info 行
     ├── MenuActivity.java   启动选择页（围棋 / 五子棋）
     ├── MainActivity.java   围棋对局主界面
-    ├── GomokuActivity.java 五子棋对局界面（棋盘 13 / 15 / 19 路、「我执」黑或白（执白时电脑先走）、可悔棋 / 认输 / 换难度 / 开关禁手 / 复盘）
+    ├── GomokuActivity.java 五子棋对局界面（棋盘 13 / 15 / 19 路、「我执」黑或白（执白时电脑先走）、可悔棋 / 认输 / 换难度 / 开关禁手 / 复盘；15 路优先 Rapfi 引擎，否则内置 AI）
     ├── GomokuReviewActivity.java 五子棋复盘界面（胜率条 / 曲线 / 失误排行 / 手顺，点哪一手都同步）
     ├── GomokuBoard.java   五子棋规则（连线 / 禁手 / 终局判定，纯 Java 可单测）
-    ├── GomokuEngine.java  五子棋引擎接口（内置 AI 与将来的外部强引擎共用同一个接口）
+    ├── GomokuEngine.java  五子棋引擎接口（内置 AI 与外部 Rapfi 强引擎共用同一个接口）
     ├── GomokuView.java    五子棋棋盘绘制与触摸
     ├── LocalGomokuAI.java 内置五子棋 AI（棋型评估 + 迭代加深 α-β，纯 Java 可单测）
     ├── GomokuLearn.java 学习库（局面哈希 + 战绩/失误统计 + 候选挑选 + 落盘；纯 Java 可单测）
     ├── XiangqiBoard.java 象棋规则（各子走法、蹩马腿/塞象眼、炮需炮架、过河兵、士帅不出九宫、将帅照面、将死/困毙；纯 Java 可单测）
-    ├── XiangqiAI.java 象棋内置 AI（三档：搜索深度 1/2/3 + 子力评估；纯 Java 可单测）
+    ├── XiangqiAI.java 象棋内置 AI / 兜底（三档：搜索深度 1/2/3 + 子力评估 + 12 开局体系 + 学习加权；纯 Java 可单测；实现 XiangqiEngineApi）
     ├── XiangqiView.java 象棋棋盘绘制与触摸（10×9、九宫、楚河汉界、坐标、圆片棋子、选中/可走点/上一手、立体棋具用 BoardArt）
-    ├── XiangqiActivity.java 象棋对局页（人执红先走、电脑执黑；新局/悔棋/认输/难度/全屏/返回、终局弹窗）
+    ├── XiangqiActivity.java 象棋对局页（人执红先走、电脑执黑；新局/悔棋/认输/难度/全屏/返回、终局弹窗；优先 ElephantEye 引擎，失败退回内置 AI 并记录学习库）
     ├── Game2048.java       2048 规则（4×4 / 四方向滑动 / 同值合并一次 / 生成 2 或 4；纯 Java 可单测）
     ├── Game2048View.java   2048 棋盘绘制与滑动手势
     ├── Game2048Activity.java 2048 页面（得分 / 最高分 / 重开 / 存档）
@@ -228,6 +261,10 @@ autogo-android/
     ├── SudokuActivity.java 数独页面（数字键盘 / 笔记 / 提示 / 撤销 / 计时 / 难度切换；竖屏上下排、横屏左右排）
     ├── Changelog.java 更新公告（最近几版的要点，最新在前；纯 Java 可单测；启动页「公告」按钮的内容来源）
     ├── RapfiGomokuEngine.java 外部强引擎 Rapfi 的适配层（起子进程走 Gomocup 协议；找不到可执行文件就退回内置 AI）
+    ├── XiangqiEngine.java 外部强引擎 ElephantEye 的适配层（起子进程走 UCCI 协议；坐标/FEN 换算；不可用就退回内置 AI）
+    ├── XiangqiEngineApi.java 象棋引擎统一接口（内置 AI 与 ElephantEye 共用）
+    ├── XiangqiLearn.java 象棋学习库（局面特征 + 战绩统计 + 选招加权 + 落盘；纯 Java 可单测）
+    ├── NativeExe.java 外部可执行文件准备工具（assets → filesDir 释放 + chmod；绕开安装目录 exec 限制）
     ├── GomokuReview.java  五子棋复盘分析（逐手胜率 / 失误排行 / 推荐点，纯 Java 可单测）
     ├── ReviewActivity.java 复盘
     ├── GameReview.java    整盘逐手分析 + 「这一局为什么赢」的结论（纯 Java，可单测）
@@ -264,7 +301,7 @@ autogo-android/
 `?` 开头的错误响应、非法落子、超时（`GtpTimeout`）、超时后引擎仍可用、
 以及 `kata-genmove_analyze` → `Analysis.parse` 整条链路。
 
-**4. 五子棋：规则 / 内置 AI / 复盘 / 外部引擎适配 / 界面层桩测（JVM 断言，项数与分项见目录树）**
+**4. 五子棋 / 象棋 / 军棋：规则 / 内置 AI / 复盘 / 学习库 / 外部引擎适配 / 界面层桩测（JVM 断言，项数与分项见目录树）**
 
 第 ①③④ 步（规则 / AI / 复盘）都是纯 Java、不碰 Android，直接进 JVM 套件：`GomokuTest` 156 项
 （横竖两种斜的连线、长连、四四 / 三三禁手与反例、和棋、终局后落子、深拷贝、坐标命名、重放旧手顺）、
@@ -290,7 +327,7 @@ autogo-android/
 `Driver95` 头部：`sun.misc.Unsafe.allocateInstance` 不跑字段初始化器，所以 `setDefaults()` 是「声明默认值」的
 手抄镜像 —— 改声明默认值而忘了改镜像，探针看不出来（第 52 轮审计低-2）。
 
-**5. 「从 nativeLibraryDir 执行二进制」—— 已从 SELinux 策略层面确认可行**
+**5. 外部引擎执行 —— 两种方式都在真机/策略层面确认过**
 
 这是整个方案唯一没法本地实跑的关键假设（`/data/app` 不在容器的挂载命名空间里）。
 但 AOSP 的策略文件写得很明白：
@@ -304,7 +341,12 @@ allow appdomain apk_data_file:file { getattr open read ioctl lock map x_file_per
 
 `x_file_perms` 包含 `execute_no_trans`，而 `nativeLibraryDir` 里的文件正是
 `apk_data_file` 标签，`untrusted_app` 继承自 `appdomain`。注释就是「允许 App 执行
-已安装的二进制」。参考实现 `youtubedl-android` 用的也是同一套办法。
+已安装的二进制」。参考实现 `youtubedl-android` 用的也是同一套办法。（KataGo 已在真机跑通。）
+
+v197 起五子棋 Rapfi / 象棋 ElephantEye 改用更稳的 `assets` 释放方式（见 3.2 节）：二进制打包进
+`assets/engine/`，运行时由 `NativeExe` 释放到 `filesDir`（`app_data_file` 标签，属 App 自己）再执行。
+可用性判断不再只看 `File.canExecute()`（它测不出 SELinux 拦截），而是**真的起一次进程走一步自检**，
+通过才启用、失败退回内置 AI —— 这样即使某台机器 exec 受限，用户也不会「看着像在用引擎、其实在跑内置 AI」。
 
 **6. 这轮测试抓出的 bug**
 
@@ -497,12 +539,15 @@ allow appdomain apk_data_file:file { getattr open read ioctl lock map x_file_per
 
 - APK 在 Android 16（Honor，SM7550）上安装成功并**能正常对弈**。
   这一条同时验证了整个方案里唯一没法在容器内实跑的关键假设 ——
-  **从 `nativeLibraryDir` 执行二进制在 Android 16 上确实可行**，
+  **从 `nativeLibraryDir` 执行二进制在 Android 16 上确实可行**（KataGo 走的就是这条路），
   与第 4 节从 AOSP 策略推断出的结论一致。
 
 **尚未逐项确认：**
 
 - 「自动对弈」和「复盘」两个功能还没拿到实测反馈（已确认的是人机对弈）。
+- 五子棋 Rapfi、象棋 ElephantEye 的 `assets` 释放 + 自检链路：代码与自检逻辑已全套单测覆盖，
+  但**引擎在这台机器上是否真的被拉起、以及相对内置 AI 的实际增强幅度**，需要装机后实测确认；
+  自检失败会自动退回内置 AI，不会出现「看着像在用引擎、实际没起来」的情况。
 
 如果哪一项有问题，App 会弹出**具体原因**（可执行文件路径、`canExecute`、
 实际 exec 失败的异常文本）；设置页里也有一个「自检」，会真跑一次二进制并回报
@@ -620,6 +665,8 @@ Uid:	10308	10308	10308	10308        # 这才是内核眼里的真实身份
 ## 九、独立审计与修复记录
 
 历史审计流水（第 1～109 轮、v1～v189 逐版记录）已移到 [`docs/AUDIT-LOG.md`](docs/AUDIT-LOG.md)，内容原样保留。
+
+v190 起的版本变化见 [`CHANGELOG.md`](CHANGELOG.md)（最近的重大改动：v195 五子棋三档全用 Rapfi、象棋 12 开局体系；v196 象棋接入 ElephantEye 引擎 + 学习库、彩蛋只在最强档显示；v197 引擎改走 `assets` 释放 + 自检，修正部分机器上引擎起不来的问题）。
 
 ---
 
