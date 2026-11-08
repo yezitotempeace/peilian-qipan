@@ -35,6 +35,8 @@ public class View {
     public void postInvalidate() {}
     /** 桩测专用：立即执行（真机上会排到下一帧，测里同步跑更好断言）。 */
     public void post(Runnable r) { if (r != null) r.run(); }
+    /** 桩测专用：延迟任务在测里也立即执行（忽略 delay），方便断言。 */
+    public boolean postDelayed(Runnable r, long delayMs) { if (r != null) r.run(); return true; }
 
     /** 布局变化回调（真机上有；第 107 轮审计要求用它做「布局完成后再算尺寸」）。 */
     public interface OnLayoutChangeListener {

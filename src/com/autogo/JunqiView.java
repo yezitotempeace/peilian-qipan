@@ -174,8 +174,32 @@ public class JunqiView extends View {
 
     /** 吃子/被吃后，把阵亡的棋子「背面→正面」翻过来给人看，然后缩小消失。 */
     public void revealFlip(int row, int col, int color, int type) {
-        flips.add(new float[]{row, col, color, type, System.currentTimeMillis()});
+        flips.add(new float[]{row, col, color, type, System.currentTimeMillis(), 0f});
         invalidate();
+    }
+
+    /**
+     * 翻棋模式下「翻开棋子」的翻牌动画：扣着的棋子翻到正面后**停住显示**（不缩小消失）。
+     * 动画期间 drawPieces 会跳过该格，只画这个翻牌，翻完再由 drawPieces 画出正面残影。
+     */
+    public void flipToReveal(int row, int col, int color, int type) {
+        // 同一格若已在翻，先去掉旧的，避免重复叠画
+        int idx = idxOfFlip(row, col);
+        if (idx >= 0) {
+            flips.remove(idx);
+        }
+        flips.add(new float[]{row, col, color, type, System.currentTimeMillis(), 1f});
+        invalidate();
+    }
+
+    private int idxOfFlip(int row, int col) {
+        for (int i = 0; i < flips.size(); i++) {
+            float[] f = flips.get(i);
+            if ((int) f[0] == row && (int) f[1] == col) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public void setInputEnabled(boolean on) { inputEnabled = on; invalidate(); }
@@ -353,6 +377,10 @@ public class JunqiView extends View {
                 if (p == animPoint) {
                     continue;
                 }
+                // 正在播翻牌动画的格子跳过：只由 drawFlip 画，避免正面与翻牌同时出现
+                if (idxOfFlip(r, c) >= 0) {
+                    continue;
+                }
                 boolean back = hidden != null && p < hidden.length && hidden[p];
                 drawPiece(canvas, cx(c), cy(r), color, board.at(r, c), back);
             }
@@ -395,22 +423,24 @@ public class JunqiView extends View {
             if (p >= 1f) {
                 flips.remove(i);
             } else {
-                drawFlipPiece(canvas, (int) f[0], (int) f[1], (int) f[2], (int) f[3], p);
+                boolean stay = f.length > 5 && f[5] >= 0.5f;
+                drawFlipPiece(canvas, (int) f[0], (int) f[1], (int) f[2], (int) f[3], p, stay);
             }
         }
         postInvalidateOnAnimation();   // 继续下一帧；全部翻完后再刷一帧清掉残影
     }
 
-    private void drawFlipPiece(Canvas canvas, int row, int col, int color, int type, float p) {
+    private void drawFlipPiece(Canvas canvas, int row, int col, int color, int type, float p, boolean stay) {
         float ang = p * (float) Math.PI;              // 0..π：先压扁背面，再展开正面
         float sx = Math.abs((float) Math.cos(ang));   // 宽度 1→0→1
         boolean faceUp = p >= 0.5f;
-        float shrink = p > 0.72f ? Math.max(0f, 1f - (p - 0.72f) / 0.28f) : 1f;  // 收尾缩小到消失
-        float pw = stationW * 0.98f * shrink, ph = stationH * 0.98f * shrink;
+        // 「停住」模式翻完不缩；「阵亡」模式收尾缩小到消失
+        float shrink = (!stay && p > 0.72f) ? Math.max(0f, 1f - (p - 0.72f) / 0.28f) : 1f;
+        float pw = stationW * 0.94f * shrink, ph = stationH * 0.94f * shrink;
         float w = pw * sx;
         float radius = ph * 0.26f * sx;
         float x = cx(col), y = cy(row);
-        y -= (float) Math.sin(ang) * stationH * 0.6f;   // 翻的时候抬起来
+        y -= (float) Math.sin(ang) * stationH * 0.18f;   // 翻的时候微微抬起
         boolean red = color == JunqiBoard.RED;
         int edge = dark ? (red ? 0xFF8A2A26 : 0xFF5D7A99) : 0xFF2E1F10;
         int body = dark ? (red ? 0xFFD64541 : 0xFF2C3E50) : (red ? 0xFFB5483A : 0xFF4A3B2C);
@@ -425,9 +455,12 @@ public class JunqiView extends View {
         tmpR2.set(x - w * 0.45f, y - ph * 0.42f, x + w * 0.45f, y + ph * 0.42f);
         canvas.drawRoundRect(tmpR2, radius * 0.7f, radius * 0.7f, face);
         if (faceUp) {
-            text.setColor(txt);
-            text.setTextSize(ph * 0.72f);
-            canvas.drawText(JunqiBoard.typeName(type), x, y + ph * 0.23f, text);
+            String label = JunqiBoard.typeName(type);
+            if (label != null && label.length() > 0) {
+                text.setColor(txt);
+                text.setTextSize(ph * 0.72f);
+                canvas.drawText(label, x, y + ph * 0.23f, text);
+            }
         } else {
             face.setColor(backdot);
             canvas.drawCircle(x, y, ph * 0.22f, face);

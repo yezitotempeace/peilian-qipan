@@ -410,19 +410,23 @@ public class JunqiActivity extends Activity {
 
     /** 翻棋模式：翻开一个棋子（算一手），然后换电脑走。 */
     private void flipPiece(int row, int col, int p) {
+        int owner = board.ownerAt(row, col);
+        int type = board.at(row, col);
         flipped[p] = true;
         selected = -1;
         legal = new int[0];
-        // 播放翻牌动画
-        int owner = board.ownerAt(row, col);
-        int type = board.at(row, col);
-        boardView.revealFlip(row, col, owner, type);
+        // 播放「翻到正面停住」的翻牌动画（drawPieces 会跳过此格，只画翻牌）
+        boardView.flipToReveal(row, col, owner, type);
         sync();
         setStatus("翻开了 " + (owner == JunqiBoard.RED ? "红方" : "黑方") + " " + JunqiBoard.typeName(type));
-        // 翻牌后换电脑走
-        if (!board.gameOver()) {
-            startAiTurn();
-        }
+        // 翻牌动画播完再换电脑走，避免两个翻牌叠在一起
+        boardView.postDelayed(new Runnable() {
+            public void run() {
+                if (alive && board != null && !board.gameOver()) {
+                    startAiTurn();
+                }
+            }
+        }, AnimMath.FLIP_MS + 60);
     }
 
     private int[] movesFrom(int from) {
@@ -526,7 +530,7 @@ public class JunqiActivity extends Activity {
                                 flipped[pick] = true;
                                 int owner = board.ownerAt(r, c);
                                 int type = board.at(r, c);
-                                boardView.revealFlip(r, c, owner, type);
+                                boardView.flipToReveal(r, c, owner, type);
                                 sync();
                                 setStatus("电脑翻开了 " + (owner == JunqiBoard.RED ? "红方" : "黑方") + " " + JunqiBoard.typeName(type) + "。轮到你走。");
                             }

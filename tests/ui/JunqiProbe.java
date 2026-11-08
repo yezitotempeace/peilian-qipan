@@ -51,6 +51,28 @@ public class JunqiProbe {
         chk("翻棋混铺：红方跨上下半场", true, redTop && redBottom);
         chk("翻棋混铺：黑方跨上下半场", true, blackTop && blackBottom);
 
+        // 翻棋翻子：翻红方和黑方都能成功（不能「翻对方失败」），翻完该格永久可见
+        set(p, "alive", false);   // 关掉 AI 换手，专测翻子本身
+        boolean[] flippedArr = (boolean[]) get(p, "flipped");
+        int redPick = -1, blackPick = -1;
+        for (int rr = 0; rr < JunqiBoard.ROWS && (redPick < 0 || blackPick < 0); rr++) {
+            for (int cc = 0; cc < JunqiBoard.COLS; cc++) {
+                int o = fb.ownerAt(rr, cc);
+                if (o == JunqiBoard.RED && redPick < 0) redPick = JunqiBoard.idx(rr, cc);
+                if (o == JunqiBoard.BLACK && blackPick < 0) blackPick = JunqiBoard.idx(rr, cc);
+            }
+        }
+        if (redPick >= 0) {
+            call(p, "flipPiece", new Class<?>[]{int.class, int.class, int.class},
+                    JunqiBoard.rowOf(redPick), JunqiBoard.colOf(redPick), redPick);
+            chk("翻棋：翻自己（红）成功", true, flippedArr[redPick]);
+        }
+        if (blackPick >= 0) {
+            call(p, "flipPiece", new Class<?>[]{int.class, int.class, int.class},
+                    JunqiBoard.rowOf(blackPick), JunqiBoard.colOf(blackPick), blackPick);
+            chk("翻棋：翻对方（黑）也成功", true, flippedArr[blackPick]);
+        }
+
         click(p, "切换模式");   // 翻棋 → 暗棋
         chk("切回暗棋仍只藏对方 25 子", 25, countTrue(hidden(v)));
 
