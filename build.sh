@@ -188,11 +188,17 @@ trap restore_prev EXIT
 cp "$OUT/dex/classes.dex" "$OUT/stage/classes.dex"
 mkdir -p "$OUT/stage/lib/arm64-v8a"
 cp "$PROJ/jniLibs/arm64-v8a/libkatago.so" "$OUT/stage/lib/arm64-v8a/libkatago.so"
-# 可选：五子棋的外部强引擎 Rapfi（有就装进去；没有也照样能构建，App 里会退回内置 AI）
+# 可选：外部强引擎（有就装进去；没有也照样能构建，App 里会退回内置 AI）
+#   librapfi.so  —— 五子棋 Rapfi
+#   libeleye.so  —— 象棋 ElephantEye（象眼）
 EXTRA_LIBS=""
 if [ -f "$PROJ/jniLibs/arm64-v8a/librapfi.so" ]; then
   cp "$PROJ/jniLibs/arm64-v8a/librapfi.so" "$OUT/stage/lib/arm64-v8a/librapfi.so"
-  EXTRA_LIBS="lib/arm64-v8a/librapfi.so"
+  EXTRA_LIBS="$EXTRA_LIBS lib/arm64-v8a/librapfi.so"
+fi
+if [ -f "$PROJ/jniLibs/arm64-v8a/libeleye.so" ]; then
+  cp "$PROJ/jniLibs/arm64-v8a/libeleye.so" "$OUT/stage/lib/arm64-v8a/libeleye.so"
+  EXTRA_LIBS="$EXTRA_LIBS lib/arm64-v8a/libeleye.so"
 fi
 
 cp "$OUT/base.apk" "$OUT/unsigned.apk"

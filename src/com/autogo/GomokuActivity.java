@@ -726,7 +726,7 @@ public class GomokuActivity extends android.app.Activity {
                     }
                 })
                 .setCancelable(true);
-        if (humanWon && WinEgg.eggAllowed(level, LocalGomokuAI.FAST)) {
+        if (humanWon && WinEgg.eggAllowed(level, LocalGomokuAI.STRONG)) {
             b.setView(WinEgg.buildBody(this));
         }
         b.show();

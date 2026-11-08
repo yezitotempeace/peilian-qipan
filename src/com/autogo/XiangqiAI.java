@@ -17,7 +17,7 @@ import java.util.List;
  * <p>开局多样性：纯搜索对同一局面永远给同一着，连着几局开头都一样。
  * 这里加了「开局随机池」——前几手在同分最优着里随机挑一个，保证每局开局不重样。
  */
-public class XiangqiAI {
+public class XiangqiAI implements XiangqiEngineApi {
     public static final int FAST = 0;
     public static final int NORMAL = 1;
     public static final int STRONG = 2;
@@ -56,19 +56,23 @@ public class XiangqiAI {
     private int level = NORMAL;
     private final java.util.Random rnd = new java.util.Random();
 
+    @Override
     public String name() {
         return "内置象棋 AI";
     }
 
+    @Override
     public void setLevel(int l) {
         level = (l < FAST || l > STRONG) ? NORMAL : l;
     }
 
+    @Override
     public int level() {
         return level;
     }
 
     /** 轮到的这一方走哪一步；无着可走或已终局返回 null。 */
+    @Override
     public int[] genmove(XiangqiBoard board) {
         if (board == null || board.gameOver()) {
             return null;

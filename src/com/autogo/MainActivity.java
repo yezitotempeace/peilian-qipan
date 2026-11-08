@@ -975,7 +975,7 @@ public class MainActivity extends Activity {
             setInfo("棋谱保存失败：" + e.getMessage());
         }
         refreshStatus();
-        if (!wasAutoPlay && WinEgg.eggAllowed(WinEgg.goLevel(modelAlias), 0)
+        if (!wasAutoPlay && WinEgg.eggAllowed(WinEgg.goLevel(modelAlias), 2)
                 && WinEgg.goHumanWon(result, humanColor)) {
             // 只有「普通 / 强」档（网络）赢了才弹：快档不弹；自动对弈没有「人」，也不弹
             WinEgg.showWin(this);

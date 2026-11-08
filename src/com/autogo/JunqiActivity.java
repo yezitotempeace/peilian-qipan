@@ -669,7 +669,7 @@ public class JunqiActivity extends Activity {
                 })
                 .setCancelable(true);
         boolean humanWon = !resigned && board != null && board.winner() == JunqiBoard.RED;
-        if (humanWon && WinEgg.eggAllowed(level, JunqiAI.FAST)) {
+        if (humanWon && WinEgg.eggAllowed(level, JunqiAI.STRONG)) {
             b.setView(WinEgg.buildBody(this));
         }
         b.show();

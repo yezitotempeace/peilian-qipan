@@ -75,7 +75,7 @@ public class XiangqiProbe {
         chk("认输先弹确认框（清空后确实新弹了框）", true, anyEvent("dialog"));
         chk("确认框里没把棋盘判终局", false, ((XiangqiBoard) get(a, "board")).gameOver());
 
-        // ⑲b 彩蛋：快档赢了不显示，普通/强档赢了才显示
+        // ⑲b 彩蛋：只在最强档显示（快/普通都不给）
         for (int lv = XiangqiAI.FAST; lv <= XiangqiAI.STRONG; lv++) {
             XiangqiActivity eg = newPage();
             set(eg, "level", Integer.valueOf(lv));
@@ -87,7 +87,7 @@ public class XiangqiProbe {
                     egg = true;
                 }
             }
-            chk("象棋难度 " + lv + " 赢了彩蛋显示=" + (lv != XiangqiAI.FAST), true, egg == (lv != XiangqiAI.FAST));
+            chk("象棋难度 " + lv + " 赢了彩蛋显示=" + (lv == XiangqiAI.STRONG), true, egg == (lv == XiangqiAI.STRONG));
         }
 
         // ⑳ 屏幕自适应：布局完成后再算；转屏按真机顺序（onConfigurationChanged 先到、layout 在后）

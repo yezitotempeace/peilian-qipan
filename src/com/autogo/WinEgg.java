@@ -38,9 +38,12 @@ public final class WinEgg {
         return blackWon == (humanColor == Board.BLACK);
     }
 
-    /** 彩蛋只给「普通 / 强」两档（快档不显示）；各棋种用各自的 FAST 常量传进来。 */
-    public static boolean eggAllowed(int level, int fastLevel) {
-        return level != fastLevel;
+    /**
+     * 彩蛋只在「最强档」给：快档、普通档都不显示（用户 2026-11-08 明确要求）。
+     * 各棋种用各自的 STRONG 常量传进来。
+     */
+    public static boolean eggAllowed(int level, int strongLevel) {
+        return level == strongLevel;
     }
 
     /** 围棋的三个网络档位映射成 0=快 / 1=普通 / 2=强；未知按普通算。 */

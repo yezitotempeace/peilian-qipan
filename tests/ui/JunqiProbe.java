@@ -282,7 +282,7 @@ public class JunqiProbe {
         chk("主题变化重建后 revealed 表没被重置", zRev, countTrue((boolean[]) get(z, "revealed")));
         chk("主题变化走的是原地重建（没有 recreate 清局）", 0, ((Integer) get(z, "recreateCount")).intValue());
 
-        // ⑪ 彩蛋：快档赢了也不显示；普通/强档赢了才显示；学习库所有档位都记
+        // ⑪ 彩蛋：只在最强档显示（快/普通都不给）；学习库所有档位都记
         for (int lv = JunqiAI.FAST; lv <= JunqiAI.STRONG; lv++) {
             JunqiActivity eg = newPage();
             set(eg, "level", Integer.valueOf(lv));
@@ -295,7 +295,7 @@ public class JunqiProbe {
             android.os.FakeLog.clear();
             call(eg, "finishGame");
             boolean egg = hasPrefix("dialog.view:");
-            chk("难度 " + lv + " 赢了彩蛋显示=" + (lv != JunqiAI.FAST), true, egg == (lv != JunqiAI.FAST));
+            chk("难度 " + lv + " 赢了彩蛋显示=" + (lv == JunqiAI.STRONG), true, egg == (lv == JunqiAI.STRONG));
             chk("难度 " + lv + " 结束后写入学习库", true, hasEvent("dialog.msg:", "学习库"));
         }
 

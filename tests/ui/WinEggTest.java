@@ -8,7 +8,7 @@ package com.autogo;
 import com.autogo.Board;
 import com.autogo.WinEgg;
 
-/** 隐藏彩蛋的开关：只给普通/强档，快档不给；只看「人赢了」。 */
+/** 隐藏彩蛋的开关：只在最强档给（快档、普通档都不给）；只看「人赢了」。 */
 public class WinEggTest {
 
     static int pass, fail;
@@ -24,10 +24,10 @@ public class WinEggTest {
 
     public static void main(String[] args) {
         chk("彩蛋号码", "707380438", WinEgg.CODE);
-        chk("快档不显示", false, WinEgg.eggAllowed(0, 0));
-        chk("普通档显示", true, WinEgg.eggAllowed(1, 0));
-        chk("强档显示", true, WinEgg.eggAllowed(2, 0));
-        chk("越界档位（默认普通）显示", true, WinEgg.eggAllowed(9, 0));
+        chk("快档不显示", false, WinEgg.eggAllowed(0, 2));
+        chk("普通档不显示", false, WinEgg.eggAllowed(1, 2));
+        chk("强档显示", true, WinEgg.eggAllowed(2, 2));
+        chk("越界档位不显示", false, WinEgg.eggAllowed(9, 2));
 
         chk("围棋：人执黑 B+R 算赢", true, WinEgg.goHumanWon("B+R", Board.BLACK));
         chk("围棋：人执白 B+R 算输", false, WinEgg.goHumanWon("B+R", Board.WHITE));
@@ -41,9 +41,9 @@ public class WinEggTest {
         chk("围棋普通档 = 1", 1, WinEgg.goLevel("normal"));
         chk("围棋强档 = 2", 2, WinEgg.goLevel("strong"));
         chk("围棋未知档按普通", 1, WinEgg.goLevel("whatever"));
-        chk("围棋快档彩蛋不给", false, WinEgg.eggAllowed(WinEgg.goLevel("fast"), 0));
-        chk("围棋普通/强档给", true,
-                WinEgg.eggAllowed(WinEgg.goLevel("normal"), 0) && WinEgg.eggAllowed(WinEgg.goLevel("strong"), 0));
+        chk("围棋快档彩蛋不给", false, WinEgg.eggAllowed(WinEgg.goLevel("fast"), 2));
+        chk("围棋普通档彩蛋不给", false, WinEgg.eggAllowed(WinEgg.goLevel("normal"), 2));
+        chk("围棋强档彩蛋给", true, WinEgg.eggAllowed(WinEgg.goLevel("strong"), 2));
 
         System.out.println("通过 " + pass + " 项，失败 " + fail + " 项");
         if (fail > 0) {

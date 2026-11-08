@@ -35,6 +35,10 @@ public class XiangqiActivity extends Activity {
 
     private XiangqiBoard board;
     private final XiangqiAI ai = new XiangqiAI();
+    /** 外部强引擎 ElephantEye（懒启动；起不来就整个退回内置 AI）。 */
+    private XiangqiEngine engine;
+    private boolean engineChecked;
+    private boolean engineOk;
     private int level = XiangqiAI.NORMAL;
 
     private XiangqiView boardView;
@@ -46,6 +50,12 @@ public class XiangqiActivity extends Activity {
 
     private boolean aiThinking;
     private boolean alive = true;
+
+    /** 象棋学习库：记录电脑每一步的局面特征与最终胜负，跨局积累经验。 */
+    private XiangqiLearn learn;
+    private final java.util.List<String> learnKeys =
+            java.util.Collections.synchronizedList(new java.util.ArrayList<String>());
+    private boolean learnRecorded;
 
     /** 复盘正在后台算（防止连点）。 */
     private boolean reviewing;
@@ -63,6 +73,7 @@ public class XiangqiActivity extends Activity {
         dark = UiTheme.apply(this);
         palette = Palette.of(dark);
         screen = Screen.read(this);
+        learn = XiangqiLearn.load(new java.io.File(getFilesDir(), XiangqiLearn.FILE_NAME));
         board = new XiangqiBoard();
         buildUi();
         syncBoardView();
@@ -131,6 +142,10 @@ public class XiangqiActivity extends Activity {
     @Override
     protected void onDestroy() {
         alive = false;
+        if (engine != null) {
+            try { engine.close(); } catch (RuntimeException ignored) { }
+            engine = null;
+        }
         super.onDestroy();
     }
 
@@ -287,6 +302,10 @@ public class XiangqiActivity extends Activity {
         selRow = -1;
         selCol = -1;
         aiThinking = false;
+        learnRecorded = false;
+        synchronized (learnKeys) {
+            learnKeys.clear();
+        }
         syncBoardView();
         setStatus("你先走（红方）。难度：" + LEVEL_NAMES[level]);
     }
@@ -340,7 +359,8 @@ public class XiangqiActivity extends Activity {
                     @Override
                     public void onClick(DialogInterface d, int w) {
                         setStatus("你认输了。");
-                        showEndDialog("你认输了。", false);
+                        recordLearning(XiangqiLearn.WIN);   // 人认输 = 电脑赢
+                        showEndDialog("你认输了。\n" + learnInfo(), false);
                     }
                 })
                 .setNegativeButton("继续下", null)
@@ -416,6 +436,94 @@ public class XiangqiActivity extends Activity {
         }
     }
 
+    /** ElephantEye 可执行文件的路径（打包成 lib/arm64-v8a/libeleye.so，同一套 nativeLibraryDir 机制）。 */
+    private String enginePath() {
+        try {
+            return new java.io.File(getApplicationInfo().nativeLibraryDir, "libeleye.so").getAbsolutePath();
+        } catch (RuntimeException e) {
+            return "";
+        }
+    }
+
+    /** 引擎装了没（结果缓存，免得每次查文件）。 */
+    private boolean engineUsable() {
+        if (!engineChecked) {
+            engineChecked = true;
+            String p = enginePath();
+            engineOk = !p.isEmpty() && new java.io.File(p).canExecute();
+        }
+        return engineOk;
+    }
+
+    /** 这一手交给谁算：引擎可用就走引擎，否则内置 AI。 */
+    private XiangqiEngineApi engineForMove() {
+        if (engineUsable()) {
+            if (engine == null) {
+                engine = new XiangqiEngine(enginePath());
+            }
+            engine.setLevel(level);
+            return engine;
+        }
+        ai.setLevel(level);
+        return ai;
+    }
+
+    /**
+     * 学习层加权：引擎给出最优着法后，在「同一起点或同一兵种」的合法着法里挑一个
+     * 历史胜率更高的（样本不足时保持引擎原选择）。这就是「随机应变 + 积累经验」：
+     * 同一类局面下赢过的手法，下次更愿意用。
+     */
+    private int[] applyLearn(XiangqiBoard snapshot, int[] engineMove) {
+        if (learn == null || engineMove == null) {
+            return engineMove;
+        }
+        java.util.List<int[]> legal = snapshot.legalMoves(XiangqiBoard.BLACK);
+        if (legal.isEmpty()) {
+            return engineMove;
+        }
+        int bestScore = Integer.MIN_VALUE;
+        int[] best = engineMove;
+        for (int[] mv : legal) {
+            String key = XiangqiLearn.keyFor(snapshot, XiangqiBoard.BLACK, mv);
+            int bonus = learn.bonus(key);
+            // 引擎那一手本身给一个基础加权，避免被无经验着法顶掉
+            if (mv[0] == engineMove[0] && mv[1] == engineMove[1]
+                    && mv[2] == engineMove[2] && mv[3] == engineMove[3]) {
+                bonus += 40;
+            }
+            if (bonus > bestScore) {
+                bestScore = bonus;
+                best = mv;
+            }
+        }
+        return best;
+    }
+
+    /** 记一条本局特征（电脑走的每一手）。 */
+    private void learnKeyFor(XiangqiBoard snapshot, int[] mv) {
+        if (learn == null || snapshot == null || mv == null) {
+            return;
+        }
+        String key = XiangqiLearn.keyFor(snapshot, XiangqiBoard.BLACK, mv);
+        if (key != null) {
+            learnKeys.add(key);
+        }
+    }
+
+    /** 把本局结果记进学习库并落盘（只记一次）。 */
+    private void recordLearning(int result) {
+        if (learn == null || learnRecorded) {
+            return;
+        }
+        learnRecorded = true;
+        learn.recordGame(learnKeys, result);
+        learn.save(new java.io.File(getFilesDir(), XiangqiLearn.FILE_NAME));
+    }
+
+    private String learnInfo() {
+        return learn == null ? "" : "（" + learn.describe() + "）";
+    }
+
     private void startAiTurn() {
         if (board == null || board.gameOver()) {
             return;
@@ -427,7 +535,24 @@ public class XiangqiActivity extends Activity {
             @Override
             public void run() {
                 ai.setLevel(level);
-                final int[] mv = ai.genmove(snapshot);
+                int[] mv;
+                String engineNote = null;
+                XiangqiEngineApi use = engineForMove();
+                try {
+                    mv = use.genmove(snapshot);
+                } catch (RuntimeException e) {
+                    // 外部引擎出问题（进程没起来/超时/通信断）：退回内置 AI，别让这一手作废
+                    mv = ai.genmove(snapshot);
+                    engineNote = "外部引擎出错，这一手改用内置 AI：" + e.getMessage();
+                }
+                // 学习层：在引擎这一手附近挑一个历史胜率更高的同类走法（样本不够时原样返回）
+                try {
+                    mv = applyLearn(snapshot, mv);
+                } catch (RuntimeException ignored) {
+                    // 学习出问题绝不影响出招
+                }
+                final int[] finalMv = mv;
+                final String finalNote = engineNote;
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -435,19 +560,20 @@ public class XiangqiActivity extends Activity {
                         if (!alive || board != snapshot || board.gameOver()) {
                             return;
                         }
-                        if (mv == null) {
+                        if (finalMv == null) {
                             setStatus("电脑无棋可走。");
                             return;
                         }
-                        board.play(mv[0], mv[1], mv[2], mv[3]);
-                        boardView.setLastMove(mv[0] * XiangqiBoard.COLS + mv[1],
-                                mv[2] * XiangqiBoard.COLS + mv[3]);
+                        learnKeyFor(snapshot, finalMv);
+                        board.play(finalMv[0], finalMv[1], finalMv[2], finalMv[3]);
+                        boardView.setLastMove(finalMv[0] * XiangqiBoard.COLS + finalMv[1],
+                                finalMv[2] * XiangqiBoard.COLS + finalMv[3]);
                         syncBoardView();
                         if (board.gameOver()) {
                             finishGame();
                             return;
                         }
-                        setStatus("轮到你走。");
+                        setStatus(finalNote != null ? finalNote : "轮到你走。");
                     }
                 });
             }
@@ -459,7 +585,9 @@ public class XiangqiActivity extends Activity {
     private void finishGame() {
         String text = board.resultString();
         setStatus(text);
-        showEndDialog(text, board.winner() == XiangqiBoard.RED);
+        boolean humanWon = board.winner() == XiangqiBoard.RED;
+        recordLearning(humanWon ? XiangqiLearn.LOSS : XiangqiLearn.WIN);
+        showEndDialog(text + "\n" + learnInfo(), humanWon);
     }
 
     private void showEndDialog(final String text, boolean humanWon) {
@@ -479,7 +607,7 @@ public class XiangqiActivity extends Activity {
                     }
                 })
                 .setCancelable(true);
-        if (humanWon && WinEgg.eggAllowed(level, XiangqiAI.FAST)) {
+        if (humanWon && WinEgg.eggAllowed(level, XiangqiAI.STRONG)) {
             b.setView(WinEgg.buildBody(this));
         }
         b.show();

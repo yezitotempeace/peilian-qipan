@@ -46,6 +46,9 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/src/com/autogo/GomokuReview.java" \
    "$PROJ/src/com/autogo/XiangqiBoard.java" \
    "$PROJ/src/com/autogo/XiangqiAI.java" \
+   "$PROJ/src/com/autogo/XiangqiEngineApi.java" \
+   "$PROJ/src/com/autogo/XiangqiEngine.java" \
+   "$PROJ/src/com/autogo/XiangqiLearn.java" \
    "$PROJ/src/com/autogo/XiangqiReview.java" \
    "$PROJ/src/com/autogo/JunqiBoard.java" \
    "$PROJ/src/com/autogo/JunqiAI.java" "$PROJ/src/com/autogo/JunqiLearn.java" "$PROJ/src/com/autogo/JunqiReveal.java" \
@@ -62,6 +65,7 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/tests/GomokuLearnTest.java" \
    "$PROJ/tests/XiangqiTest.java" \
    "$PROJ/tests/XiangqiAITest.java" \
+   "$PROJ/tests/XiangqiLearnTest.java" \
    "$PROJ/tests/XiangqiReviewTest.java" \
    "$PROJ/tests/AnimMathTest.java" \
    "$PROJ/tests/JunqiTest.java" "$PROJ/tests/JunqiAITest.java" "$PROJ/tests/JunqiRevealTest.java" \
@@ -86,6 +90,7 @@ java -cp "$OUT/classes" GomokuReviewTest
 java -cp "$OUT/classes" GomokuLearnTest
 java -cp "$OUT/classes" XiangqiTest
 java -cp "$OUT/classes" XiangqiAITest
+java -cp "$OUT/classes" XiangqiLearnTest
 java -cp "$OUT/classes" XiangqiReviewTest
 java -cp "$OUT/classes" AnimMathTest
 java -cp "$OUT/classes" JunqiAITest
