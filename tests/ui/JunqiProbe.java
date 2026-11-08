@@ -38,6 +38,18 @@ public class JunqiProbe {
         chk("翻棋模式", Boolean.TRUE, get(p, "flipMode"));
         chk("翻棋下全部 hidden（50 子全扣着）", 50, countTrue(hidden(v)));
         chk("状态条提到翻棋", true, text(p).contains("翻棋"));
+        // 翻棋布局是混铺：红黑双方都跨上下半场（不是各占半边）
+        JunqiBoard fb = (JunqiBoard) get(p, "board");
+        boolean redTop = false, redBottom = false, blackTop = false, blackBottom = false;
+        for (int rr = 0; rr < JunqiBoard.ROWS; rr++) {
+            for (int cc = 0; cc < JunqiBoard.COLS; cc++) {
+                int o = fb.ownerAt(rr, cc);
+                if (o == JunqiBoard.RED) { if (rr < 6) redTop = true; else redBottom = true; }
+                if (o == JunqiBoard.BLACK) { if (rr < 6) blackTop = true; else blackBottom = true; }
+            }
+        }
+        chk("翻棋混铺：红方跨上下半场", true, redTop && redBottom);
+        chk("翻棋混铺：黑方跨上下半场", true, blackTop && blackBottom);
 
         click(p, "切换模式");   // 翻棋 → 暗棋
         chk("切回暗棋仍只藏对方 25 子", 25, countTrue(hidden(v)));

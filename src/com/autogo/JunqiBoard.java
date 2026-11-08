@@ -170,6 +170,78 @@ public final class JunqiBoard {
         }
     }
 
+    /**
+     * 翻棋开局：双方共 50 枚棋子混合后随机铺满全盘（不分半场归属）。
+     *
+     * <p>行营（安全区）留空，正好 60−10=50 格放 50 子。为兼顾军棋规则：
+     * 军旗仍各放本方大本营（红底线、黑顶线），地雷仍各放本方后两排（红 10-11 行、黑 0-1 行），
+     * 其余棋子完全随机混铺。翻子揭晓归属，是「翻翻棋」的核心玩法。</p>
+     */
+    public void setupFlip(Random rnd) {
+        java.util.Arrays.fill(grid, EMPTY);
+        java.util.Arrays.fill(owner, EMPTY);
+        history.clear();
+        winner = 0;
+        endReason = "";
+        sideToMove = RED;
+        Random r = rnd == null ? new Random(20261017L) : rnd;
+
+        // 1. 军旗：各放本方大本营（红底线 11 行、黑顶线 0 行）之一
+        int[] redHq = {idx(ROWS - 1, 1), idx(ROWS - 1, 3)};
+        int[] blackHq = {idx(0, 1), idx(0, 3)};
+        int redFlag = redHq[r.nextInt(2)];
+        int blackFlag = blackHq[r.nextInt(2)];
+        grid[redFlag] = FLAG; owner[redFlag] = RED;
+        grid[blackFlag] = FLAG; owner[blackFlag] = BLACK;
+
+        // 2. 地雷：各放本方后两排（作为「颜色」归属，但位置混铺）
+        //    红后两排 = 10,11 行；黑后两排 = 0,1 行
+        java.util.List<Integer> redMineCells = new java.util.ArrayList<Integer>();
+        for (int row = ROWS - 2; row <= ROWS - 1; row++) {
+            for (int col = 0; col < COLS; col++) {
+                int p = idx(row, col);
+                if (grid[p] == EMPTY && !isCamp(row, col)) redMineCells.add(p);
+            }
+        }
+        java.util.List<Integer> blackMineCells = new java.util.ArrayList<Integer>();
+        for (int row = 0; row <= 1; row++) {
+            for (int col = 0; col < COLS; col++) {
+                int p = idx(row, col);
+                if (grid[p] == EMPTY && !isCamp(row, col)) blackMineCells.add(p);
+            }
+        }
+        java.util.Collections.shuffle(redMineCells, r);
+        java.util.Collections.shuffle(blackMineCells, r);
+        for (int i = 0; i < 3; i++) { int p = redMineCells.get(i); grid[p] = MINE; owner[p] = RED; }
+        for (int i = 0; i < 3; i++) { int p = blackMineCells.get(i); grid[p] = MINE; owner[p] = BLACK; }
+
+        // 3. 其余所有棋子（去掉已放的 2 旗 + 6 雷）混在一起，随机铺到剩余空格
+        java.util.List<Integer> pieces = new java.util.ArrayList<Integer>();
+        java.util.List<Integer> pieceOwners = new java.util.ArrayList<Integer>();
+        int[] others = {COMMANDER, ARMY, DIVISION, DIVISION, BRIGADE, BRIGADE, REGIMENT, REGIMENT,
+                BATTALION, BATTALION, COMPANY, COMPANY, COMPANY, PLATOON, PLATOON, PLATOON,
+                ENGINEER, ENGINEER, ENGINEER, BOMB, BOMB};
+        for (int color = RED; color <= BLACK; color++) {
+            for (int t : others) { pieces.add(t); pieceOwners.add(color); }
+        }
+        java.util.List<Integer> slots = new java.util.ArrayList<Integer>();
+        for (int p = 0; p < grid.length; p++) {
+            if (grid[p] == EMPTY && !isCamp(rowOf(p), colOf(p))) slots.add(p);
+        }
+        java.util.Collections.shuffle(slots, r);
+        // 同时打乱棋子顺序
+        for (int i = pieces.size() - 1; i > 0; i--) {
+            int j = r.nextInt(i + 1);
+            int tmpT = pieces.get(i); pieces.set(i, pieces.get(j)); pieces.set(j, tmpT);
+            int tmpO = pieceOwners.get(i); pieceOwners.set(i, pieceOwners.get(j)); pieceOwners.set(j, tmpO);
+        }
+        for (int i = 0; i < pieces.size(); i++) {
+            int p = slots.get(i);
+            grid[p] = pieces.get(i);
+            owner[p] = pieceOwners.get(i);
+        }
+    }
+
     // ---------- 坐标与基本读写 ----------
 
     public static int idx(int row, int col) {

@@ -71,19 +71,20 @@ public class JunqiActivity extends Activity {
     }
 
     private void newGame() {
-        board = new JunqiBoard();
-        board.setupStandard(new Random(SEED));
-        startBoard = board.copy();
         // 模式初始化
         dark = gameMode == 0;         // 暗棋
         flipMode = gameMode == 2;     // 翻棋
+        board = new JunqiBoard();
         if (flipMode) {
-            // 翻棋：全部扣着，flipped 全 false
+            // 翻棋：50 子混合随机铺满全盘（不分半场），全部扣着
+            board.setupFlip(new Random(SEED));
             java.util.Arrays.fill(flipped, false);
-            JunqiReveal.reset(revealed, true);  // 全隐藏（等同暗棋初始）
+            JunqiReveal.reset(revealed, true);  // 全隐藏
         } else {
+            board.setupStandard(new Random(SEED));
             JunqiReveal.reset(revealed, dark);
         }
+        startBoard = board.copy();
         selected = -1;
         legal = new int[0];
         aiThinking = false;
@@ -163,7 +164,7 @@ public class JunqiActivity extends Activity {
                                 gameMode = (gameMode + 1) % 3;
                                 newGame();
                                 sync();
-                                String[] names = {"暗棋（只看不见对方）", "明棋（双方都看得到）", "翻棋（全部扣着，点击翻开）"};
+                                String[] names = {"暗棋（只看不见对方）", "明棋（双方都看得到）", "翻棋（50 子混铺全盘，谁都能翻）"};
                                 setStatus("已切换为" + names[gameMode] + "。");
                             }
                         },
