@@ -39,8 +39,18 @@ public class JunqiView extends View {
     private long animStart;
     private int animFrom = -1;
     private int animTo = -1;
-    /** 正在翻转显露的阵亡棋子：{row, col, color, type, startMs}。 */
-    private final java.util.ArrayList<float[]> flips = new java.util.ArrayList<float[]>();
+    /** 一条翻牌动画：起点 long 时间戳（float 存毫秒会丢精度，动画会瞬间结束或卡住）。 */
+    private static final class FlipAnim {
+        final int row, col, color, type;
+        final long startMs;
+        final boolean stay;
+        FlipAnim(int row, int col, int color, int type, long startMs, boolean stay) {
+            this.row = row; this.col = col; this.color = color; this.type = type;
+            this.startMs = startMs; this.stay = stay;
+        }
+    }
+
+    private final java.util.ArrayList<FlipAnim> flips = new java.util.ArrayList<FlipAnim>();
 
     private final Paint bg = new Paint();
     private final Paint road = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -174,13 +184,13 @@ public class JunqiView extends View {
 
     /** 吃子/被吃后，把阵亡的棋子「背面→正面」翻过来给人看，然后缩小消失。 */
     public void revealFlip(int row, int col, int color, int type) {
-        flips.add(new float[]{row, col, color, type, System.currentTimeMillis(), 0f});
+        flips.add(new FlipAnim(row, col, color, type, System.currentTimeMillis(), false));
         invalidate();
     }
 
     /**
      * 翻棋模式下「翻开棋子」的翻牌动画：扣着的棋子翻到正面后**停住显示**（不缩小消失）。
-     * 动画期间 drawPieces 会跳过该格，只画这个翻牌，翻完再由 drawPieces 画出正面残影。
+     * 动画期间 drawPieces 会跳过该格，只画这个翻牌，翻完再由 drawPieces 画出正面。
      */
     public void flipToReveal(int row, int col, int color, int type) {
         // 同一格若已在翻，先去掉旧的，避免重复叠画
@@ -188,14 +198,14 @@ public class JunqiView extends View {
         if (idx >= 0) {
             flips.remove(idx);
         }
-        flips.add(new float[]{row, col, color, type, System.currentTimeMillis(), 1f});
+        flips.add(new FlipAnim(row, col, color, type, System.currentTimeMillis(), true));
         invalidate();
     }
 
     private int idxOfFlip(int row, int col) {
         for (int i = 0; i < flips.size(); i++) {
-            float[] f = flips.get(i);
-            if ((int) f[0] == row && (int) f[1] == col) {
+            FlipAnim f = flips.get(i);
+            if (f.row == row && f.col == col) {
                 return i;
             }
         }
@@ -418,13 +428,12 @@ public class JunqiView extends View {
         }
         long now = System.currentTimeMillis();
         for (int i = flips.size() - 1; i >= 0; i--) {
-            float[] f = flips.get(i);
-            float p = AnimMath.progress((long) f[4], now, AnimMath.FLIP_MS);
+            FlipAnim f = flips.get(i);
+            float p = AnimMath.progress(f.startMs, now, AnimMath.FLIP_MS);
             if (p >= 1f) {
                 flips.remove(i);
             } else {
-                boolean stay = f.length > 5 && f[5] >= 0.5f;
-                drawFlipPiece(canvas, (int) f[0], (int) f[1], (int) f[2], (int) f[3], p, stay);
+                drawFlipPiece(canvas, f.row, f.col, f.color, f.type, p, f.stay);
             }
         }
         postInvalidateOnAnimation();   // 继续下一帧；全部翻完后再刷一帧清掉残影

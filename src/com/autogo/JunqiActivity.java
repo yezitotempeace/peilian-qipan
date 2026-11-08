@@ -415,6 +415,8 @@ public class JunqiActivity extends Activity {
         flipped[p] = true;
         selected = -1;
         legal = new int[0];
+        aiThinking = true;                 // 立刻锁输入：动画期间不许再点第二子
+        boardView.setInputEnabled(false);
         // 播放「翻到正面停住」的翻牌动画（drawPieces 会跳过此格，只画翻牌）
         boardView.flipToReveal(row, col, owner, type);
         sync();
@@ -423,6 +425,7 @@ public class JunqiActivity extends Activity {
         boardView.postDelayed(new Runnable() {
             public void run() {
                 if (alive && board != null && !board.gameOver()) {
+                    aiThinking = false;    // startAiTurn 会重新置 true 并锁输入
                     startAiTurn();
                 }
             }
@@ -523,9 +526,7 @@ public class JunqiActivity extends Activity {
                         final int pick = unflipped.get(new Random().nextInt(unflipped.size()));
                         runOnUiThread(new Runnable() {
                             public void run() {
-                                aiThinking = false;
                                 if (!alive || board == null || board.gameOver()) return;
-                                boardView.setInputEnabled(true);
                                 int r = JunqiBoard.rowOf(pick), c = JunqiBoard.colOf(pick);
                                 flipped[pick] = true;
                                 int owner = board.ownerAt(r, c);
@@ -533,6 +534,14 @@ public class JunqiActivity extends Activity {
                                 boardView.flipToReveal(r, c, owner, type);
                                 sync();
                                 setStatus("电脑翻开了 " + (owner == JunqiBoard.RED ? "红方" : "黑方") + " " + JunqiBoard.typeName(type) + "。轮到你走。");
+                                // 电脑翻牌动画播完再放开玩家输入
+                                boardView.postDelayed(new Runnable() {
+                                    public void run() {
+                                        if (!alive) return;
+                                        aiThinking = false;
+                                        boardView.setInputEnabled(true);
+                                    }
+                                }, AnimMath.FLIP_MS + 60);
                             }
                         });
                     } else if (!flippedMoves.isEmpty()) {

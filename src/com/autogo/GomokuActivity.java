@@ -258,14 +258,16 @@ public class GomokuActivity extends android.app.Activity {
         return rapfiOk;
     }
 
-    /** 这一手交给谁算：强档 + Rapfi 可用 ⇒ Rapfi；否则内置 AI。 */
-    /** 外部强引擎 Rapfi 是 15×15 的引擎：非 15 路一律走内置 AI（第 51 轮审计 中-1）。 */
+    /**
+     * 这一手交给谁算：Rapfi 可用就走 Rapfi（三档都用，档位只改时限）；
+     * 否则退回内置 AI。Rapfi 是 15×15 的引擎，非 15 路只能用内置 AI。
+     */
     private boolean rapfiUsableForThisBoard() {
         return size == 15 && rapfiUsable();
     }
 
     private GomokuEngine engineForMove() {
-        if (level == LocalGomokuAI.STRONG && rapfiUsableForThisBoard()) {
+        if (rapfiUsableForThisBoard()) {
             if (rapfi == null) rapfi = new RapfiGomokuEngine(rapfiPath());
             rapfi.setLevel(level);
             return rapfi;
@@ -274,9 +276,12 @@ public class GomokuActivity extends android.app.Activity {
         return engine;
     }
 
-    /** 状态条上的难度名字：强档没 Rapfi 时说实话。 */
+    /**
+     * 状态条上的难度名字：Rapfi 用不上时说清楚是内置 AI（别让人以为在跟外部强引擎下棋）。
+     * 15 路且 Rapfi 可用时不加后缀。
+     */
     private String levelLabel() {
-        if (level == LocalGomokuAI.STRONG && !rapfiUsableForThisBoard()) return LEVEL_NAMES[level] + "（内置）";
+        if (!rapfiUsableForThisBoard()) return LEVEL_NAMES[level] + "（内置）";
         return LEVEL_NAMES[level];
     }
 
@@ -306,7 +311,7 @@ public class GomokuActivity extends android.app.Activity {
     }
 
     private String optionsText() {
-        return "棋盘：" + size + " 路　难度：" + levelLabel()
+        return "棋盘：" + size + " 路　难度：" + LEVEL_NAMES[level]
                 + (forbid ? "　禁手：开" : "　禁手：关");
     }
 
