@@ -159,6 +159,7 @@ fi
 mkdir -p "$OUT/ui/src" "$OUT/ui/fake"
 cp "$PROJ/src/com/autogo/MenuActivity.java" "$PROJ/src/com/autogo/GomokuActivity.java" \
    "$PROJ/src/com/autogo/Watermark.java" "$PROJ/src/com/autogo/WinEgg.java" "$PROJ/src/com/autogo/BoardArt.java" \
+   "$PROJ/src/com/autogo/NativeExe.java" \
    "$PROJ/src/com/autogo/XiangqiView.java" "$PROJ/src/com/autogo/XiangqiActivity.java" \
    "$PROJ/src/com/autogo/XiangqiReviewActivity.java" \
    "$PROJ/src/com/autogo/JunqiView.java" "$PROJ/src/com/autogo/JunqiActivity.java" \

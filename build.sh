@@ -101,11 +101,21 @@ echo "== 3/7 aapt2 compile =="
 "$AAPT2" compile --dir "$PROJ/res" -o "$OUT/res.zip"
 
 echo "== 4/7 aapt2 link =="
+# 引擎不放进 lib/（nativeLibraryDir 在 Android 10+ 常被 SELinux 拦 exec），
+# 改从 jniLibs 复制到临时 assets/engine 再打进 APK，运行时由 NativeExe 释放到私有目录执行。
+mkdir -p "$OUT/assets-merged/engine"
+cp -r "$PROJ/assets/." "$OUT/assets-merged/" 2>/dev/null || true
+if [ -f "$PROJ/jniLibs/arm64-v8a/librapfi.so" ]; then
+  cp "$PROJ/jniLibs/arm64-v8a/librapfi.so" "$OUT/assets-merged/engine/rapfi"
+fi
+if [ -f "$PROJ/jniLibs/arm64-v8a/libeleye.so" ]; then
+  cp "$PROJ/jniLibs/arm64-v8a/libeleye.so" "$OUT/assets-merged/engine/eleeye"
+fi
 "$AAPT2" link \
   -o "$OUT/base.apk" \
   -I "$PLATFORM" \
   --manifest "$PROJ/AndroidManifest.xml" \
-  -A "$PROJ/assets" \
+  -A "$OUT/assets-merged" \
   --java "$OUT/gen" \
   --min-sdk-version 26 \
   --target-sdk-version 34 \
@@ -188,18 +198,10 @@ trap restore_prev EXIT
 cp "$OUT/dex/classes.dex" "$OUT/stage/classes.dex"
 mkdir -p "$OUT/stage/lib/arm64-v8a"
 cp "$PROJ/jniLibs/arm64-v8a/libkatago.so" "$OUT/stage/lib/arm64-v8a/libkatago.so"
-# 可选：外部强引擎（有就装进去；没有也照样能构建，App 里会退回内置 AI）
-#   librapfi.so  —— 五子棋 Rapfi
-#   libeleye.so  —— 象棋 ElephantEye（象眼）
+# 外部强引擎走 assets（assets/engine/rapfi、assets/engine/eleeye），
+# 运行时由 NativeExe 释放到 filesDir 再执行 —— 绕开 Android 对 nativeLibraryDir 的 exec 限制。
+# 因此这里不再往 lib/ 里塞引擎（塞了也是白占体积且不可执行）。
 EXTRA_LIBS=""
-if [ -f "$PROJ/jniLibs/arm64-v8a/librapfi.so" ]; then
-  cp "$PROJ/jniLibs/arm64-v8a/librapfi.so" "$OUT/stage/lib/arm64-v8a/librapfi.so"
-  EXTRA_LIBS="$EXTRA_LIBS lib/arm64-v8a/librapfi.so"
-fi
-if [ -f "$PROJ/jniLibs/arm64-v8a/libeleye.so" ]; then
-  cp "$PROJ/jniLibs/arm64-v8a/libeleye.so" "$OUT/stage/lib/arm64-v8a/libeleye.so"
-  EXTRA_LIBS="$EXTRA_LIBS lib/arm64-v8a/libeleye.so"
-fi
 
 cp "$OUT/base.apk" "$OUT/unsigned.apk"
 ( cd "$OUT/stage" && zip -q -X "$OUT/unsigned.apk" classes.dex lib/arm64-v8a/libkatago.so $EXTRA_LIBS )

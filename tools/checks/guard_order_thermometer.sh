@@ -34,6 +34,7 @@ build_and_run() {   # $1=源码根（含 src/ tests/） $2=工作目录
     "$R/src/com/autogo/WinrateChartView.java" "$R/src/com/autogo/WinrateBarView.java" "$R/src/com/autogo/UiTheme.java" \
     "$R/src/com/autogo/MenuActivity.java" "$R/src/com/autogo/Changelog.java" \
     "$R/src/com/autogo/Watermark.java" "$R/src/com/autogo/WinEgg.java" "$R/src/com/autogo/BoardArt.java" \
+    "$R/src/com/autogo/NativeExe.java" \
     "$R/src/com/autogo/XiangqiView.java" "$R/src/com/autogo/XiangqiActivity.java" \
     "$R/src/com/autogo/XiangqiReviewActivity.java" \
     "$R/src/com/autogo/JunqiView.java" "$R/src/com/autogo/JunqiActivity.java" \

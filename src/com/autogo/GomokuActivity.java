@@ -241,19 +241,31 @@ public class GomokuActivity extends android.app.Activity {
 
     /** 「强」档的外部引擎在 nativeLibraryDir 里（和 KataGo 同一套：只有那个目录允许 App 执行）。 */
     private String rapfiPath() {
-        try {
-            return new java.io.File(getApplicationInfo().nativeLibraryDir, "librapfi.so").getAbsolutePath();
-        } catch (RuntimeException e) {
-            return "";
-        }
+        java.io.File f = NativeExe.prepare(this, "engine/rapfi", "librapfi.so");
+        return f == null ? "" : f.getAbsolutePath();
     }
 
-    /** 「强」档是不是真用上了 Rapfi（结果缓存，免得每次查文件）。 */
+    /** Rapfi 到底能不能用（结果缓存）。这里会真的起一次进程握手——
+     *  只查 canExecute() 测不出 Android 的 SELinux exec 限制，会「检查通过、运行时失败」。 */
     private boolean rapfiUsable() {
         if (!rapfiChecked) {
             rapfiChecked = true;
             String p = rapfiPath();
-            rapfiOk = !p.isEmpty() && new java.io.File(p).canExecute();
+            if (p.isEmpty()) {
+                rapfiOk = false;
+            } else {
+                try {
+                    RapfiGomokuEngine probe = new RapfiGomokuEngine(p);
+                    // 空盘自检：能正常走一步才算真的可用
+                    GomokuBoard b = new GomokuBoard(15, false);
+                    probe.setLevel(LocalGomokuAI.FAST);
+                    int mv = probe.genmove(b, GomokuBoard.BLACK);
+                    probe.close();
+                    rapfiOk = mv >= 0;
+                } catch (RuntimeException e) {
+                    rapfiOk = false;
+                }
+            }
         }
         return rapfiOk;
     }

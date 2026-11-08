@@ -33,6 +33,11 @@ public class Context {
     public android.content.pm.ApplicationInfo applicationInfo = new android.content.pm.ApplicationInfo();
     public android.content.pm.ApplicationInfo getApplicationInfo() { return applicationInfo; }
 
+    /** 假 assets：桩测里默认「没有任何 asset」（引擎文件不存在 ⇒ 退回内置 AI）。 */
+    public android.content.res.AssetManager getAssets() {
+        return new android.content.res.AssetManager();
+    }
+
     /** 假系统服务：目前只需要剪贴板。 */
     public Object getSystemService(String name) {
         if (CLIPBOARD_SERVICE.equals(name)) {

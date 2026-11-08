@@ -436,21 +436,31 @@ public class XiangqiActivity extends Activity {
         }
     }
 
-    /** ElephantEye 可执行文件的路径（打包成 lib/arm64-v8a/libeleye.so，同一套 nativeLibraryDir 机制）。 */
+    /** ElephantEye 可执行文件的路径（从 assets 释放到 filesDir，绕开 SELinux exec 限制）。 */
     private String enginePath() {
-        try {
-            return new java.io.File(getApplicationInfo().nativeLibraryDir, "libeleye.so").getAbsolutePath();
-        } catch (RuntimeException e) {
-            return "";
-        }
+        java.io.File f = NativeExe.prepare(this, "engine/eleeye", "libeleye.so");
+        return f == null ? "" : f.getAbsolutePath();
     }
 
-    /** 引擎装了没（结果缓存，免得每次查文件）。 */
+    /** 引擎到底能不能用（结果缓存）。真的起一次进程握手才算数。 */
     private boolean engineUsable() {
         if (!engineChecked) {
             engineChecked = true;
             String p = enginePath();
-            engineOk = !p.isEmpty() && new java.io.File(p).canExecute();
+            if (p.isEmpty()) {
+                engineOk = false;
+            } else {
+                try {
+                    XiangqiEngine probe = new XiangqiEngine(p);
+                    XiangqiBoard b = new XiangqiBoard();
+                    probe.setLevel(XiangqiAI.FAST);
+                    int[] mv = probe.genmove(b);
+                    probe.close();
+                    engineOk = mv != null;
+                } catch (RuntimeException e) {
+                    engineOk = false;
+                }
+            }
         }
         return engineOk;
     }
