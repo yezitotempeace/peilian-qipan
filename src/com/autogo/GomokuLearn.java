@@ -38,6 +38,9 @@ public class GomokuLearn {
     public static final double GOOD_RATE = 0.6;
     /** 经验库最多记多少个局面（超了按「下得最少」的淘汰）。 */
     public static final int MAX_POSITIONS = 20000;
+
+    /** 学习库文件体积上限（2 GiB）。超过就按「下得最少的先丢」裁到上限以内再写盘。 */
+    public static final long MAX_BYTES = 2L * 1024 * 1024 * 1024L;
     /** 默认文件名。 */
     public static final String FILE_NAME = "gomoku-learn.dat";
 
@@ -89,6 +92,8 @@ public class GomokuLearn {
     private final LinkedHashMap<String, LinkedHashMap<Integer, Integer>> blunders = new LinkedHashMap<>();
     private int games;
     private int maxPositions = MAX_POSITIONS;
+    /** 保存前的字符预算：UTF-8 下单字符最多 3 字节，按最坏情况折算。 */
+    private long maxChars = MAX_BYTES / 3;
 
     /** 仅供测试：把容量调小，验证淘汰逻辑。 */
     public void setMaxPositions(int max) {
@@ -332,35 +337,73 @@ public class GomokuLearn {
 
     // ---------- 存盘 ----------
 
+    /** 测试用：直接设字符预算。 */
+    public void setMaxChars(long chars) {
+        if (chars > 0) maxChars = chars;
+    }
+
+    /** 把当前内容拼成一整块（保存与体积裁剪共用）。 */
+    String snapshot() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(BuildInfo.header()).append('\n');
+        sb.append("V1\n");
+        sb.append("games ").append(games).append('\n');
+        for (Map.Entry<String, LinkedHashMap<Integer, MoveStats>> e : table.entrySet()) {
+            sb.append("pos ").append(e.getKey()).append(' ');
+            boolean first = true;
+            for (Map.Entry<Integer, MoveStats> m : e.getValue().entrySet()) {
+                if (!first) sb.append(',');
+                sb.append(m.getKey()).append(':').append(m.getValue().encode());
+                first = false;
+            }
+            sb.append('\n');
+        }
+        for (Map.Entry<String, LinkedHashMap<Integer, Integer>> e : blunders.entrySet()) {
+            sb.append("blu ").append(e.getKey()).append(' ');
+            boolean first = true;
+            for (Map.Entry<Integer, Integer> m : e.getValue().entrySet()) {
+                if (!first) sb.append(',');
+                sb.append(m.getKey()).append(':').append(m.getValue());
+                first = false;
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
+
     public void save(File f) throws IOException {
         File parent = f.getParentFile();
         if (parent != null && !parent.exists()) parent.mkdirs();
+        String content = snapshot();
+        // 体积上限：超了就成批丢掉「下得最少」的局面，再快照一次
+        int guard = 0;
+        while (content.length() > maxChars && !table.isEmpty() && guard++ < 1000) {
+            evictBatch();
+            content = snapshot();
+        }
         try (OutputStream out = new FileOutputStream(f)) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(BuildInfo.header()).append('\n');
-            sb.append("V1\n");
-            sb.append("games ").append(games).append('\n');
+            out.write(content.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    /** 一次淘汰约 10%（至少 1 条）下得最少的局面。 */
+    private void evictBatch() {
+        int before = table.size();
+        int target = Math.max(0, before - Math.max(1, before / 10));
+        while (table.size() > target) {
+            String worst = null;
+            int worstPlays = Integer.MAX_VALUE;
             for (Map.Entry<String, LinkedHashMap<Integer, MoveStats>> e : table.entrySet()) {
-                sb.append("pos ").append(e.getKey()).append(' ');
-                boolean first = true;
-                for (Map.Entry<Integer, MoveStats> m : e.getValue().entrySet()) {
-                    if (!first) sb.append(',');
-                    sb.append(m.getKey()).append(':').append(m.getValue().encode());
-                    first = false;
+                int plays = 0;
+                for (MoveStats st : e.getValue().values()) plays += st.plays;
+                if (plays < worstPlays) {
+                    worstPlays = plays;
+                    worst = e.getKey();
                 }
-                sb.append('\n');
             }
-            for (Map.Entry<String, LinkedHashMap<Integer, Integer>> e : blunders.entrySet()) {
-                sb.append("blu ").append(e.getKey()).append(' ');
-                boolean first = true;
-                for (Map.Entry<Integer, Integer> m : e.getValue().entrySet()) {
-                    if (!first) sb.append(',');
-                    sb.append(m.getKey()).append(':').append(m.getValue());
-                    first = false;
-                }
-                sb.append('\n');
-            }
-            out.write(sb.toString().getBytes(StandardCharsets.UTF_8));
+            if (worst == null) break;
+            table.remove(worst);
+            blunders.remove(worst);
         }
     }
 

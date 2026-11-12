@@ -151,25 +151,61 @@ public final class XiangqiLearn {
 
     // ---------- 持久化 ----------
 
+    /** 学习库文件体积上限（2 GiB）。超过就按「下得最少的先丢」裁到上限以内再写盘。 */
+    public static final long MAX_BYTES = 2L * 1024 * 1024 * 1024L;
+
+    /** 保存前的字符预算：UTF-8 下单字符最多 3 字节，按最坏情况折算。 */
+    private long maxChars = MAX_BYTES / 3;
+
+    /** 测试用：直接设字符预算。 */
+    public void setMaxChars(long chars) {
+        if (chars > 0) {
+            maxChars = chars;
+        }
+    }
+
+    /** 把当前内容拼成一整块（保存与体积裁剪共用）。 */
+    String snapshot() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(BuildInfo.header()).append('\n');
+        sb.append("# games ").append(games).append(' ').append(wins).append(' ')
+                .append(losses).append(' ').append(draws).append('\n');
+        for (Map.Entry<String, Stats> e : table.entrySet()) {
+            Stats s = e.getValue();
+            sb.append(e.getKey()).append('\t').append(s.plays).append(':').append(s.wins)
+                    .append(':').append(s.losses).append(':').append(s.draws).append('\n');
+        }
+        return sb.toString();
+    }
+
     public void save(File f) {
         if (f == null) {
             return;
         }
+        String content = snapshot();
+        int guard = 0;
+        while (content.length() > maxChars && !table.isEmpty() && guard++ < 1000) {
+            evictBatch();
+            content = snapshot();
+        }
         OutputStreamWriter w = null;
         try {
             w = new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8);
-            w.write(BuildInfo.header() + "\n");
-            w.write("# games " + games + " " + wins + " " + losses + " " + draws + "\n");
-            for (Map.Entry<String, Stats> e : table.entrySet()) {
-                Stats s = e.getValue();
-                w.write(e.getKey() + "\t" + s.plays + ":" + s.wins + ":" + s.losses + ":" + s.draws + "\n");
-            }
+            w.write(content);
         } catch (IOException ignored) {
             // 学习库存不下来不影响下棋
         } finally {
             if (w != null) {
                 try { w.close(); } catch (IOException ignored) { }
             }
+        }
+    }
+
+    /** 一次淘汰约 10%（至少 1 条）下得最少的特征。 */
+    private void evictBatch() {
+        int n = Math.max(1, table.size() / 10);
+        for (int i = 0; i < n && !table.isEmpty(); i++) {
+            evictOne();
         }
     }
 

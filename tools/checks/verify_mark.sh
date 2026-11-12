@@ -24,11 +24,11 @@ fail() {
 [ -f "$RES" ] || fail "缺少 res/values/strings.xml"
 
 # 1) 代码侧：编码常量 + 指纹 + 关键方法齐全
-for k in E_AUTHOR E_YEAR E_PRODUCT E_LICENSE E_REPO E_MARK E_TAG E_REV E_SIG E_OWNER E_NAME; do
+for k in E_AUTHOR E_YEAR E_LICENSE E_REPO E_MARK E_TAG E_REV E_SIG E_OWNER E_NAME; do
   grep -q "String $k = " "$SRC" || fail "BuildInfo.java 缺少常量 $k"
 done
 grep -q 'BUILD_TAG = "q7-26-a3"' "$SRC" || fail "构建指纹与预期不符（q7-26-a3）"
-for m in author year product license repo owner repoName mark tag rev sig stamp header aboutText; do
+for m in author year license repo owner repoName mark tag rev sig stamp header; do
   grep -q "static String $m()" "$SRC" || fail "BuildInfo.java 缺少方法 $m()"
 done
 grep -q 'class Check' "$SRC" || fail "BuildInfo.java 缺少内部类 Check"
@@ -63,4 +63,4 @@ grep -q 'BuildInfo.Check.fromOurRepo' "$PROJ/src/com/autogo/UpdateManager.java" 
 grep -q 'EXPECTED_CERT_SHA256' "$PROJ/src/com/autogo/UpdateManager.java" \
   || fail "UpdateManager 缺少安装包签名校验"
 
-echo "标记校验通过：11 个编码常量、4 个资源键、$REFS 个引用点、3 个存档标记、更新来源+签名校验"
+echo "标记校验通过：10 个编码常量、4 个资源键、$REFS 个引用点、3 个存档标记、更新来源+签名校验"

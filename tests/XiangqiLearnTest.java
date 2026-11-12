@@ -113,7 +113,24 @@ public class XiangqiLearnTest {
         }
         chk("越界走法抛异常", true, threw);
 
-        System.out.println("通过 " + pass + " 项，失败 " + fail + " 项");
+        
+        // ---------- 体积上限：预算调小后，写出来的文件必须被裁到预算以内 ----------
+        {
+            XiangqiLearn l = empty();
+            l.setMaxChars(600);
+            for (int i = 0; i < 400; i++) {
+                java.util.List<String> k = new java.util.ArrayList<String>();
+                k.add("key" + i);
+                l.recordGame(k, XiangqiLearn.WIN);
+            }
+            java.io.File capFile = java.io.File.createTempFile("cap", ".dat");
+            capFile.deleteOnExit();
+            l.save(capFile);
+            chk("超预算会自动裁小", true, capFile.length() <= 600 * 3L);
+            chk("裁完还剩数据（不是清空）", true, l.keys() > 0);
+        }
+
+System.out.println("通过 " + pass + " 项，失败 " + fail + " 项");
         if (fail > 0) {
             System.exit(1);
         }

@@ -29,7 +29,7 @@ public class JunqiLearnTest {
         return JunqiLearn.load(new File("/tmp/junqi-learn-empty-" + System.nanoTime() + ".dat"));
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         JunqiLearn learn = empty();
         chk("空库 0 局", 0, learn.games());
         chk("空库 0 特征", 0, learn.keys());
@@ -83,7 +83,24 @@ public class JunqiLearnTest {
         chk("同一步特征稳定", k1, k2);
         chk("不同兵种特征不同", true, k1 != null && !k1.equals(k3));
 
-        System.out.println("通过 " + pass + " 项，失败 " + fail + " 项");
+        
+        // ---------- 体积上限：预算调小后，写出来的文件必须被裁到预算以内 ----------
+        {
+            JunqiLearn l = empty();
+            l.setMaxChars(600);
+            for (int i = 0; i < 400; i++) {
+                java.util.List<String> k = new java.util.ArrayList<String>();
+                k.add("key" + i);
+                l.recordGame(k, JunqiLearn.WIN);
+            }
+            java.io.File capFile = java.io.File.createTempFile("cap", ".dat");
+            capFile.deleteOnExit();
+            l.save(capFile);
+            chk("超预算会自动裁小", true, capFile.length() <= 600 * 3L);
+            chk("裁完还剩数据（不是清空）", true, l.keys() > 0);
+        }
+
+System.out.println("通过 " + pass + " 项，失败 " + fail + " 项");
         if (fail > 0) {
             System.exit(1);
         }

@@ -35,7 +35,6 @@ public final class BuildInfo {
 
     private static final String E_AUTHOR = "eWV6aXRvdGVtcGVhY2U=";
     private static final String E_YEAR = "MjAyNg==";
-    private static final String E_PRODUCT = "6Zmq57uD5qOL55uY";
     private static final String E_LICENSE = "QUdQTC0zLjAtb25seQ==";
     private static final String E_REPO = "aHR0cHM6Ly9naXRodWIuY29tL3lleml0b3RlbXBlYWNlL3BlaWxpYW4tcWlwYW4=";
     private static final String E_MARK = "UEVJTElBTi1RSVBBTg==";
@@ -59,11 +58,6 @@ public final class BuildInfo {
     /** 起始年份。 */
     public static String year() {
         return dec(E_YEAR);
-    }
-
-    /** 产品名。 */
-    public static String product() {
-        return dec(E_PRODUCT);
     }
 
     /** 许可标识。 */
@@ -106,11 +100,6 @@ public final class BuildInfo {
         return dec(E_SIG);
     }
 
-    /** 一句话归属行（关于页用；界面里正常展示，不属于隐藏项）。 */
-    public static String line() {
-        return "Copyright (C) " + year() + " " + author() + " · " + license();
-    }
-
     /** 存档格式戳：写入与读取都比对它。 */
     public static String stamp() {
         return mark() + "/" + license() + "/" + year() + "/" + author();
@@ -119,17 +108,6 @@ public final class BuildInfo {
     /** 存档头行。 */
     public static String header() {
         return "# " + stamp();
-    }
-
-    /** 关于页正文。 */
-    public static String aboutText() {
-        return product() + " · " + year() + "\n"
-                + "版权所有 (C) " + year() + " " + author() + "\n"
-                + "许可：" + license() + "\n"
-                + repo() + "\n\n"
-                + "本程序为个人学习作品，仅供学习、研究与自娱，禁止任何商业用途。\n"
-                + "随包第三方引擎（KataGo / Rapfi / ElephantEye）各遵循其原有许可，"
-                + "详见仓库 THIRD-PARTY-NOTICES.md。";
     }
 
     /** Base64 → 字符串。失败返回空串（不让自检把 App 弄崩）。 */

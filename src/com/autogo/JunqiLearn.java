@@ -171,6 +171,33 @@ public final class JunqiLearn {
 
     // ---------- 持久化 ----------
 
+    /** 学习库文件体积上限（2 GiB）。超过就按「下得最少的先丢」裁到上限以内再写盘。 */
+    public static final long MAX_BYTES = 2L * 1024 * 1024 * 1024L;
+
+    /** 保存前的字符预算：UTF-8 下单字符最多 3 字节，按最坏情况折算（不做真实编码，省内存）。 */
+    private long maxChars = MAX_BYTES / 3;
+
+    /** 测试用：直接设字符预算。 */
+    public void setMaxChars(long chars) {
+        if (chars > 0) {
+            maxChars = chars;
+        }
+    }
+
+    /** 把当前内容拼成一整块（保存与体积裁剪共用）。 */
+    String snapshot() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(BuildInfo.header()).append('\n');
+        sb.append("games=").append(games).append('\n');
+        sb.append("wins=").append(wins).append('\n');
+        sb.append("losses=").append(losses).append('\n');
+        sb.append("draws=").append(draws).append('\n');
+        for (Map.Entry<String, Stats> e : table.entrySet()) {
+            sb.append(e.getKey()).append('\t').append(e.getValue().encode()).append('\n');
+        }
+        return sb.toString();
+    }
+
     public void save(File f) {
         if (f == null) {
             return;
@@ -179,17 +206,25 @@ public final class JunqiLearn {
         if (parent != null && !parent.exists()) {
             parent.mkdirs();
         }
+        String content = snapshot();
+        // 体积上限：超了就成批丢掉「下得最少」的特征，再快照一次（批量丢，避免逐条 O(n²)）
+        int guard = 0;
+        while (content.length() > maxChars && !table.isEmpty() && guard++ < 1000) {
+            evictBatch();
+            content = snapshot();
+        }
         try (OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8)) {
-            w.write(BuildInfo.header() + "\n");
-            w.write("games=" + games + "\n");
-            w.write("wins=" + wins + "\n");
-            w.write("losses=" + losses + "\n");
-            w.write("draws=" + draws + "\n");
-            for (Map.Entry<String, Stats> e : table.entrySet()) {
-                w.write(e.getKey() + "\t" + e.getValue().encode() + "\n");
-            }
+            w.write(content);
         } catch (IOException ignored) {
             // 学习库写失败不该影响对局
+        }
+    }
+
+    /** 一次淘汰约 10%（至少 1 条）下得最少的特征。 */
+    private void evictBatch() {
+        int n = Math.max(1, table.size() / 10);
+        for (int i = 0; i < n && !table.isEmpty(); i++) {
+            evictOne();
         }
     }
 

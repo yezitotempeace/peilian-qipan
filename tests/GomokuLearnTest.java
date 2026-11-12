@@ -332,6 +332,30 @@ public class GomokuLearnTest {
         checkEq(ai.topMoves(over, GomokuBoard.WHITE, 3).length, 0, "F10 终局后不给候选");
     }
 
+    /** 体积上限：预算调小后写出来的文件必须被裁到预算以内，且不会清空。 */
+    static void testSizeCap() throws Exception {
+        GomokuLearn g = new GomokuLearn();
+        g.setMaxChars(800);
+        // 造很多不同局面：每条手顺 4 手（同一局内点位互不重复），局面各不相同
+        for (int i = 0; i < 300; i++) {
+            int base = (i % 50) * 4;
+            java.util.List<int[]> mv = new java.util.ArrayList<int[]>();
+            mv.add(new int[]{GomokuBoard.BLACK, base});
+            mv.add(new int[]{GomokuBoard.WHITE, base + 1});
+            mv.add(new int[]{GomokuBoard.BLACK, base + 2});
+            mv.add(new int[]{GomokuBoard.WHITE, base + 3});
+            g.recordGame(mv, 15, GomokuBoard.BLACK);
+        }
+        java.io.File f = java.io.File.createTempFile("gomoku-cap", ".dat");
+        f.deleteOnExit();
+        g.save(f);
+        check(f.length() <= 800 * 3L, "G1 超预算会自动裁小（实际 " + f.length() + " 字节）");
+        check(g.positions() > 0, "G2 裁完还剩数据（不是清空）");
+
+        // 上限常量固定 2 GiB
+        checkEq(GomokuLearn.MAX_BYTES, 2L * 1024 * 1024 * 1024L, "G3 体积上限是 2 GiB");
+    }
+
     public static void main(String[] args) throws Exception {
         long t0 = System.currentTimeMillis();
         System.out.println("GomokuLearn 单元测试");
@@ -341,6 +365,7 @@ public class GomokuLearnTest {
         testBlunders();
         testStorage();
         testTopMoves();
+        testSizeCap();
         System.out.println("通过 " + passed + " 项，失败 " + failures.size() + " 项（"
                 + (System.currentTimeMillis() - t0) + " ms）");
         if (!failures.isEmpty()) System.exit(1);
