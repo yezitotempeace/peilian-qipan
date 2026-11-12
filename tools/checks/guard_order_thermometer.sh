@@ -24,7 +24,7 @@ build_and_run() {   # $1=源码根（含 src/ tests/） $2=工作目录
     "$R/src/com/autogo/Board.java" "$R/src/com/autogo/Palette.java" "$R/src/com/autogo/Theme.java" "$R/src/com/autogo/LayoutMath.java" \
     "$R/src/com/autogo/Screen.java" "$R/src/com/autogo/GomokuBoard.java" "$R/src/com/autogo/GomokuEngine.java" \
     "$R/src/com/autogo/GomokuReview.java" "$R/src/com/autogo/LocalGomokuAI.java" "$R/src/com/autogo/RapfiGomokuEngine.java" \
-    "$R/src/com/autogo/GomokuLearn.java" "$R/src/com/autogo/AnimMath.java" "$R/src/com/autogo/XiangqiBoard.java" \
+    "$R/src/com/autogo/BuildInfo.java" "$R/src/com/autogo/IntegrityGuard.java" "$R/src/com/autogo/Eula.java" "$R/src/com/autogo/GomokuLearn.java" "$R/src/com/autogo/AnimMath.java" "$R/src/com/autogo/XiangqiBoard.java" \
     "$R/src/com/autogo/XiangqiAI.java" "$R/src/com/autogo/XiangqiEngineApi.java" "$R/src/com/autogo/XiangqiEngine.java" \
     "$R/src/com/autogo/XiangqiLearn.java" "$R/src/com/autogo/XiangqiReview.java" \
     "$R/src/com/autogo/JunqiBoard.java" "$R/src/com/autogo/JunqiAI.java" "$R/src/com/autogo/JunqiLearn.java" "$R/src/com/autogo/JunqiReveal.java" "$R/src/com/autogo/Game2048.java" || return 1

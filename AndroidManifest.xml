@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.autogo"
-    android:versionCode="189"
-    android:versionName="1.20261021.189">
+    android:versionCode="198"
+    android:versionName="1.20261112.198">
 
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34" />
 
@@ -17,9 +17,9 @@
         android:extractNativeLibs="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
-        <!-- 启动入口：先选棋种，再由它分流到围棋 / 五子棋 -->
+        <!-- 启动入口：先过用户协议（学习版声明），同意后才进主菜单 -->
         <activity
-            android:name=".MenuActivity"
+            android:name=".EulaActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|fontScale|density|locale|layoutDirection|colorMode">
             <intent-filter>
@@ -27,6 +27,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 主菜单：选棋种，再分流到各对局页 -->
+        <activity
+            android:name=".MenuActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|fontScale|density|locale|layoutDirection|colorMode" />
 
         <activity
             android:name=".MainActivity"

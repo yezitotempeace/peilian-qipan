@@ -158,6 +158,7 @@ public final class XiangqiLearn {
         OutputStreamWriter w = null;
         try {
             w = new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8);
+            w.write(BuildInfo.header() + "\n");
             w.write("# games " + games + " " + wins + " " + losses + " " + draws + "\n");
             for (Map.Entry<String, Stats> e : table.entrySet()) {
                 Stats s = e.getValue();
@@ -172,6 +173,26 @@ public final class XiangqiLearn {
         }
     }
 
+    /** 头部戳是否可接受（老存档无戳也放行，避免升级时丢掉用户的学习记录）。 */
+    static boolean headerAcceptable(BufferedReader r) {
+        try {
+            r.mark(4096);
+            String first = r.readLine();
+            r.reset();
+            if (first == null) {
+                return true;
+            }
+            String t = first.trim();
+            // 只有形如 "# XXX/YYY/..." 的才是我们的戳；其它（老格式 "# games ..."）一律放行
+            if (t.startsWith("# ") && t.indexOf('/') > 0) {
+                return BuildInfo.Check.stamp(t);
+            }
+            return true;
+        } catch (IOException e) {
+            return true;   // 读不动就当老存档处理，不让学习库把 App 拦下来
+        }
+    }
+
     public static XiangqiLearn load(File f) {
         XiangqiLearn l = new XiangqiLearn();
         if (f == null || !f.isFile()) {
@@ -180,6 +201,10 @@ public final class XiangqiLearn {
         BufferedReader r = null;
         try {
             r = new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8));
+            // 头部戳校验：有戳但对不上 ⇒ 不是本程序写的，拒绝加载；没有戳的是老存档，照常读
+            if (!headerAcceptable(r)) {
+                return l;
+            }
             String line;
             while ((line = r.readLine()) != null) {
                 line = line.trim();

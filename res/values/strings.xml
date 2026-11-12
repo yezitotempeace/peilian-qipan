@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">陪练棋盘</string>
+    <!-- 构建元数据。键名与取值刻意做成中性形态：含义见本地交接文档 HANDOVER.md 第 4 节。
+         运行期由 Copyright.Mark.verify 与代码常量比对；被改动或删除即视为成品被修改。 -->
+    <string name="cfg_tag">PQ</string>
+    <string name="cfg_rev">26</string>
+    <string name="cfg_sig">a3-r7</string>
+    <string name="cfg_src">github.com/yezitotempeace/peilian-qipan</string>
 </resources>

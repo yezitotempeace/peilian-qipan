@@ -337,6 +337,7 @@ public class GomokuLearn {
         if (parent != null && !parent.exists()) parent.mkdirs();
         try (OutputStream out = new FileOutputStream(f)) {
             StringBuilder sb = new StringBuilder();
+            sb.append(BuildInfo.header()).append('\n');
             sb.append("V1\n");
             sb.append("games ").append(games).append('\n');
             for (Map.Entry<String, LinkedHashMap<Integer, MoveStats>> e : table.entrySet()) {
@@ -376,6 +377,12 @@ public class GomokuLearn {
             return g;
         }
         String text = new String(raw, StandardCharsets.UTF_8);
+        // 头部戳校验：有戳但对不上 ⇒ 拒绝加载（不是本程序写的）；无戳的老存档照常读
+        String firstLine = text.isEmpty() ? null : text.split("\n", 2)[0].trim();
+        if (firstLine != null && firstLine.startsWith("# ") && firstLine.indexOf('/') > 0
+                && !BuildInfo.Check.stamp(firstLine)) {
+            return g;
+        }
         for (String line : text.split("\n")) {
             String s = line.trim();
             if (s.isEmpty()) continue;

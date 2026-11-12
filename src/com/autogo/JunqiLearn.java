@@ -180,6 +180,7 @@ public final class JunqiLearn {
             parent.mkdirs();
         }
         try (OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8)) {
+            w.write(BuildInfo.header() + "\n");
             w.write("games=" + games + "\n");
             w.write("wins=" + wins + "\n");
             w.write("losses=" + losses + "\n");
@@ -207,6 +208,16 @@ public final class JunqiLearn {
         }
         try (BufferedReader r = new BufferedReader(
                 new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8))) {
+            // 头部戳校验：有戳但对不上 ⇒ 拒绝加载；无戳的老存档照常读
+            r.mark(4096);
+            String probe = r.readLine();
+            r.reset();
+            if (probe != null) {
+                String t = probe.trim();
+                if (t.startsWith("# ") && t.indexOf('/') > 0 && !BuildInfo.Check.stamp(t)) {
+                    return learn;
+                }
+            }
             String line;
             while ((line = r.readLine()) != null) {
                 line = line.trim();

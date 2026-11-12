@@ -57,6 +57,9 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/src/com/autogo/Game2048.java" \
    "$PROJ/src/com/autogo/SudokuGame.java" \
    "$PROJ/src/com/autogo/RapfiGomokuEngine.java" \
+   "$PROJ/src/com/autogo/Eula.java" \
+   "$PROJ/src/com/autogo/BuildInfo.java" \
+   "$PROJ/src/com/autogo/IntegrityGuard.java" \
    "$PROJ/tests/BoardTest.java" \
    "$PROJ/tests/GtpTest.java" \
    "$PROJ/tests/GomokuTest.java" \
@@ -74,6 +77,8 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/tests/SudokuTest.java" \
    "$PROJ/tests/XiangqiTrendTest.java" \
    "$PROJ/tests/RapfiGomokuTest.java" \
+   "$PROJ/tests/EulaTest.java" \
+   "$PROJ/tests/IntegrityGuardTest.java" \
    "$OUT/src/"
 cp "$PROJ/tests/fixture_analyze.txt" "$OUT/"
 
@@ -89,6 +94,8 @@ java -cp "$OUT/classes" GomokuAITest
 java -cp "$OUT/classes" GomokuReviewTest
 java -cp "$OUT/classes" GomokuLearnTest
 java -cp "$OUT/classes" XiangqiTest
+java -cp "$OUT/classes" EulaTest
+java -cp "$OUT/classes" IntegrityGuardTest
 java -cp "$OUT/classes" XiangqiAITest
 java -cp "$OUT/classes" XiangqiLearnTest
 java -cp "$OUT/classes" XiangqiReviewTest

@@ -39,6 +39,13 @@ public final class UpdateManager {
     /** 国内可直连的 GitHub 代理；403/超时时改用，下载也走它。 */
     public static final String PROXY = "https://gh-proxy.com/";
     public static final String REPO_PAGE = "https://github.com/yezitotempeace/peilian-qipan/releases";
+    /**
+     * 本程序的签名证书指纹（SHA-256，小写无冒号）。
+     * 下载回来的安装包必须由同一把证书签名才允许安装 —— 换过包的 APK 一律拒绝。
+     */
+    public static final String EXPECTED_CERT_SHA256 =
+            "2a8de3ac837cabb945a4fb3bd952e7a28e555cb936c3bb064b4a4d2e08d90223";
+
     public static final String ACTION_INSTALL_STATUS = "com.autogo.UPDATE_INSTALL_STATUS";
     public static final String EXTRA_FILE = "update_file";
 
@@ -128,6 +135,10 @@ public final class UpdateManager {
         String url = firstApkUrl(json);
         if (code <= 0 || url.length() == 0) {
             throw new IllegalStateException("release 里没有可用的 APK");
+        }
+        // 来源校验：不是本仓库的 release 资产，一律不认（防止被改成指向别人的仓库）
+        if (!BuildInfo.Check.fromOurRepo(url)) {
+            throw new IllegalStateException("更新来源不是官方仓库，已拒绝");
         }
         return new Info(code, version, notes, url, code <= currentCode);
     }
@@ -235,8 +246,58 @@ public final class UpdateManager {
         }, "update-download").start();
     }
 
+    /**
+     * 读出 APK 的签名证书 SHA-256（小写十六进制）。读不到返回空串。
+     * API 28+ 用 getPackageArchiveInfo(GET_SIGNING_CERTIFICATES)，26/27 退回 GET_SIGNATURES。
+     */
+    static String certSha256(Activity activity, File apk) {
+        try {
+            android.content.pm.PackageManager pm = activity.getPackageManager();
+            android.content.pm.PackageInfo pi;
+            byte[] cert;
+            if (Build.VERSION.SDK_INT >= 28) {
+                pi = pm.getPackageArchiveInfo(apk.getAbsolutePath(),
+                        android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES);
+                if (pi == null || pi.signingInfo == null) {
+                    return "";
+                }
+                android.content.pm.Signature[] sigs = pi.signingInfo.getApkContentsSigners();
+                if (sigs == null || sigs.length == 0) {
+                    return "";
+                }
+                cert = sigs[0].toByteArray();
+            } else {
+                pi = pm.getPackageArchiveInfo(apk.getAbsolutePath(),
+                        android.content.pm.PackageManager.GET_SIGNATURES);
+                if (pi == null || pi.signatures == null || pi.signatures.length == 0) {
+                    return "";
+                }
+                cert = pi.signatures[0].toByteArray();
+            }
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(cert);
+            StringBuilder sb = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                sb.append(Character.forDigit((b >> 4) & 0xF, 16));
+                sb.append(Character.forDigit(b & 0xF, 16));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     private static void install(Activity activity, File apk) {
         try {
+            // 先验签名：换过包的 APK（哪怕版本号更高）一律不装
+            String cert = certSha256(activity, apk);
+            if (!EXPECTED_CERT_SHA256.equalsIgnoreCase(cert)) {
+                Toast.makeText(activity,
+                        "安装包签名不符（不是官方版本），已拒绝安装", Toast.LENGTH_LONG).show();
+                //noinspection ResultOfMethodCallIgnored
+                apk.delete();
+                return;
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                     && !activity.getPackageManager().canRequestPackageInstalls()) {
                 Toast.makeText(activity, "请先允许本应用安装未知应用，再点更新", Toast.LENGTH_LONG).show();

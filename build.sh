@@ -55,6 +55,10 @@ for pair in "aapt2=$AAPT2" "zipalign=$ZIPALIGN" "d8=$D8" "apksigner=$APKSIGNER";
 done
 [ -f "$PLATFORM" ] || { echo "缺少 android.jar: $PLATFORM"; exit 1; }
 
+echo "== 0/7 标记校验 =="
+# 归属标记是结构性依赖：缺了/对不上就不往下走（详见本地 HANDOVER.md）
+bash "$PROJ/tools/checks/verify_mark.sh" || exit 1
+
 echo "== 1/7 生成图标 =="
 python3 "$PROJ/make_icons.py"
 
