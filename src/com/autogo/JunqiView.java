@@ -7,6 +7,7 @@ package com.autogo;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
@@ -38,6 +39,7 @@ public class JunqiView extends View {
     private long animStart;
     private int animFrom = -1;
     private int animTo = -1;
+    private long animDuration = AnimMath.MOVE_MS;
     /** 一条翻牌动画：起点 long 时间戳（float 存毫秒会丢精度，动画会瞬间结束或卡住）。 */
     private static final class FlipAnim {
         final int row, col, color, type;
@@ -178,6 +180,11 @@ public class JunqiView extends View {
         if (animationsEnabled && fromRow >= 0 && toRow >= 0 && nf != nt) {
             animFrom = lastFrom;
             animTo = lastTo;
+            // 时长分层：短步快、铁路长滑行慢、吃子再久一点 —— 每一手都看得清
+            int cheb = Math.max(Math.abs(toRow - fromRow), Math.abs(toCol - fromCol));
+            animDuration = 320L + 70L * cheb;
+            if (board != null && board.lastWasFight()) animDuration += 150L;
+            animDuration = Math.min(animDuration, 720L);
             animStart = System.currentTimeMillis();
             animActive = true;
         } else {
@@ -374,7 +381,7 @@ public class JunqiView extends View {
         int animPoint = -1;
         float animP = 1f;
         if (animActive) {
-            animP = AnimMath.progress(animStart, System.currentTimeMillis(), AnimMath.MOVE_MS);
+            animP = AnimMath.progress(animStart, System.currentTimeMillis(), animDuration);
             if (animP >= 1f) {
                 animActive = false;
             } else {
@@ -416,7 +423,7 @@ public class JunqiView extends View {
                 float gy = AnimMath.lerp(cy(animFrom / cols), cy(tr), e);
                 // 微跳跃：棋子沿抛物线抬起，影子留在地面并变淡
                 float hopFrac = (float) Math.sin(Math.PI * e);
-                float hop = hopFrac * ch * 1.1f;
+                float hop = hopFrac * ch * 0.55f;
                 shadow.setColor(((int) (0x50 * (1f - 0.65f * hopFrac)) << 24));
                 tmpR3.set(x - stationW * 0.40f, gy + stationH * 0.28f,
                         x + stationW * 0.40f, gy + stationH * 0.50f);
@@ -502,38 +509,75 @@ public class JunqiView extends View {
 
     private void drawPiece(Canvas canvas, float x, float y, int color, int type, boolean back, float scl) {
         float pw = stationW * 0.94f * scl, ph = stationH * 0.94f * scl;
-        float radius = ph * 0.26f;
+        float radius = ph * 0.24f;
         boolean red = color == JunqiBoard.RED;
-        int edge = dark ? (red ? 0xFF8A2A26 : 0xFF5D7A99) : 0xFF2E1F10;
-        int body = dark ? (red ? 0xFFD64541 : 0xFF2C3E50) : (red ? 0xFFB5483A : 0xFF4A3B2C);
-        int inner = dark ? (red ? 0xFFF07E76 : 0xFF46627A) : (red ? 0xFFE8C9A8 : 0xFFD8C6A8);
-        int txt = dark ? 0xFFFFFFFF : (red ? 0xFF7A2A20 : 0xFF2E1F10);
-        pieceLine.setStrokeWidth(Math.max(1.5f, cw * 0.018f));
-        pieceLine.setColor(edge);
-        face.setStyle(Paint.Style.FILL);
-        face.setColor(edge);
-        tmpR1.set(x - pw / 2f, y - ph / 2f, x + pw / 2f, y + ph / 2f);
-        canvas.drawRoundRect(tmpR1, radius, radius, face);
-        face.setColor(back ? (dark ? 0xFF546E7A : 0xFF9E8F72) : body);
-        tmpR2.set(x - pw * 0.45f, y - ph * 0.42f, x + pw * 0.45f, y + ph * 0.42f);
-        canvas.drawRoundRect(tmpR2, radius * 0.7f, radius * 0.7f, face);
-        if (!back) {
-            // 内框高光：让棋子更有立体感（原来 inner 色定义了没用上）
-            pieceLine.setStrokeWidth(Math.max(1f, cw * 0.010f));
-            pieceLine.setColor(inner);
-            tmpR2.set(x - pw * 0.34f, y - ph * 0.30f, x + pw * 0.34f, y + ph * 0.30f);
-            canvas.drawRoundRect(tmpR2, radius * 0.45f, radius * 0.45f, pieceLine);
+
+        // 柔和配色：棋身用米色 / 深木色，红蓝只出现在文字与一圈细边线上，不再整块大红大蓝
+        int faceTop, faceBot, edge, txtCol, dotCol;
+        if (dark) {
+            faceTop = 0xFF6E5C44; faceBot = 0xFF453827;
+            edge    = 0xFF2B2318;
+            txtCol  = red ? 0xFFF0B4A8 : 0xFFA9C6E2;
+            dotCol  = 0xFF8FA3B8;
+        } else {
+            faceTop = 0xFFFCF3DE; faceBot = 0xFFE4CFA4;
+            edge    = 0xFFB0986F;
+            txtCol  = red ? 0xFFA93A2E : 0xFF2F5C8A;
+            dotCol  = 0xFF9C8B6A;
         }
         if (back) {
-            face.setColor(dark ? 0xFF7A8FA3 : 0xFF6B5740);
-            canvas.drawCircle(x, y, ph * 0.22f, face);
+            faceTop = dark ? 0xFF57636E : 0xFFDAC89F;
+            faceBot = dark ? 0xFF3D4954 : 0xFFC2AC83;
+            dotCol  = dark ? 0xFF8FA3B8 : 0xFF9C8B6A;
+        }
+
+        // 投影：棋子压在盘面上的一圈软阴影（立体感）
+        shadow.setStyle(Paint.Style.FILL);
+        shadow.setColor(0x2E000000);
+        tmpR3.set(x - pw * 0.50f, y - ph * 0.30f + ph * 0.14f,
+                  x + pw * 0.50f, y + ph * 0.62f + ph * 0.14f);
+        canvas.drawRoundRect(tmpR3, radius, radius, shadow);
+
+        // 侧面（深一档）：做出厚度
+        face.setStyle(Paint.Style.FILL);
+        face.setColor(edge);
+        tmpR1.set(x - pw / 2f, y - ph / 2f + ph * 0.07f,
+                  x + pw / 2f, y + ph / 2f + ph * 0.07f);
+        canvas.drawRoundRect(tmpR1, radius, radius, face);
+
+        // 正面：上浅下深（两段叠出渐变，立体感；不依赖 Shader，桩测环境也能画）
+        face.setStyle(Paint.Style.FILL);
+        face.setColor(faceBot);
+        tmpR1.set(x - pw / 2f, y - ph / 2f, x + pw / 2f, y + ph / 2f);
+        canvas.drawRoundRect(tmpR1, radius, radius, face);
+        face.setColor(faceTop);
+        tmpR1.set(x - pw * 0.46f, y - ph * 0.46f, x + pw * 0.46f, y + ph * 0.14f);
+        canvas.drawRoundRect(tmpR1, radius * 0.85f, radius * 0.85f, face);
+
+        // 顶部受光高光 + 底部收暗
+        pieceLine.setStrokeWidth(Math.max(1f, ph * 0.05f));
+        pieceLine.setColor(0x59FFFFFF);
+        tmpR2.set(x - pw * 0.38f, y - ph * 0.38f, x + pw * 0.38f, y + ph * 0.06f);
+        canvas.drawRoundRect(tmpR2, radius * 0.8f, radius * 0.8f, pieceLine);
+        pieceLine.setColor(0x24000000);
+        tmpR2.set(x - pw * 0.38f, y + ph * 0.08f, x + pw * 0.38f, y + ph * 0.38f);
+        canvas.drawRoundRect(tmpR2, radius * 0.8f, radius * 0.8f, pieceLine);
+
+        // 细边线：红 / 蓝只在这里轻轻一圈
+        pieceLine.setStrokeWidth(Math.max(1f, ph * 0.035f));
+        pieceLine.setColor(edge);
+        tmpR2.set(x - pw * 0.46f, y - ph * 0.46f, x + pw * 0.46f, y + ph * 0.46f);
+        canvas.drawRoundRect(tmpR2, radius, radius, pieceLine);
+
+        // 文字 / 背面圆点
+        if (back) {
+            face.setStyle(Paint.Style.FILL);
+            face.setColor(dotCol);
+            canvas.drawCircle(x, y, ph * 0.18f, face);
         } else {
-            String label = JunqiBoard.typeName(type);
-            if (label != null && label.length() > 0) {
-                text.setColor(txt);
-                text.setTextSize(ph * 0.72f);
-                canvas.drawText(label, x, y + ph * 0.23f, text);
-            }
+            text.setColor(txtCol);
+            text.setTextSize(ph * 0.60f);
+            canvas.drawText(JunqiBoard.typeName(type), x, y + ph * 0.21f, text);
         }
     }
 

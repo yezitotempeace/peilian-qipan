@@ -9,7 +9,7 @@ package com.autogo;
 public final class AnimMath {
 
     /** 普通走子动画时长（毫秒）。 */
-    public static final long MOVE_MS = 460;
+    public static final long MOVE_MS = 360;   // 基础时长；实际会按滑行距离与是否吃子再加成
     /** 吃子闪光时长。 */
     public static final long FLASH_MS = 560;
     /** 军棋吃子「背面→正面」翻牌时长。 */
