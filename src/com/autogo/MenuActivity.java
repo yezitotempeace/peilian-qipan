@@ -23,12 +23,13 @@ import android.content.Intent;
 import android.net.Uri;
 
 /**
- * 启动选择页：从这里选「围棋 / 五子棋 / 象棋 / 军棋 / 2048 / 数独」。
+ * 启动选择页：从这里选「围棋 / 五子棋 / 象棋 / 黑白棋 / 军棋 / 2048 / 数独」。
  *
  * 这一页只负责分流，不碰任何一方的对局逻辑：
  *   - 围棋 → {@link MainActivity}（原有对局界面，一行没改）
  *   - 五子棋 → {@link GomokuActivity}
  *   - 象棋 → {@link XiangqiActivity}
+ *   - 黑白棋 → {@link ReversiActivity}
  *   - 军棋 → {@link JunqiActivity}
  *   - 2048 → {@link Game2048Activity}
  *   - 数独 → {@link SudokuActivity}
@@ -221,6 +222,14 @@ public class MenuActivity extends Activity {
         });
         root.addView(xiangqi, buttonRow(0, 10));
 
+        Button reversi = bigButton("黑白棋", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MenuActivity.this, ReversiActivity.class));
+            }
+        });
+        root.addView(reversi, buttonRow(0, 10));
+
         Button junqi = bigButton("军　棋", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -246,7 +255,13 @@ public class MenuActivity extends Activity {
         root.addView(sudoku, buttonRow(0, 10));
 
         TextView hint = new TextView(this);
-        hint.setText("围棋：9 / 13 / 19 路 · KataGo 引擎\n五子棋：13 / 15 / 19 路 · 内置 AI\n象棋：内置三档 AI\n军棋：暗棋 / 翻棋 · 三档棋力\n2048：4×4 数字合并\n数独：9×9 逻辑填数 · 三档");
+        hint.setText("围棋：9 / 13 / 19 路 · KataGo 引擎\n"
+                + "五子棋：13 / 15 / 19 路 · 15 路走 Rapfi 引擎\n"
+                + "象棋 · ElephantEye（象眼）引擎\n"
+                + "黑白棋：8×8 · 内置 AI\n"
+                + "军棋：暗棋 / 翻棋 · 内置 AI\n"
+                + "2048：4×4 数字合并\n"
+                + "数独：9×9 逻辑填数 · 三档");
         hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         hint.setTextColor(palette.textDim);
         hint.setGravity(Gravity.CENTER);

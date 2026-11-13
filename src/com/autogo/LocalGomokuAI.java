@@ -24,7 +24,7 @@ public class LocalGomokuAI implements GomokuEngine {
     private static final int[][] LEVELS = {
         {2, 8, 20000},
         {4, 10, 120000},
-        {4, 14, 400000},
+        {6, 16, 1500000},
     };
 
     /** 「已成五」的量级：比任何棋型都大，配合 depth 用来偏好更快的胜 / 更慢的败。 */

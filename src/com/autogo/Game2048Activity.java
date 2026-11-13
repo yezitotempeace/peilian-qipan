@@ -162,6 +162,7 @@ public class Game2048Activity extends Activity {
         root.addView(hint, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         Watermark.wrap(this, root, palette, 6);
+        RulesHelp.attach(this, palette, "【目的】把相同数字合并，凑出 2048（还能继续往上合）。\n【操作】上下左右滑动，所有数字朝那个方向移动。\n【合并】相同数字撞在一起就合并成它们的和；一次滑动里每格只合并一次。\n【出新】每次滑动后，空格里会冒出一个 2 或 4。\n【结束】棋盘填满、且没有相邻相同的数字可合并时结束。\n【技巧】把最大的数固定在一个角，别把它从角上挪开。");
     }
 
     private TextView scoreLabel(String s) {

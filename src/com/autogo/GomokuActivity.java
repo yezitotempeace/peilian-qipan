@@ -760,6 +760,7 @@ public class GomokuActivity extends android.app.Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         Watermark.wrap(this, scroll, palette, 6);
 
+        RulesHelp.attach(this, palette, "【目的】先把自己的五颗子连成一条直线就赢。\n【方向】横、竖、两条斜线都可以。\n【落子】黑先白后，下在交叉点上，落子后不能移动。\n【棋盘】15×15（另有 13、19 路可选）。\n【提示】15 路的「强」档用的是 Rapfi 引擎，很难赢；想练手先用「普通」档。");
         topChrome = new LinearLayout(this);
         topChrome.setOrientation(LinearLayout.VERTICAL);
         topChrome.setGravity(Gravity.CENTER_HORIZONTAL);

@@ -151,6 +151,7 @@ public class SudokuActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         Watermark.wrap(this, root, palette, 6);
+        RulesHelp.attach(this, palette, "【目的】把 9×9 填满：每行、每列、每个 3×3 宫都要是 1–9 且不重复。\n【规则】已给出的数字不能改，只能填空格。\n【技巧】先找某行/列/宫里只剩一种可能数字的格子下手。\n【难度】空格越多越难。");
     }
 
     private View buildHeader() {

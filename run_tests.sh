@@ -50,6 +50,7 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/src/com/autogo/XiangqiEngine.java" \
    "$PROJ/src/com/autogo/XiangqiLearn.java" \
    "$PROJ/src/com/autogo/XiangqiReview.java" \
+   "$PROJ/src/com/autogo/ReversiBoard.java" "$PROJ/src/com/autogo/ReversiAi.java" \
    "$PROJ/src/com/autogo/JunqiBoard.java" \
    "$PROJ/src/com/autogo/JunqiAI.java" "$PROJ/src/com/autogo/JunqiLearn.java" \
    "$PROJ/src/com/autogo/GomokuLearn.java" \
@@ -72,6 +73,7 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/tests/XiangqiReviewTest.java" \
    "$PROJ/tests/AnimMathTest.java" \
    "$PROJ/tests/Junqi2Test.java" "$PROJ/tests/JunqiAiTest.java" "$PROJ/tests/JunqiLearnTest.java" \
+   "$PROJ/tests/ReversiTest.java" \
    "$PROJ/tests/Game2048Test.java" \
    "$PROJ/tests/SudokuTest.java" \
    "$PROJ/tests/XiangqiTrendTest.java" \
@@ -99,6 +101,7 @@ java -cp "$OUT/classes" XiangqiAITest
 java -cp "$OUT/classes" XiangqiLearnTest
 java -cp "$OUT/classes" XiangqiReviewTest
 java -cp "$OUT/classes" AnimMathTest
+java -cp "$OUT/classes" ReversiTest  # 黑白棋规则
 java -cp "$OUT/classes" Junqi2Test   # 军棋规则（5×12 / 铁路 / 行营 / 山界 / 战斗 / 亮子 / 胜负）
 java -cp "$OUT/classes" JunqiAiTest  # 军棋 AI（合法性 / 吃子选择 / 避强击弱 / 扛旗 / 难度）
 java -cp "$OUT/classes" JunqiLearnTest
@@ -161,7 +164,7 @@ if [ -d "$PROJ/tests/ui/sub" ]; then
   exit 1
 fi
 mkdir -p "$OUT/ui/src" "$OUT/ui/fake"
-cp "$PROJ/src/com/autogo/MenuActivity.java" "$PROJ/src/com/autogo/GomokuActivity.java" \
+cp "$PROJ/src/com/autogo/MenuActivity.java" "$PROJ/src/com/autogo/GomokuActivity.java" "$PROJ/src/com/autogo/RulesHelp.java" \
    "$PROJ/src/com/autogo/Watermark.java" "$PROJ/src/com/autogo/WinEgg.java" "$PROJ/src/com/autogo/BoardArt.java" \
    "$PROJ/src/com/autogo/NativeExe.java" \
    "$PROJ/src/com/autogo/XiangqiView.java" "$PROJ/src/com/autogo/XiangqiActivity.java" \
@@ -185,8 +188,8 @@ javac -encoding UTF-8 -nowarn -d "$OUT/ui/fakecls" $(find "$OUT/ui/fake" -name '
 # 围棋对局页（1800+ 行、拖着一堆只在真机上存在的 API）编不进桩测，这里只放一个空壳 ——
 # 探针断的是「点了按钮跳到哪个类名」，不测那一页的行为。
 mkdir -p "$OUT/ui/stub"
-cp "$PROJ/tests/ui/stub/com/autogo/MainActivity.java" "$OUT/ui/stub/"
-javac -encoding UTF-8 -nowarn -d "$OUT/ui/stubcls" -cp "$OUT/ui/fakecls:$ANDROID_JAR" "$OUT/ui/stub/MainActivity.java"
+cp "$PROJ/tests/ui/stub/com/autogo/MainActivity.java" "$PROJ/tests/ui/stub/com/autogo/ReversiActivity.java" "$OUT/ui/stub/"
+javac -encoding UTF-8 -nowarn -d "$OUT/ui/stubcls" -cp "$OUT/ui/fakecls:$ANDROID_JAR" "$OUT/ui/stub/MainActivity.java" "$OUT/ui/stub/ReversiActivity.java"
 javac -encoding UTF-8 -nowarn -d "$OUT/ui/realcls" -cp "$OUT/ui/fakecls:$OUT/ui/stubcls:$OUT/classes:$ANDROID_JAR" "$OUT"/ui/src/*.java
 javac -encoding UTF-8 -nowarn -d "$OUT/ui/testcls" -cp "$OUT/ui/fakecls:$OUT/ui/realcls:$OUT/ui/stubcls:$OUT/classes:$ANDROID_JAR" \
   "$PROJ/tests/ui/Driver95.java" "$PROJ/tests/ui/ViewProbe.java" "$PROJ/tests/ui/ReviewProbe.java" \

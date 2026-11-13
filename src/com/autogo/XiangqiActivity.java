@@ -241,6 +241,7 @@ public class XiangqiActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
         Watermark.wrap(this, scroll, palette, 6);
+        RulesHelp.attach(this, palette, "【目的】将死对方的将（帅），或让对方无棋可走。\n【车】横竖直走，不限步数，不可越子。\n【马】走「日」字；马腿被别住就跳不过去。\n【相/象】走「田」字，不能过河；象眼被塞就走不了。\n【士】只能在九宫格里斜走一格。\n【将/帅】在九宫格里横竖走一格；两将不能在同一直线正对面。\n【炮】直走；吃子必须隔一个棋子当炮架。\n【兵/卒】过河前只能向前一步；过河后可左右横走，不能后退。\n【将军】攻对方的将叫将军，必须应将；应不了就是被将死。");
         // 布局完成后再按真实可用空间算棋盘：转屏、分屏、全屏都由它触发（比在 onConfigurationChanged 里 post 可靠）
         scroll.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override

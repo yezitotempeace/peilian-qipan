@@ -31,7 +31,7 @@ import java.util.List;
 public final class XiangqiEngine implements XiangqiEngineApi {
 
     /** 三档每手时限（毫秒）。快档也够引擎搜到 5-6 层，远强于内置 AI 的 1 层。 */
-    private static final long[] LEVEL_MS = {400, 1200, 3000};
+    private static final long[] LEVEL_MS = {400, 1200, 8000};
     /** 读回应的额外宽限（进程启动 / 开局库加载都可能慢）。 */
     private static final long READ_SLACK_MS = 15000L;
 

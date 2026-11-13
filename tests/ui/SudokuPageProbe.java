@@ -92,7 +92,7 @@ public class SudokuPageProbe {
         // ── ① 竖屏结构 ──
         SudokuActivity a = make(false);
         FrameLayout holder = (FrameLayout) a.content;
-        chk("页面是「内容 + 水印」两层", 2, holder.getChildCount());
+        chk("页面是「内容 + 水印 + 规则按钮 + 规则卡片」四层", 4, holder.getChildCount());
         LinearLayout root = (LinearLayout) holder.getChildAt(0);
         chk("内容根视图竖排", LinearLayout.VERTICAL, root.orientation);
         chk("有难度按钮（默认普通）", true, buttonWith(root, "难度 普通") != null);

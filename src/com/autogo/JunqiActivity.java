@@ -205,6 +205,7 @@ public class JunqiActivity extends Activity {
 
         scroll.addView(root);
         Watermark.wrap(this, scroll, palette, 6);
+        RulesHelp.attach(this, palette, "【目的】夺走对方的军旗，或让对方无棋可走。\n【军衔】司令＞军长＞师长＞旅长＞团长＞营长＞连长＞排长＞工兵；大子吃小子，同级同归于尽。\n【炸弹】和任何棋子同归于尽。\n【地雷】不能动；非工兵撞雷阵亡、雷保留；只有工兵能挖雷。\n【军旗】放在大本营里，被扛走就输；军旗和地雷都不能动。\n【行营】安全区，里面的棋子不会被吃；行营四周可斜走。\n【铁路】可直线滑行多格（不可越子）；工兵还能沿铁路拐弯。\n【山界】两军交界只有三个口能通过，其余是山。\n【玩法】暗棋＝看不见对方棋子，交战后亮出；翻棋＝50 子随机扣着铺满，翻牌算一步。");
         sync();
         scroll.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override

@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit;
 public final class RapfiGomokuEngine implements GomokuEngine {
 
     /** 档位（0 快 / 1 普通 / 2 强）与各自的每手时限（毫秒）。 */
-    private static final int[] LEVEL_MS = {400, 1500, 4000};
+    private static final int[] LEVEL_MS = {400, 1500, 8000};
     /** 读回应的额外宽限：引擎自报时限之外，进程调度 / 开局库加载都可能多花时间。 */
     private static final long READ_SLACK_MS = 15000L;
 

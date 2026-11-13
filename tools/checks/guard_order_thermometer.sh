@@ -27,13 +27,14 @@ build_and_run() {   # $1=源码根（含 src/ tests/） $2=工作目录
     "$R/src/com/autogo/BuildInfo.java" "$R/src/com/autogo/IntegrityGuard.java" "$R/src/com/autogo/Eula.java" "$R/src/com/autogo/GomokuLearn.java" "$R/src/com/autogo/AnimMath.java" "$R/src/com/autogo/XiangqiBoard.java" \
     "$R/src/com/autogo/XiangqiAI.java" "$R/src/com/autogo/XiangqiEngineApi.java" "$R/src/com/autogo/XiangqiEngine.java" \
     "$R/src/com/autogo/XiangqiLearn.java" "$R/src/com/autogo/XiangqiReview.java" \
-    "$R/src/com/autogo/JunqiBoard.java" "$R/src/com/autogo/JunqiAI.java" $R/src/com/autogo/JunqiLearn.java "$R/src/com/autogo/Game2048.java" || return 1
+    "$R/src/com/autogo/JunqiBoard.java" "$R/src/com/autogo/JunqiAI.java" $R/src/com/autogo/JunqiLearn.java "$R/src/com/autogo/Game2048.java" \
+    "$R/src/com/autogo/ReversiBoard.java" "$R/src/com/autogo/ReversiAi.java" || return 1
   "$JAVAC" -encoding UTF-8 -nowarn -cp "$W/fakecls:$W/basecls:$ANDROID_JAR" -d "$W/stubcls" $(find "$R/tests/ui/stub" -name '*.java') || return 1
   "$JAVAC" -encoding UTF-8 -nowarn -cp "$W/fakecls:$W/basecls:$W/stubcls:$ANDROID_JAR" -d "$W/realcls" \
     "$R/src/com/autogo/GomokuActivity.java" "$R/src/com/autogo/GomokuView.java" "$R/src/com/autogo/GomokuReviewActivity.java" \
     "$R/src/com/autogo/WinrateChartView.java" "$R/src/com/autogo/WinrateBarView.java" "$R/src/com/autogo/UiTheme.java" \
     "$R/src/com/autogo/MenuActivity.java" "$R/src/com/autogo/Changelog.java" \
-    "$R/src/com/autogo/Watermark.java" "$R/src/com/autogo/WinEgg.java" "$R/src/com/autogo/BoardArt.java" \
+    "$R/src/com/autogo/Watermark.java" "$R/src/com/autogo/WinEgg.java" "$R/src/com/autogo/BoardArt.java" "$R/src/com/autogo/RulesHelp.java" \
     "$R/src/com/autogo/NativeExe.java" \
     "$R/src/com/autogo/XiangqiView.java" "$R/src/com/autogo/XiangqiActivity.java" \
     "$R/src/com/autogo/XiangqiReviewActivity.java" \

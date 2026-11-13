@@ -314,6 +314,7 @@ public class MainActivity extends Activity {
 
         
         Watermark.wrap(this, rootLayout, palette, 6);
+        RulesHelp.attach(this, palette, "【目的】把地盘围得比对方多，围得多就赢。\n【落子】黑先白后，下在交叉点上，落下后不能移动。\n【气】棋子横竖相邻的空点叫「气」。一颗子的气被堵光就被提走；一整块棋的气被堵光，整块被提走。\n【禁着点】落子后自己这块没气、又提不掉对方子的点不能下（禁止自杀）。\n【打劫】刚被提一子后，不能马上在同一处提回去，要先在别处走一手。\n【终局】双方连续放弃落子就结束，数地盘定胜负；黑棋要贴还给白棋几目。");
     }
 
     private LinearLayout.LayoutParams matchWrap() {
