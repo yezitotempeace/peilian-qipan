@@ -9,11 +9,11 @@ package com.autogo;
 public final class AnimMath {
 
     /** 普通走子动画时长（毫秒）。 */
-    public static final long MOVE_MS = 220;
+    public static final long MOVE_MS = 460;
     /** 吃子闪光时长。 */
-    public static final long FLASH_MS = 320;
+    public static final long FLASH_MS = 560;
     /** 军棋吃子「背面→正面」翻牌时长。 */
-    public static final long FLIP_MS = 560;
+    public static final long FLIP_MS = 760;
     /** 彩蛋弹出时长。 */
     public static final long EGG_MS = 280;
 

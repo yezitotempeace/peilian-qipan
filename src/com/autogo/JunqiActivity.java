@@ -370,7 +370,10 @@ public class JunqiActivity extends Activity {
                 selected = -1;
                 legal = new ArrayList<int[]>();
                 int res = board.play(JunqiBoard.RED, row, col, row, col);
-                boardView.setLastMove(row, col, row, col);
+                JunqiBoard.Pc flipped = board.at(row, col);
+                if (flipped != null) {
+                    boardView.flipToReveal(row, col, flipped.side, flipped.type);
+                }
                 setStatus(res >= 0 ? "翻出「" + JunqiBoard.typeName(board.typeAt(row, col)) + "」。" : "翻不了。");
                 if (board.gameOver()) {
                     sync();
@@ -467,7 +470,14 @@ public class JunqiActivity extends Activity {
                         }
                         JunqiBoard.Pc mover = snapshot.at(mv[0], mv[1]);
                         int res = board.play(JunqiBoard.BLACK, mv[0], mv[1], mv[2], mv[3]);
-                        boardView.setLastMove(mv[0], mv[1], mv[2], mv[3]);
+                        if (board.isFlipMode() && mv[0] == mv[2] && mv[1] == mv[3]) {
+                            JunqiBoard.Pc flipped = board.at(mv[2], mv[3]);
+                            if (flipped != null) {
+                                boardView.flipToReveal(mv[2], mv[3], flipped.side, flipped.type);
+                            }
+                        } else {
+                            boardView.setLastMove(mv[0], mv[1], mv[2], mv[3]);
+                        }
                         if (mover != null) {
                             String key = "t" + mover.type + "z" + (mv[3] / 3)
                                     + "f" + (res == JunqiBoard.RES_WIN || res == JunqiBoard.RES_BOTH ? 1 : 0);

@@ -75,6 +75,8 @@ public class JunqiView extends View {
     /** 可复用的临时 RectF，避免 onDraw 每帧分配。 */
     private final RectF tmpR1 = new RectF();
     private final RectF tmpR2 = new RectF();
+    private final RectF tmpR3 = new RectF();
+    private final Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static final int cols = JunqiBoard.COLS;
     private static final int rows = JunqiBoard.ROWS;
     private static final float BOARD_W_UNITS = 4.8f;   // 4 个列距 + 左右各 0.4
@@ -93,6 +95,7 @@ public class JunqiView extends View {
     private void init() {
         setFocusable(true);
         bg.setStyle(Paint.Style.FILL);
+        shadow.setStyle(Paint.Style.FILL);
         road.setStyle(Paint.Style.STROKE);
         railBase.setStyle(Paint.Style.STROKE);
         railDash.setStyle(Paint.Style.STROKE);
@@ -406,15 +409,23 @@ public class JunqiView extends View {
         }
         if (animPoint >= 0) {
             int tr = animTo / cols, tc = animTo % cols;
-            int mover = JunqiBoard.opponent(board.sideToMove());
-            if (board.ownerAt(tr, tc) == mover) {
+            JunqiBoard.Pc mv = board.at(tr, tc);
+            if (mv != null) {
                 float e = AnimMath.easeOut(animP);
                 float x = AnimMath.lerp(cx(animFrom % cols), cx(tc), e);
-                float y = AnimMath.lerp(cy(animFrom / cols), cy(tr), e);
+                float gy = AnimMath.lerp(cy(animFrom / cols), cy(tr), e);
+                // 微跳跃：棋子沿抛物线抬起，影子留在地面并变淡
+                float hopFrac = (float) Math.sin(Math.PI * e);
+                float hop = hopFrac * ch * 1.1f;
+                shadow.setColor(((int) (0x50 * (1f - 0.65f * hopFrac)) << 24));
+                tmpR3.set(x - stationW * 0.40f, gy + stationH * 0.28f,
+                        x + stationW * 0.40f, gy + stationH * 0.50f);
+                canvas.drawOval(tmpR3, shadow);
                 boolean back = board.faceDown(tr, tc);
-                // 落子带缩放：从小到大落下，滑动不再是纯位移
-                drawPiece(canvas, x, y, mover, board.typeAt(tr, tc), back, 0.72f + 0.28f * e);
+                drawPiece(canvas, x, gy - hop, mv.side, mv.type, back,
+                        1f + 0.07f * hopFrac);
             }
+            // 落点冲击环：让「这一手落在哪」看得清
             float fa = 0.55f * (1f - animP);
             mark.setColor(((int) (fa * 255) << 24) | 0x00FFB300);
             mark.setStrokeWidth(Math.max(2f, cw * 0.04f));
