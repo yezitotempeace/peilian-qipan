@@ -9,9 +9,6 @@ This repository and the built APK bundle the following third-party components. C
 ## 1. KataGo（围棋引擎与权重 / Go engine and networks）
 
 - 用途 / Used for：围棋 AI 对弈 / Go AI play
-- 位置 / Files in this repo：
-  - `jniLibs/arm64-v8a/libkatago.so`
-  - `assets/model_b6c96.txt.gz`、`assets/model_b10c128.txt.gz`、`assets/model_b18c384nbt.bin.gz`
 - 上游 / Upstream：https://github.com/lightvector/KataGo
 - 许可证 / License：**MIT**
 
@@ -45,12 +42,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 ## 2. Rapfi（五子棋引擎 / Gomoku-Renju engine）
 
 - 用途 / Used for：五子棋「强档」AI / strong Gomoku AI
-- 位置 / Files in this repo：
-  - `jniLibs/arm64-v8a/librapfi.so`（构建时打包进 APK 的 `assets/engine/rapfi`，运行时释放执行）
-  - `tools/rapfi/`（构建记录 / build notes）
 - 上游 / Upstream：https://github.com/dhbloo/rapfi
 - 许可证 / License：**GNU General Public License v3.0 (GPL-3.0)**
-- 完整许可文本 / Full text：[`licenses/GPL-3.0.txt`](licenses/GPL-3.0.txt)（上游对应 `Copying.txt`）
+- 完整许可文本 / Full text：[`licenses/GPL-3.0.txt`](licenses/GPL-3.0.txt)
 
 本应用打包并链接了 GPL-3.0 的 Rapfi，因此本应用整体按 **AGPL-3.0** 发布（AGPL-3.0 与 GPL-3.0 相互兼容），见根目录 [`LICENSE`](LICENSE)。
 
@@ -61,18 +55,13 @@ Because this app bundles and links the GPL-3.0 Rapfi, the app as a whole is rele
 ## 3. ElephantEye 象眼（象棋引擎 / Xiangqi engine）
 
 - 用途 / Used for：象棋三档 AI / Xiangqi AI at all levels
-- 位置 / Files in this repo：
-  - `jniLibs/arm64-v8a/libeleye.so`（源码 `eleeye/` 交叉编译为 Android arm64，构建时打包进 APK 的 `assets/engine/eleeye`，运行时释放执行）
 - 上游 / Upstream：http://www.xqbase.com/computer/eleeye.htm （作者 / author：黄晨 / Morning Yellow）
-- 版本 / Version：ElephantEye 3.31（UCCI 3.0 协议）
 - 许可证 / License：**GNU Lesser General Public License v2.1 (LGPL-2.1)**
-- 完整许可文本 / Full text：[`licenses/LGPL-2.1.txt`](licenses/LGPL-2.1.txt)（上游对应 `LICENSE`）
+- 完整许可文本 / Full text：[`licenses/LGPL-2.1.txt`](licenses/LGPL-2.1.txt)
 
-ElephantEye 以 LGPL-2.1 发布；本应用按协议以独立可执行程序方式调用它（子进程 + UCCI 文本协议），
-并随包提供其源码构建方式与本许可文本，满足 LGPL 关于「可替换/可重链接」的要求。
-ElephantEye 与本应用其余部分（AGPL-3.0）通过进程边界分离，互不传染。
+ElephantEye 以 LGPL-2.1 发布。本应用按 LGPL 的要求随包提供该许可全文，其调用方式与本应用其余部分（AGPL-3.0）相互独立。
 
-ElephantEye is released under LGPL-2.1; this app invokes it as a separate executable (subprocess + UCCI text protocol), ships this license text and build notes, satisfying LGPL's relink/replace requirements. It is separated from the rest of the app (AGPL-3.0) by a process boundary.
+ElephantEye is released under LGPL-2.1. This app ships the full license text as required; it is invoked independently of the rest of the app (AGPL-3.0).
 
 ---
 
