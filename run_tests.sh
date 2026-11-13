@@ -51,7 +51,7 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/src/com/autogo/XiangqiLearn.java" \
    "$PROJ/src/com/autogo/XiangqiReview.java" \
    "$PROJ/src/com/autogo/JunqiBoard.java" \
-   "$PROJ/src/com/autogo/JunqiAI.java" "$PROJ/src/com/autogo/JunqiLearn.java" "$PROJ/src/com/autogo/JunqiReveal.java" \
+   "$PROJ/src/com/autogo/JunqiAI.java" "$PROJ/src/com/autogo/JunqiLearn.java" \
    "$PROJ/src/com/autogo/GomokuLearn.java" \
    "$PROJ/src/com/autogo/AnimMath.java" \
    "$PROJ/src/com/autogo/Game2048.java" \
@@ -71,8 +71,7 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/tests/XiangqiLearnTest.java" \
    "$PROJ/tests/XiangqiReviewTest.java" \
    "$PROJ/tests/AnimMathTest.java" \
-   "$PROJ/tests/JunqiTest.java" "$PROJ/tests/JunqiAITest.java" "$PROJ/tests/JunqiRevealTest.java" \
-   "$PROJ/tests/JunqiStrengthTest.java" "$PROJ/tests/JunqiLearnTest.java" \
+   "$PROJ/tests/Junqi2Test.java" "$PROJ/tests/JunqiAiTest.java" "$PROJ/tests/JunqiLearnTest.java" \
    "$PROJ/tests/Game2048Test.java" \
    "$PROJ/tests/SudokuTest.java" \
    "$PROJ/tests/XiangqiTrendTest.java" \
@@ -100,11 +99,9 @@ java -cp "$OUT/classes" XiangqiAITest
 java -cp "$OUT/classes" XiangqiLearnTest
 java -cp "$OUT/classes" XiangqiReviewTest
 java -cp "$OUT/classes" AnimMathTest
-java -cp "$OUT/classes" JunqiAITest
-java -cp "$OUT/classes" JunqiStrengthTest  # 三档难度强度回归（固定种子，慢约 15 秒）
+java -cp "$OUT/classes" Junqi2Test   # 军棋规则（5×12 / 铁路 / 行营 / 山界 / 战斗 / 亮子 / 胜负）
+java -cp "$OUT/classes" JunqiAiTest  # 军棋 AI（合法性 / 吃子选择 / 避强击弱 / 扛旗 / 难度）
 java -cp "$OUT/classes" JunqiLearnTest
-java -cp "$OUT/classes" JunqiRevealTest
-java -cp "$OUT/classes" JunqiTest  # 军棋规则（5×12 / 铁路 / 行营 / 战斗 / 胜负）
 java -cp "$OUT/classes" Game2048Test  # 2048 规则（4×4 / 合并一次 / 生成 / 胜负）
 java -cp "$OUT/classes" SudokuTest  # 数独（生成 / 唯一解 / 三档难度 / 行列宫冲突 / 笔记 / 撤销 / 存档）
 java -cp "$OUT/classes" XiangqiTrendTest  # 象棋复盘走势文案 / 未终局前缀
@@ -193,11 +190,11 @@ javac -encoding UTF-8 -nowarn -d "$OUT/ui/stubcls" -cp "$OUT/ui/fakecls:$ANDROID
 javac -encoding UTF-8 -nowarn -d "$OUT/ui/realcls" -cp "$OUT/ui/fakecls:$OUT/ui/stubcls:$OUT/classes:$ANDROID_JAR" "$OUT"/ui/src/*.java
 javac -encoding UTF-8 -nowarn -d "$OUT/ui/testcls" -cp "$OUT/ui/fakecls:$OUT/ui/realcls:$OUT/ui/stubcls:$OUT/classes:$ANDROID_JAR" \
   "$PROJ/tests/ui/Driver95.java" "$PROJ/tests/ui/ViewProbe.java" "$PROJ/tests/ui/ReviewProbe.java" \
-  "$PROJ/tests/ui/MenuProbe.java" "$PROJ/tests/ui/XiangqiViewProbe.java" "$PROJ/tests/ui/JunqiViewProbe.java" "$PROJ/tests/ui/JunqiProbe.java" \
+  "$PROJ/tests/ui/MenuProbe.java" "$PROJ/tests/ui/XiangqiViewProbe.java" \
   "$PROJ/tests/ui/XiangqiReviewProbe.java" "$PROJ/tests/ui/XiangqiProbe.java" \
   "$PROJ/tests/ui/WatermarkProbe.java" "$PROJ/tests/ui/WinEggTest.java" "$PROJ/tests/ui/Game2048ViewProbe.java" "$PROJ/tests/ui/Game2048PageProbe.java" "$PROJ/tests/ui/UpdateManagerTest.java" \
   "$PROJ/tests/ui/SudokuPageProbe.java"
-for t in Driver95 ViewProbe ReviewProbe MenuProbe XiangqiViewProbe JunqiViewProbe JunqiProbe XiangqiReviewProbe XiangqiProbe WatermarkProbe WinEggTest Game2048ViewProbe Game2048PageProbe UpdateManagerTest SudokuPageProbe; do
+for t in Driver95 ViewProbe ReviewProbe MenuProbe XiangqiViewProbe XiangqiReviewProbe XiangqiProbe WatermarkProbe WinEggTest Game2048ViewProbe Game2048PageProbe UpdateManagerTest SudokuPageProbe; do
   java -cp "$OUT/ui/fakecls:$OUT/ui/realcls:$OUT/ui/stubcls:$OUT/ui/testcls:$OUT/classes" com.autogo.$t
   rc=$?
   if [ $rc -ne 0 ]; then
@@ -205,26 +202,6 @@ for t in Driver95 ViewProbe ReviewProbe MenuProbe XiangqiViewProbe JunqiViewProb
     exit $rc
   fi
 done
-
-# 军棋页必须走 JunqiReveal（规则只留一份，别再内联重写）
-REVEAL_CALLS=$(python3 - "$PROJ/src/com/autogo/JunqiActivity.java" <<'PYEOF'
-import re, sys
-s = open(sys.argv[1], encoding="utf-8").read()
-s = re.sub(r"/\*.*?\*/", "", s, flags=re.S)
-s = re.sub(r"//[^\n]*", "", s)
-print(len(re.findall(r"JunqiReveal\s*\.\s*resolve\s*\(", s)))
-PYEOF
-)
-if [ "$REVEAL_CALLS" != "2" ]; then
-  echo "错误：JunqiActivity 里 JunqiReveal.resolve 的调用数是 $REVEAL_CALLS，期望 2（人走 + 电脑走各一次）"
-  exit 1
-fi
-echo "军棋暴露规则接线：JunqiReveal.resolve 调用 $REVEAL_CALLS 处 ✓"
-# 除了 JunqiReveal，页面/任何源文件里都不要再自己给 revealed[...] 赋值（第 101 轮审计的「双绕过」演示；
-# 第 103 轮审计指出旧正则只认常量下标，`revealed[JunqiBoard.idx(...)] = true` 漏网 ⇒ 改成语法级脚本，能配对嵌套 []、也查别名）
-if ! python3 tools/checks/check_inline_reveal.py src/com/autogo; then
-  exit 1
-fi
 
 echo "=========== 5. GTP 客户端（需要真引擎） ==========="
 if [ -x "$KATAGO" ] && [ -f "$MODEL" ]; then

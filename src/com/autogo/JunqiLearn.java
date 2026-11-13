@@ -294,42 +294,6 @@ public final class JunqiLearn {
         return learn;
     }
 
-    // ---------- 特征 ----------
-
-    /**
-     * 一步棋的特征：进攻子兵种 + 目标类型（E 空 / K 已知敌子 / U 未知敌子）+ 目标区域 + 方向。
-     * 区域按电脑视角：0=自家半场、1=中间、2=敌方半场；方向 F=向前、B=向后、S=横走。
-     */
-    public static String keyFor(JunqiBoard view, int color, int[] move) {
-        if (view == null || move == null || move.length < 2) {
-            return null;
-        }
-        int from;
-        int to;
-        if (move.length >= 4) {
-            from = JunqiBoard.idx(move[0], move[1]);
-            to = JunqiBoard.idx(move[2], move[3]);
-        } else if (move.length == 2) {
-            from = move[0];
-            to = move[1];
-        } else {
-            return null;
-        }
-        int atk = view.at(JunqiBoard.rowOf(from), JunqiBoard.colOf(from));
-        int def = view.at(JunqiBoard.rowOf(to), JunqiBoard.colOf(to));
-        String target = def == JunqiBoard.EMPTY ? "E" : (def == JunqiAI.UNKNOWN ? "U" : "K");
-        int row = JunqiBoard.rowOf(to);
-        int zone;
-        if (color == JunqiBoard.RED) {
-            zone = row <= 3 ? 2 : (row <= 7 ? 1 : 0);
-        } else {
-            zone = row >= 8 ? 2 : (row >= 4 ? 1 : 0);
-        }
-        int dr = JunqiBoard.rowOf(to) - JunqiBoard.rowOf(from);
-        String dir = dr == 0 ? "S" : ((color == JunqiBoard.RED ? dr < 0 : dr > 0) ? "F" : "B");
-        return "a" + atk + "t" + target + "z" + zone + "d" + dir;
-    }
-
     private JunqiLearn() {
     }
 }

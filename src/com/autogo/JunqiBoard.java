@@ -10,587 +10,822 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * 军棋（二人陆战棋）棋盘与规则核心 —— 纯 Java，无 Android 依赖，可 JVM 单测。
+ * 军棋（陆战棋）规则引擎 —— 暗棋玩法，完全重写。
  *
- * <p>本类采用「二人军棋 · 明棋」口径（暗棋在界面层靠隐藏棋子实现，AI 不得偷看）：
+ * <p><b>棋盘</b>：12 行 × 5 列，共 60 个可落子点；两军之间隔一条“前线带”
+ * （3 个前线 + 2 座山界，山界不可通过）。棋盘按真实军棋绘制：</p>
  * <ul>
- *   <li>棋盘 5 列 × 12 行；红方在下（行 9..11 一侧），黑方在上。</li>
- *   <li>大本营：(0,1)(0,3) 黑、(11,1)(11,3) 红 —— 进大本营的棋子不能再移动。</li>
- *   <li>行营：(2,1)(2,3)(3,2)(4,1)(4,3) 与镜像 (7,1)(7,3)(8,2)(9,1)(9,3)，行营里的棋子不能被吃。</li>
- *   <li>铁路：第 1/5/6/10 行整行；第 0/4 列的第 1..10 行；普通棋子可沿直线铁路任意远，工兵可沿铁路拐弯。</li>
- *   <li>棋子：司令 9 > 军长 8 > 师长 7 > 旅长 6 > 团长 5 > 营长 4 > 连长 3 > 排长 2 > 工兵 1；
- *       炸弹与任何棋子同归于尽（含地雷）；地雷不动、除工兵外谁碰谁死；军旗被吃即负。</li>
+ *   <li>大本营：每方底线第 2、4 列（军旗必须放这里，进去的棋子不能再出来）；</li>
+ *   <li>行营：每方 5 个，呈梅花形（第 2/3/4 排），行营中的棋子<b>不会被攻击</b>；</li>
+ *   <li>铁路：第 1、5、6、10 行整行 + 左右两边线整列 + 中路（第 3 列）靠前线一段；
+ *       铁路上普通棋子可直线滑行任意远（不可越子），<b>工兵</b>可沿铁路网拐弯；</li>
+ *   <li>公路：其余连线，每次走一格；行营四周还有<b>斜线</b>，可斜走一步。</li>
  * </ul>
+ *
+ * <p><b>棋子</b>：每方 25 枚。司令、军长、军旗各一；师长、旅长、团长、营长、炸弹各二；
+ * 连长、排长、工兵、地雷各三。军衔：司令>军长>师长>旅长>团长>营长>连长>排长>工兵。</p>
+ *
+ * <p><b>吃子</b>：高吃低，同级同归于尽；炸弹与任何棋子同归于尽；
+ * 非工兵撞地雷则攻击方阵亡、地雷保留；<b>工兵挖雷</b>则地雷消失、工兵存活并占据该格。</p>
+ *
+ * <p><b>暗棋信息</b>：己方棋子始终可见；敌方棋子<b>只要没交战过就一直盖着</b>，
+ * 交战过的双方棋子身份公开。棋子一旦移动过，就一定不是地雷/军旗（用于推断）。</p>
+ *
+ * <p><b>胜负</b>：吃掉对方军旗获胜；一方无合法着法判负；连续 200 步无吃子判和。</p>
+ *
+ * <p>本类只管规则，不碰 Android，可整体在 JVM 上单测。</p>
  */
 public final class JunqiBoard {
 
-    public static final int COLS = 5;
     public static final int ROWS = 12;
+    public static final int COLS = 5;
 
+    /** 空。 */
     public static final int EMPTY = 0;
+    /** 玩家（红，屏幕下半）。 */
     public static final int RED = 1;
+    /** 电脑（黑，屏幕上半）。 */
     public static final int BLACK = 2;
 
-    /** 兵种（数值即军衔，越大越强；地雷/炸弹/军旗用负数）。 */
-    public static final int FLAG = -2;
-    public static final int BOMB = -1;
-    public static final int MINE = -3;
-    public static final int ENGINEER = 1;
-    public static final int PLATOON = 2;
-    public static final int COMPANY = 3;
-    public static final int BATTALION = 4;
-    public static final int REGIMENT = 5;
-    public static final int BRIGADE = 6;
-    public static final int DIVISION = 7;
-    public static final int ARMY = 8;
-    public static final int COMMANDER = 9;
+    /** 棋子类型。军衔用 1..9（9 最高），特殊子用负数。 */
+    public static final int SILING = 9;      // 司令
+    public static final int JUNZHANG = 8;    // 军长
+    public static final int SHIZHANG = 7;    // 师长
+    public static final int LVZHANG = 6;     // 旅长
+    public static final int TUANZHANG = 5;   // 团长
+    public static final int YINGZHANG = 4;   // 营长
+    public static final int LIANZHANG = 3;   // 连长
+    public static final int PAIZHANG = 2;    // 排长
+    public static final int GONGBING = 1;    // 工兵
+    public static final int DILEI = -1;      // 地雷（不可动）
+    public static final int ZHADAN = -2;     // 炸弹
+    public static final int JUNQI = -3;      // 军旗（不可动）
 
-    /** 每方 25 个棋子：司令 1、军长 1、师长 2、旅长 2、团长 2、营长 2、连长 3、排长 3、工兵 3、地雷 3、炸弹 2、军旗 1。 */
-    private static final int[] ARMY_SET = {
-            COMMANDER, ARMY, DIVISION, DIVISION, BRIGADE, BRIGADE, REGIMENT, REGIMENT,
-            BATTALION, BATTALION, COMPANY, COMPANY, COMPANY, PLATOON, PLATOON, PLATOON,
-            ENGINEER, ENGINEER, ENGINEER, MINE, MINE, MINE, BOMB, BOMB, FLAG
-    };
+    /** 无战斗（普通移动）。 */
+    public static final int RES_MOVE = 0;
+    /** 攻方吃掉守方。 */
+    public static final int RES_WIN = 1;
+    /** 攻方被吃。 */
+    public static final int RES_LOSE = 2;
+    /** 同归于尽。 */
+    public static final int RES_BOTH = 3;
 
-    /** 一方可摆子的 30 个格：红方行 6..11、黑方行 0..5（各 5 列 × 6 行）。 */
-    public static int setupRows(int color) {
-        return color == RED ? 6 : 0;
+    /** 连续多少步无吃子判和。 */
+    public static final int DRAW_STEPS = 200;
+
+    /** 一枚棋子。 */
+    public static final class Pc {
+        public int side;         // RED / BLACK
+        public int type;         // 上面常量之一
+        public boolean revealed; // 是否已亮出（交战过 / 翻棋被翻开）
+        public boolean moved;    // 是否移动过（移动过 ⇒ 一定不是地雷/军旗）
+        public boolean faceDown; // 是否背面朝上（翻棋开局全扣；暗棋敌方扣着）
+
+        Pc(int side, int type) {
+            this.side = side;
+            this.type = type;
+        }
     }
 
-    private final int[] grid = new int[ROWS * COLS];
-    private final int[] owner = new int[ROWS * COLS];
+    private static final int[] KIND = buildKind();          // 0=兵站 1=行营 2=大本营
+    private static final boolean[][] RAIL = buildRail();
+    private final Pc[] cell = new Pc[ROWS * COLS];
+
+    /** 是否翻棋模式（翻牌算一步；暗棋为 false）。 */
+    private final boolean flipMode;
+
     private int sideToMove = RED;
-    private final List<int[]> history = new ArrayList<int[]>();
-    private int winner;
-    private String endReason = "";
+    private boolean setupPhase = true;
+    private int quietSteps;
+    private int result;                                     // 0=进行中 1=红胜 2=黑胜 3=和
+    private String lastBattle = "";
+    private final List<Pc> captured = new ArrayList<Pc>();
 
-    public JunqiBoard() {
-        setupStandard(null);
+    /** 暗棋模式。 */
+    public JunqiBoard(long seed) {
+        this(seed, false);
     }
 
-    public JunqiBoard(boolean empty) {
-        if (!empty) {
-            setupStandard(null);
+    /** flip=true 为翻棋：50 子随机扣着铺满除行营外的 50 个点位。 */
+    public JunqiBoard(long seed, boolean flip) {
+        flipMode = flip;
+        Random rnd = new Random(seed);
+        if (flip) {
+            setupFlip(rnd);
+            setupPhase = false;      // 翻棋没有布阵阶段，直接开翻
+        } else {
+            randomSetup(RED, rnd);
+            randomSetup(BLACK, rnd);
         }
     }
 
-    /** 除军旗/地雷/炸弹外的 19 个兵种（随机摆子用）。 */
-    private static final int[] OTHER_SET = {
-            COMMANDER, ARMY, DIVISION, DIVISION, BRIGADE, BRIGADE, REGIMENT, REGIMENT,
-            BATTALION, BATTALION, COMPANY, COMPANY, COMPANY, PLATOON, PLATOON, PLATOON,
-            ENGINEER, ENGINEER, ENGINEER
-    };
-
-    /**
-     * 随机摆子（暗棋开局用）；同 seed 摆法一致，便于测试。
-     *
-     * <p>按军棋规则摆：军旗必须在本方大本营（底线两格之一）；地雷只能放后两排；
-     * 炸弹不能放第一排；其余子随机。以前是 25 个子完全随机，军旗可能出现在最前排，
-     * 一步就被夺旗，AI 强弱也测不出来。
-     */
-    public void setupStandard(Random rnd) {
-        java.util.Arrays.fill(grid, EMPTY);
-        java.util.Arrays.fill(owner, EMPTY);
-        history.clear();
-        winner = 0;
-        endReason = "";
-        sideToMove = RED;
-        Random r = rnd == null ? new Random(20261017L) : rnd;
-        for (int color = RED; color <= BLACK; color++) {
-            int base = setupRows(color);          // 红 6、黑 0
-            int backRow = color == RED ? ROWS - 1 : 0;
-            int frontRow = color == RED ? base : base + 5;
-            // 摆子格 = 兵站 + 大本营（行营开局留空：安全区不能一上来就塞子，符合正规军棋）
-            List<Integer> all = new ArrayList<Integer>();
-            for (int row = base; row < base + 6; row++) {
-                for (int col = 0; col < COLS; col++) {
-                    if (!isCamp(row, col)) {
-                        all.add(idx(row, col));
-                    }
+    /** 翻棋布阵：双方 50 枚棋子打乱，扣着铺满除行营外的 50 个点位（行营留空作安全区）。 */
+    private void setupFlip(Random rnd) {
+        List<Integer> cells = new ArrayList<Integer>();
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                if (KIND[idx(r, c)] != 1) {
+                    cells.add(idx(r, c));
                 }
             }
-            // 军旗：底线两个大本营之一
-            List<Integer> hq = new ArrayList<Integer>();
-            hq.add(idx(backRow, 1));
-            hq.add(idx(backRow, 3));
-            java.util.Collections.shuffle(hq, r);
-            int flagAt = hq.get(0);
-            grid[flagAt] = FLAG;
-            owner[flagAt] = color;
+        }
+        shuffle(cells, rnd);
+        List<int[]> pool = new ArrayList<int[]>();
+        int[][] set = {
+                {RED, JUNQI, 1}, {RED, SILING, 1}, {RED, JUNZHANG, 1}, {RED, SHIZHANG, 2},
+                {RED, LVZHANG, 2}, {RED, TUANZHANG, 2}, {RED, YINGZHANG, 2}, {RED, LIANZHANG, 3},
+                {RED, PAIZHANG, 3}, {RED, GONGBING, 3}, {RED, DILEI, 3}, {RED, ZHADAN, 2},
+                {BLACK, JUNQI, 1}, {BLACK, SILING, 1}, {BLACK, JUNZHANG, 1}, {BLACK, SHIZHANG, 2},
+                {BLACK, LVZHANG, 2}, {BLACK, TUANZHANG, 2}, {BLACK, YINGZHANG, 2}, {BLACK, LIANZHANG, 3},
+                {BLACK, PAIZHANG, 3}, {BLACK, GONGBING, 3}, {BLACK, DILEI, 3}, {BLACK, ZHADAN, 2},
+        };
+        for (int[] t : set) {
+            for (int i = 0; i < t[2]; i++) {
+                pool.add(new int[]{t[0], t[1]});
+            }
+        }
+        shuffleInt(pool, rnd);
+        for (int i = 0; i < cells.size() && i < pool.size(); i++) {
+            int[] pt = pool.get(i);
+            Pc p = new Pc(pt[0], pt[1]);
+            p.faceDown = true;
+            cell[cells.get(i)] = p;
+        }
+    }
 
-            // 地雷：后两排（去掉军旗那一格）
-            List<Integer> backTwo = new ArrayList<Integer>();
-            for (int row = backRow == 0 ? 0 : ROWS - 2; row <= (backRow == 0 ? 1 : ROWS - 1); row++) {
-                for (int col = 0; col < COLS; col++) {
-                    int p = idx(row, col);
-                    if (p != flagAt) {
-                        backTwo.add(p);
-                    }
+    /** 是否翻棋模式。 */
+    public boolean isFlipMode() {
+        return flipMode;
+    }
+
+    /** 指定阵型构建（测试用）。formations[b][i] 依次对应 placeableCells(side) 的位置，<=0 表示留空。 */
+    public JunqiBoard(int[][] formations) {
+        flipMode = false;
+        for (int b = 0; b < 2; b++) {
+            int side = (b == 0) ? RED : BLACK;
+            int[] f = formations[b];
+            List<Integer> cells = placeableCells(side);
+            for (int i = 0; i < cells.size() && i < f.length; i++) {
+                if (f[i] > 0) {
+                    cell[cells.get(i)] = new Pc(side, f[i]);
                 }
             }
-            java.util.Collections.shuffle(backTwo, r);
-            for (int i = 0; i < 3; i++) {
-                int p = backTwo.get(i);
-                grid[p] = MINE;
-                owner[p] = color;
-            }
-
-            // 炸弹：不能在第一排（去掉已用格）
-            List<Integer> bombCells = new ArrayList<Integer>();
-            for (int p : all) {
-                int row = rowOf(p);
-                if (row == frontRow) {
-                    continue;
-                }
-                if (owner[p] != EMPTY) {
-                    continue;
-                }
-                bombCells.add(p);
-            }
-            java.util.Collections.shuffle(bombCells, r);
-            for (int i = 0; i < 2; i++) {
-                int p = bombCells.get(i);
-                grid[p] = BOMB;
-                owner[p] = color;
-            }
-
-            // 其余 19 子：剩下的空格随机
-            List<Integer> rest = new ArrayList<Integer>();
-            for (int p : all) {
-                if (owner[p] == EMPTY) {
-                    rest.add(p);
-                }
-            }
-            java.util.Collections.shuffle(rest, r);
-            for (int i = 0; i < OTHER_SET.length; i++) {
-                int p = rest.get(i);
-                grid[p] = OTHER_SET[i];
-                owner[p] = color;
-            }
         }
+        setupPhase = false;
     }
 
-    /**
-     * 翻棋开局：双方共 50 枚棋子混合后随机铺满全盘（不分半场归属）。
-     *
-     * <p>行营（安全区）留空，正好 60−10=50 格放 50 子。为兼顾军棋规则：
-     * 军旗仍各放本方大本营（红底线、黑顶线），地雷仍各放本方后两排（红 10-11 行、黑 0-1 行），
-     * 其余棋子完全随机混铺。翻子揭晓归属，是「翻翻棋」的核心玩法。</p>
-     */
-    public void setupFlip(Random rnd) {
-        java.util.Arrays.fill(grid, EMPTY);
-        java.util.Arrays.fill(owner, EMPTY);
-        history.clear();
-        winner = 0;
-        endReason = "";
-        sideToMove = RED;
-        Random r = rnd == null ? new Random(20261017L) : rnd;
+    // ------------------------------------------------------------ 地形
 
-        // 1. 军旗：各放本方大本营（红底线 11 行、黑顶线 0 行）之一
-        int[] redHq = {idx(ROWS - 1, 1), idx(ROWS - 1, 3)};
-        int[] blackHq = {idx(0, 1), idx(0, 3)};
-        int redFlag = redHq[r.nextInt(2)];
-        int blackFlag = blackHq[r.nextInt(2)];
-        grid[redFlag] = FLAG; owner[redFlag] = RED;
-        grid[blackFlag] = FLAG; owner[blackFlag] = BLACK;
-
-        // 2. 地雷：各放本方后两排（作为「颜色」归属，但位置混铺）
-        //    红后两排 = 10,11 行；黑后两排 = 0,1 行
-        java.util.List<Integer> redMineCells = new java.util.ArrayList<Integer>();
-        for (int row = ROWS - 2; row <= ROWS - 1; row++) {
-            for (int col = 0; col < COLS; col++) {
-                int p = idx(row, col);
-                if (grid[p] == EMPTY && !isCamp(row, col)) redMineCells.add(p);
-            }
+    private static int[] buildKind() {
+        int[] k = new int[ROWS * COLS];
+        for (int c : new int[]{1, 3}) {
+            k[idx(0, c)] = 2;
+            k[idx(11, c)] = 2;
         }
-        java.util.List<Integer> blackMineCells = new java.util.ArrayList<Integer>();
-        for (int row = 0; row <= 1; row++) {
-            for (int col = 0; col < COLS; col++) {
-                int p = idx(row, col);
-                if (grid[p] == EMPTY && !isCamp(row, col)) blackMineCells.add(p);
-            }
+        int[][] camps = {
+                {2, 1}, {2, 3}, {3, 2}, {4, 1}, {4, 3},
+                {7, 1}, {7, 3}, {8, 2}, {9, 1}, {9, 3},
+        };
+        for (int[] rc : camps) {
+            k[idx(rc[0], rc[1])] = 1;
         }
-        java.util.Collections.shuffle(redMineCells, r);
-        java.util.Collections.shuffle(blackMineCells, r);
-        for (int i = 0; i < 3; i++) { int p = redMineCells.get(i); grid[p] = MINE; owner[p] = RED; }
-        for (int i = 0; i < 3; i++) { int p = blackMineCells.get(i); grid[p] = MINE; owner[p] = BLACK; }
+        return k;
+    }
 
-        // 3. 其余所有棋子（去掉已放的 2 旗 + 6 雷）混在一起，随机铺到剩余空格
-        java.util.List<Integer> pieces = new java.util.ArrayList<Integer>();
-        java.util.List<Integer> pieceOwners = new java.util.ArrayList<Integer>();
-        int[] others = {COMMANDER, ARMY, DIVISION, DIVISION, BRIGADE, BRIGADE, REGIMENT, REGIMENT,
-                BATTALION, BATTALION, COMPANY, COMPANY, COMPANY, PLATOON, PLATOON, PLATOON,
-                ENGINEER, ENGINEER, ENGINEER, BOMB, BOMB};
-        for (int color = RED; color <= BLACK; color++) {
-            for (int t : others) { pieces.add(t); pieceOwners.add(color); }
+    private static boolean[][] buildRail() {
+        boolean[][] rl = new boolean[ROWS][COLS];
+        for (int c = 0; c < COLS; c++) {
+            rl[1][c] = true;
+            rl[5][c] = true;
+            rl[6][c] = true;
+            rl[10][c] = true;
         }
-        java.util.List<Integer> slots = new java.util.ArrayList<Integer>();
-        for (int p = 0; p < grid.length; p++) {
-            if (grid[p] == EMPTY && !isCamp(rowOf(p), colOf(p))) slots.add(p);
+        for (int r = 0; r < ROWS; r++) {
+            rl[r][0] = true;
+            rl[r][4] = true;
         }
-        java.util.Collections.shuffle(slots, r);
-        // 同时打乱棋子顺序
-        for (int i = pieces.size() - 1; i > 0; i--) {
-            int j = r.nextInt(i + 1);
-            int tmpT = pieces.get(i); pieces.set(i, pieces.get(j)); pieces.set(j, tmpT);
-            int tmpO = pieceOwners.get(i); pieceOwners.set(i, pieceOwners.get(j)); pieceOwners.set(j, tmpO);
+        for (int r = 4; r <= 7; r++) {
+            rl[r][2] = true;
         }
-        for (int i = 0; i < pieces.size(); i++) {
-            int p = slots.get(i);
-            grid[p] = pieces.get(i);
-            owner[p] = pieceOwners.get(i);
-        }
+        return rl;
     }
 
-    // ---------- 坐标与基本读写 ----------
-
-    public static int idx(int row, int col) {
-        return row * COLS + col;
+    public static int idx(int r, int c) {
+        return r * COLS + c;
     }
 
-    public static int rowOf(int point) {
-        return point / COLS;
+    public static boolean isCamp(int r, int c) {
+        return inBounds(r, c) && KIND[idx(r, c)] == 1;
     }
 
-    public static int colOf(int point) {
-        return point % COLS;
+    public static boolean isHq(int r, int c) {
+        return inBounds(r, c) && KIND[idx(r, c)] == 2;
     }
 
-    public static boolean inBounds(int row, int col) {
-        return row >= 0 && row < ROWS && col >= 0 && col < COLS;
+    public static boolean isRail(int r, int c) {
+        return inBounds(r, c) && RAIL[r][c];
     }
 
-    public int at(int row, int col) {
-        return grid[idx(row, col)];
+    /** 该格棋子的归属（EMPTY = 无子）。 */
+    public int ownerAt(int r, int c) {
+        Pc p = at(r, c);
+        return p == null ? EMPTY : p.side;
     }
 
-    public int ownerAt(int row, int col) {
-        return owner[idx(row, col)];
+    /** 该格棋子的类型（EMPTY = 无子）。 */
+    public int typeAt(int r, int c) {
+        Pc p = at(r, c);
+        return p == null ? EMPTY : p.type;
     }
 
-    public void put(int row, int col, int color, int type) {
-        int p = idx(row, col);
-        grid[p] = type;
-        owner[p] = color;
+    /** 该格棋子是否应背面向上（只有“未亮出的敌方棋子”为真；玩家视角=红方）。 */
+    public boolean faceDown(int r, int c) {
+        Pc p = at(r, c);
+        return p != null && p.faceDown;
     }
 
-
-    private static final String[] TYPE_NAMES = {"地雷", "工兵", "排长", "连长", "营长", "团长", "旅长", "师长", "军长", "司令"};
-
-    /** 兵种名（军旗 / 炸弹单独处理，其余按常量数值索引）。 */
-    public static String typeName(int type) {
-        if (type == FLAG) {
-            return "军旗";
-        }
-        if (type == BOMB) {
-            return "炸弹";
-        }
-        if (type == MINE) {
-            return "地雷";
-        }
-        if (type >= ENGINEER && type < TYPE_NAMES.length) {
-            return TYPE_NAMES[type];
-        }
-        return "";
+    /** 最近一次落子是否发生了战斗（用于吃子爆点动画）。 */
+    public boolean lastWasFight() {
+        return lastBattle != null && lastBattle.length() > 0;
     }
 
-    public int sideToMove() {
-        return sideToMove;
+    private static boolean inBounds(int r, int c) {
+        return r >= 0 && r < ROWS && c >= 0 && c < COLS;
     }
 
-    public int winner() {
-        return winner;
+    /** 从 (r,c) 到 (nr,nc) 是否被山界挡住（仅中线 r5↔r6 的第 2/4 列被挡）。 */
+    private boolean mountainBlocked(int r, int c, int nr, int nc) {
+        boolean crossing = (r == 5 && nr == 6) || (r == 6 && nr == 5);
+        return crossing && (c == 1 || c == 3) && nc == c;
     }
 
-    public String endReason() {
-        return endReason;
-    }
+    // ------------------------------------------------------------ 布阵
 
-    public boolean gameOver() {
-        return winner != 0;
-    }
-
-    public List<int[]> history() {
-        return new ArrayList<int[]>(history);
-    }
-
-    public static int opponent(int color) {
-        return color == RED ? BLACK : RED;
-    }
-
-    // ---------- 特殊格 ----------
-
-    public static boolean isHq(int row, int col) {
-        return col == 1 || col == 3 ? (row == 0 || row == ROWS - 1) : false;
-    }
-
-    public static boolean isCamp(int row, int col) {
-        if (col == 2) {
-            return row == 3 || row == 8;
-        }
-        if (col == 1 || col == 3) {
-            return row == 2 || row == 4 || row == 7 || row == 9;
-        }
-        return false;
-    }
-
-    /** 铁路格（可沿铁路长距离移动）。 */
-    public static boolean isRail(int row, int col) {
-        if (row == 1 || row == 5 || row == 6 || row == 10) {
-            return true;
-        }
-        return (col == 0 || col == 4) && row >= 1 && row <= 10;
-    }
-
-    public static boolean sameRailLine(int r1, int c1, int r2, int c2) {
-        if (r1 == r2) {
-            return isRail(r1, c1) && isRail(r2, c2);
-        }
-        if (c1 == c2) {
-            return isRail(r1, c1) && isRail(r2, c2);
-        }
-        return false;
-    }
-
-    public static String pointName(int row, int col) {
-        return String.valueOf((char) ('A' + col)) + (ROWS - row);
-    }
-
-    private JunqiBoard(JunqiBoard o) {
-        System.arraycopy(o.grid, 0, grid, 0, grid.length);
-        System.arraycopy(o.owner, 0, owner, 0, owner.length);
-        sideToMove = o.sideToMove;
-        winner = o.winner;
-        endReason = o.endReason;
-        history.addAll(o.history);
-    }
-
-    public JunqiBoard copy() {
-        return new JunqiBoard(this);
-    }
-
-
-    // ---------- 走子与战斗 ----------
-
-    /** 该格棋子能不能动（地雷、军旗、以及进了大本营的棋子都不能动）。 */
-    public boolean canMovePiece(int point) {
-        int t = grid[point];
-        if (owner[point] == EMPTY || t == MINE || t == FLAG) {
-            return false;
-        }
-        return !isHq(rowOf(point), colOf(point));
-    }
-
-    /** 某一方的全部合法着法，每个着法 {fromPoint, toPoint}。 */
-    public List<int[]> legalMoves(int color) {
-        List<int[]> out = new ArrayList<int[]>();
-        for (int p = 0; p < grid.length; p++) {
-            if (owner[p] != color || !canMovePiece(p)) {
+    /** 本方可布子位置（兵站 + 大本营，共 25 个；行营开局必须留空）。 */
+    public List<Integer> placeableCells(int side) {
+        List<Integer> out = new ArrayList<Integer>();
+        for (int r = 0; r < ROWS; r++) {
+            if (sideOfRow(r) != side) {
                 continue;
             }
-            int r = rowOf(p);
-            int c = colOf(p);
-            int type = grid[p];
-            for (int[] d : DIRS) {
-                int nr = r + d[0];
-                int nc = c + d[1];
-                if (inBounds(nr, nc)) {
-                    addIfOk(out, p, idx(nr, nc), color);
-                }
-            }
-            if (!isRail(r, c)) {
-                continue;
-            }
-            if (type == ENGINEER) {
-                engineerRail(out, p, color);
-            } else {
-                for (int[] d : DIRS) {
-                    int nr = r + d[0];
-                    int nc = c + d[1];
-                    while (inBounds(nr, nc) && isRail(nr, nc)) {
-                        int q = idx(nr, nc);
-                        if (owner[q] == color) {
-                            break;
-                        }
-                        if (owner[q] != EMPTY && isCamp(nr, nc)) {
-                            break;
-                        }
-                        out.add(new int[]{p, q});
-                        if (owner[q] != EMPTY) {
-                            break;
-                        }
-                        nr += d[0];
-                        nc += d[1];
-                    }
+            for (int c = 0; c < COLS; c++) {
+                if (KIND[idx(r, c)] != 1) {
+                    out.add(idx(r, c));
                 }
             }
         }
         return out;
     }
 
-    private static final int[][] DIRS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-
-    private void addIfOk(List<int[]> out, int from, int to, int color) {
-        int o = owner[to];
-        if (o == color) {
-            return;
+    /** 该行属于哪一方（上半=黑，下半=红；无归属返回 0）。 */
+    public int sideOfRow(int r) {
+        if (r < 0 || r >= ROWS) {
+            return 0;
         }
-        if (o != EMPTY && isCamp(rowOf(to), colOf(to))) {
-            return;
-        }
-        out.add(new int[]{from, to});
+        return r <= 5 ? BLACK : RED;
     }
 
-    /** 工兵沿铁路拐弯：只能走铁路格，己方格挡路，敌方格只能作为终点。 */
-    private void engineerRail(List<int[]> out, int from, int color) {
-        boolean[] seen = new boolean[grid.length];
-        java.util.ArrayDeque<Integer> queue = new java.util.ArrayDeque<Integer>();
-        seen[from] = true;
-        queue.add(from);
-        while (!queue.isEmpty()) {
-            int p = queue.poll();
-            int r = rowOf(p);
-            int c = colOf(p);
-            for (int[] d : DIRS) {
-                int nr = r + d[0];
-                int nc = c + d[1];
-                if (!inBounds(nr, nc) || !isRail(nr, nc)) {
+    /** 随机摆一个合法阵型：军旗进大本营、地雷限后两排、炸弹不进第一排。 */
+    public void randomSetup(int side, Random rnd) {
+        List<Integer> cells = placeableCells(side);
+        for (int idx : cells) {
+            cell[idx] = null;
+        }
+        shuffle(cells, rnd);          // 打乱后按顺序放，保证随机且均匀
+
+        List<Integer> pool = new ArrayList<Integer>();
+        addN(pool, JUNQI, 1);
+        addN(pool, SILING, 1);
+        addN(pool, JUNZHANG, 1);
+        addN(pool, SHIZHANG, 2);
+        addN(pool, LVZHANG, 2);
+        addN(pool, TUANZHANG, 2);
+        addN(pool, YINGZHANG, 2);
+        addN(pool, LIANZHANG, 3);
+        addN(pool, PAIZHANG, 3);
+        addN(pool, GONGBING, 3);
+        addN(pool, DILEI, 3);
+        addN(pool, ZHADAN, 2);
+
+        int frontRow = (side == RED) ? 6 : 5;
+        int mineMin = (side == RED) ? 10 : 0;
+        int mineMax = (side == RED) ? 11 : 1;
+
+        // 先放受限棋子（军旗 / 地雷 / 炸弹）
+        for (int t : new int[]{JUNQI, DILEI, DILEI, DILEI, ZHADAN, ZHADAN}) {
+            for (int idx : cells) {
+                if (cell[idx] != null) {
                     continue;
                 }
-                int np = idx(nr, nc);
-                if (seen[np]) {
-                    continue;
+                int r = idx / COLS;
+                boolean ok;
+                if (t == JUNQI) {
+                    ok = isHq(r, idx % COLS);
+                } else if (t == DILEI) {
+                    ok = r >= mineMin && r <= mineMax;
+                } else {
+                    ok = r != frontRow;
                 }
-                seen[np] = true;
-                if (owner[np] == color) {
-                    continue;
+                if (ok) {
+                    cell[idx] = new Pc(side, t);
+                    pool.remove(Integer.valueOf(t));
+                    break;
                 }
-                if (owner[np] != EMPTY && isCamp(nr, nc)) {
-                    continue;
-                }
-                out.add(new int[]{from, np});
-                if (owner[np] == EMPTY) {
-                    queue.add(np);
+            }
+        }
+
+        // 其余棋子按打乱顺序放剩余空位
+        int p = 0;
+        for (int idx : cells) {
+            if (cell[idx] == null && p < pool.size()) {
+                cell[idx] = new Pc(side, pool.get(p++));
+            }
+        }
+        // 暗棋：己方明、敌方扣
+        for (int idx : cells) {
+            Pc pc = cell[idx];
+            if (pc != null) {
+                pc.faceDown = (pc.side == BLACK);
+            }
+        }
+    }
+
+    private static void addN(List<Integer> pool, int type, int n) {
+        for (int i = 0; i < n; i++) {
+            pool.add(type);
+        }
+    }
+
+    private static void shuffleInt(List<int[]> a, Random rnd) {
+        for (int i = a.size() - 1; i > 0; i--) {
+            int j = rnd.nextInt(i + 1);
+            int[] t = a.get(i);
+            a.set(i, a.get(j));
+            a.set(j, t);
+        }
+    }
+
+    private static void shuffle(List<Integer> a, Random rnd) {
+        for (int i = a.size() - 1; i > 0; i--) {
+            int j = rnd.nextInt(i + 1);
+            int t = a.get(i);
+            a.set(i, a.get(j));
+            a.set(j, t);
+        }
+    }
+
+    /** 布阵阶段：对调本方两枚棋子（玩家手动调整阵型）。 */
+    public boolean swapOwn(int side, int r1, int c1, int r2, int c2) {
+        if (!setupPhase || !inBounds(r1, c1) || !inBounds(r2, c2)) {
+            return false;
+        }
+        Pc a = cell[idx(r1, c1)], b = cell[idx(r2, c2)];
+        if (a == null || b == null || a.side != side || b.side != side) {
+            return false;
+        }
+        if (!canSit(side, a.type, r2, c2) || !canSit(side, b.type, r1, c1)) {
+            return false;
+        }
+        cell[idx(r1, c1)] = b;
+        cell[idx(r2, c2)] = a;
+        return true;
+    }
+
+    /** 棋子 type 能否放在 (r,c)（布阵约束）。 */
+    private boolean canSit(int side, int type, int r, int c) {
+        if (isCamp(r, c)) {
+            return false;
+        }
+        int frontRow = (side == RED) ? 6 : 5;
+        if (type == JUNQI) {
+            return isHq(r, c);
+        }
+        if (type == DILEI) {
+            return (side == RED) ? (r >= 10) : (r <= 1);
+        }
+        if (type == ZHADAN) {
+            return r != frontRow;
+        }
+        return true;
+    }
+
+    /** 结束布阵，开始对局（红先）。 */
+    public void beginBattle() {
+        setupPhase = false;
+        sideToMove = RED;
+    }
+
+    public boolean isSetupPhase() {
+        return setupPhase;
+    }
+
+    // ------------------------------------------------------------ 查询
+
+    public Pc at(int r, int c) {
+        if (!inBounds(r, c)) {
+            return null;
+        }
+        return cell[idx(r, c)];
+    }
+
+    public int sideToMove() {
+        return sideToMove;
+    }
+
+    public boolean gameOver() {
+        return result != 0;
+    }
+
+    /** 0=进行中 1=红胜 2=黑胜 3=和棋。 */
+    public int result() {
+        return result;
+    }
+
+    public String lastBattle() {
+        return lastBattle;
+    }
+
+    public List<Pc> captured() {
+        return captured;
+    }
+
+    public static String typeName(int t) {
+        switch (t) {
+            case SILING: return "司令";
+            case JUNZHANG: return "军长";
+            case SHIZHANG: return "师长";
+            case LVZHANG: return "旅长";
+            case TUANZHANG: return "团长";
+            case YINGZHANG: return "营长";
+            case LIANZHANG: return "连长";
+            case PAIZHANG: return "排长";
+            case GONGBING: return "工兵";
+            case DILEI: return "地雷";
+            case ZHADAN: return "炸弹";
+            case JUNQI: return "军旗";
+            default: return "?";
+        }
+    }
+
+    /** 深拷贝（AI 搜索用）：地形是静态共享的，只复制棋子与对局状态。 */
+    public JunqiBoard copy() {
+        JunqiBoard b = new JunqiBoard(0L);
+        for (int i = 0; i < cell.length; i++) {
+            Pc p = cell[i];
+            if (p == null) {
+                b.cell[i] = null;
+            } else {
+                Pc q = new Pc(p.side, p.type);
+                q.revealed = p.revealed;
+                q.moved = p.moved;
+                b.cell[i] = q;
+            }
+        }
+        b.sideToMove = sideToMove;
+        b.setupPhase = setupPhase;
+        b.quietSteps = quietSteps;
+        b.result = result;
+        b.lastBattle = lastBattle;
+        return b;
+    }
+
+    /** 该方所有棋子设为“已亮出”（确定性化搜索用：在这个采样的世界里视为全知）。 */
+    public void revealAll(int side) {
+        for (Pc p : cell) {
+            if (p != null && p.side == side) {
+                p.revealed = true;
+            }
+        }
+    }
+
+    // ------------------------------------------------------------ 测试挂钩
+
+    /** 仅供测试：直接摆放一枚棋子（不走布阵校验）。 */
+    public void testPut(int r, int c, int side, int type) {
+        if (inBounds(r, c)) {
+            cell[idx(r, c)] = new Pc(side, type);
+        }
+    }
+
+    /** 仅供测试：清除一格。 */
+    public void testClear(int r, int c) {
+        if (inBounds(r, c)) {
+            cell[idx(r, c)] = null;
+        }
+    }
+
+    /** 仅供测试：跳过布阵，直接进入对局。 */
+    public void testStartBattle() {
+        setupPhase = false;
+        sideToMove = RED;
+    }
+
+    /** 仅供 AI 搜索：直接替换一格棋子（保留棋子对象，不产生任何对局副作用）。 */
+    public void aiSet(int r, int c, Pc p) {
+        if (inBounds(r, c)) {
+            cell[idx(r, c)] = p;
+        }
+    }
+
+    // ------------------------------------------------------------ 走法生成
+
+    private void roadNeighbors(int r, int c, List<int[]> out) {
+        int[][] d = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+        for (int[] dd : d) {
+            int nr = r + dd[0], nc = c + dd[1];
+            if (!inBounds(nr, nc) || mountainBlocked(r, c, nr, nc)) {
+                continue;
+            }
+            out.add(new int[]{nr, nc});
+        }
+        // 行营四周有斜线，可斜走一步
+        if (isCamp(r, c)) {
+            int[][] dg = {{-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
+            for (int[] dd : dg) {
+                int nr = r + dd[0], nc = c + dd[1];
+                if (inBounds(nr, nc)) {
+                    out.add(new int[]{nr, nc});
                 }
             }
         }
     }
 
-    public boolean isLegal(int fr, int fc, int tr, int tc) {
-        if (!inBounds(fr, fc) || !inBounds(tr, tc)) {
+    private void railNeighbors(int r, int c, List<int[]> out) {
+        if (!isRail(r, c)) {
+            return;
+        }
+        int[][] d = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+        for (int[] dd : d) {
+            int nr = r + dd[0], nc = c + dd[1];
+            if (!inBounds(nr, nc) || !RAIL[nr][nc] || mountainBlocked(r, c, nr, nc)) {
+                continue;
+            }
+            out.add(new int[]{nr, nc});
+        }
+    }
+
+    /** 地雷、军旗、以及进大本营的棋子都不能动。 */
+    private boolean movable(Pc p, int r, int c) {
+        if (p == null || p.type == DILEI || p.type == JUNQI) {
             return false;
         }
-        int from = idx(fr, fc);
-        if (owner[from] != sideToMove || !canMovePiece(from)) {
+        return !isHq(r, c);
+    }
+
+    /** side 的所有合法着法，元素为 {fromRow, fromCol, toRow, toCol}。 */
+    public List<int[]> legalMoves(int side) {
+        List<int[]> out = new ArrayList<int[]>();
+        if (gameOver() || setupPhase) {
+            return out;
+        }
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                Pc p = cell[idx(r, c)];
+                if (p == null) {
+                    continue;
+                }
+                if (flipMode) {
+                    if (p.faceDown) {
+                        out.add(new int[]{r, c, r, c});   // 翻牌也算一步
+                    } else if (p.side == side && movable(p, r, c)) {
+                        addMovesFrom(out, p, r, c);
+                    }
+                    continue;
+                }
+                if (p.side != side || !movable(p, r, c)) {
+                    continue;
+                }
+                addMovesFrom(out, p, r, c);
+            }
+        }
+        return out;
+    }
+
+    private void addMovesFrom(List<int[]> out, Pc p, int r, int c) {
+        List<int[]> nb = new ArrayList<int[]>();
+        roadNeighbors(r, c, nb);
+        for (int[] n : nb) {
+            addIfOk(out, p, r, c, n[0], n[1]);
+        }
+        if (isRail(r, c)) {
+            if (p.type == GONGBING) {
+                addEngineerRailMoves(out, p, r, c);
+            } else {
+                addStraightRailMoves(out, p, r, c);
+            }
+        }
+    }
+
+    /** 普通棋子：沿铁路直线滑行任意远，不可越子。 */
+    private void addStraightRailMoves(List<int[]> out, Pc p, int r, int c) {
+        int[][] d = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+        for (int[] dd : d) {
+            int pr = r, pc = c;
+            int nr = r + dd[0], nc = c + dd[1];
+            while (inBounds(nr, nc) && isRail(nr, nc) && !mountainBlocked(pr, pc, nr, nc)) {
+                Pc q = cell[idx(nr, nc)];
+                if (q == null) {
+                    addIfOk(out, p, r, c, nr, nc);
+                } else {
+                    if (q.side != p.side) {
+                        addIfOk(out, p, r, c, nr, nc);
+                    }
+                    break;   // 有子挡路，直线到此为止
+                }
+                pr = nr;
+                pc = nc;
+                nr += dd[0];
+                nc += dd[1];
+            }
+        }
+    }
+
+    /** 工兵：沿铁路网可拐弯，走到任意连通铁路格（路径不可被挡）。 */
+    private void addEngineerRailMoves(List<int[]> out, Pc p, int r, int c) {
+        boolean[][] seen = new boolean[ROWS][COLS];
+        List<int[]> queue = new ArrayList<int[]>();
+        queue.add(new int[]{r, c});
+        seen[r][c] = true;
+        int head = 0;
+        while (head < queue.size()) {
+            int[] cur = queue.get(head++);
+            List<int[]> nb = new ArrayList<int[]>();
+            railNeighbors(cur[0], cur[1], nb);
+            for (int[] n : nb) {
+                if (seen[n[0]][n[1]]) {
+                    continue;
+                }
+                seen[n[0]][n[1]] = true;
+                Pc q = cell[idx(n[0], n[1])];
+                if (q != null && q.side == p.side) {
+                    continue;                    // 己方子挡路
+                }
+                addIfOk(out, p, r, c, n[0], n[1]);
+                if (q == null) {
+                    queue.add(new int[]{n[0], n[1]});   // 空格才能继续往前
+                }
+            }
+        }
+    }
+
+    /** 目标格合法性：己方格不行；敌方行营有子不能吃（行营安全）；去重。 */
+    private void addIfOk(List<int[]> out, Pc p, int fr, int fc, int tr, int tc) {
+        if (tr == fr && tc == fc) {
+            return;
+        }
+        Pc q = cell[idx(tr, tc)];
+        if (q != null && q.side == p.side) {
+            return;
+        }
+        if (q != null && isCamp(tr, tc)) {
+            return;
+        }
+        for (int[] m : out) {
+            if (m[0] == fr && m[1] == fc && m[2] == tr && m[3] == tc) {
+                return;
+            }
+        }
+        out.add(new int[]{fr, fc, tr, tc});
+    }
+
+    // ------------------------------------------------------------ 落子与战斗
+
+    public boolean isLegal(int side, int fr, int fc, int tr, int tc) {
+        if (gameOver() || setupPhase) {
             return false;
         }
-        int to = idx(tr, tc);
-        List<int[]> all = legalMoves(sideToMove);
-        for (int[] mv : all) {
-            if (mv[0] == from && mv[1] == to) {
+        if (flipMode && fr == tr && fc == tc) {
+            Pc fp = at(fr, fc);
+            return fp != null && fp.faceDown;   // 翻牌
+        }
+        Pc p = at(fr, fc);
+        if (p == null || p.side != side || !movable(p, fr, fc)) {
+            return false;
+        }
+        for (int[] m : legalMoves(side)) {
+            if (m[0] == fr && m[1] == fc && m[2] == tr && m[3] == tc) {
                 return true;
             }
         }
         return false;
     }
 
-    /** 落子：合法的才落，返回是否真的走了。战斗结果写在 {@link #lastBattle()}。 */
-    public boolean play(int fr, int fc, int tr, int tc) {
-        if (gameOver() || !isLegal(fr, fc, tr, tc)) {
-            return false;
+    /**
+     * 走棋并结算战斗。返回攻方视角的 {@link #RES_MOVE}/{@link #RES_WIN}/{@link #RES_LOSE}/{@link #RES_BOTH}；
+     * 非法着法返回 -1 且不改变局面。
+     */
+    public int play(int side, int fr, int fc, int tr, int tc) {
+        if (!isLegal(side, fr, fc, tr, tc)) {
+            return -1;
         }
-        int from = idx(fr, fc);
-        int to = idx(tr, tc);
-        int atk = grid[from];
-        int atkOwner = owner[from];
-        int def = grid[to];
-        int defOwner = owner[to];
-        lastAtkType = atk;
-        lastDefType = def;
-        lastResult = 0;
-        lastAttacker = atkOwner;
-        history.add(new int[]{fr, fc, tr, tc});
-        if (defOwner == EMPTY) {
-            move(from, to);
-            lastBattle = "移动";
-        } else if (def == FLAG) {
-            winner = atkOwner;
-            endReason = "军旗被夺";
-            move(from, to);
-            lastBattle = "夺旗";
-            lastResult = atkOwner;
-            return true;
-        } else if (atk == BOMB || def == BOMB) {
-            clear(from);
-            clear(to);
-            lastBattle = "炸弹同归于尽";
-        } else if (def == MINE) {
-            if (atk == ENGINEER) {
-                move(from, to);
-                lastBattle = "工兵挖雷";
-                lastResult = atkOwner;
-            } else {
-                clear(from);
-                lastBattle = "踩雷阵亡";
-                lastResult = defOwner;
+        if (flipMode && fr == tr && fc == tc) {
+            Pc fp = cell[idx(fr, fc)];
+            if (fp == null || !fp.faceDown) {
+                return -1;
             }
-        } else if (atk > def) {
-            move(from, to);
-            lastBattle = "吃掉对方";
-            lastResult = atkOwner;
-        } else if (atk < def) {
-            clear(from);
-            lastBattle = "攻击失败阵亡";
-            lastResult = defOwner;
+            fp.faceDown = false;
+            fp.revealed = true;
+            lastBattle = "翻出 " + typeName(fp.type);
+            sideToMove = opponent(side);
+            return RES_MOVE;
+        }
+        Pc p = cell[idx(fr, fc)];
+        Pc q = cell[idx(tr, tc)];
+        int res = RES_MOVE;
+
+        if (q == null) {
+            cell[idx(tr, tc)] = p;
+            cell[idx(fr, fc)] = null;
+            lastBattle = "";
         } else {
-            clear(from);
-            clear(to);
-            lastBattle = "同级同归于尽";
-        }
-        sideToMove = opponent(atkOwner);
-        if (winner == 0 && legalMoves(sideToMove).isEmpty()) {
-            winner = opponent(sideToMove);
-            endReason = "对方无子可走";
-        }
-        return true;
-    }
-
-    private String lastBattle = "";
-    private int lastAtkType;
-    private int lastDefType;
-    private int lastResult;
-    private int lastAttacker;
-
-    public String lastBattle() {
-        return lastBattle;
-    }
-
-    /** 上一手交战双方兵种与结果，供界面把「被吃的对方兵种」翻出来给人看。 */
-    public int lastAtkType() { return lastAtkType; }
-    public int lastDefType() { return lastDefType; }
-    /** 上一手战斗胜方颜色（RED/BLACK）；同归于尽/普通移动为 0。 */
-    public int lastResult() { return lastResult; }
-    /** 上一手进攻方颜色（用于把「对方被吃的兵种」翻出来给人看）。 */
-    public int lastAttacker() { return lastAttacker; }
-
-    private void move(int from, int to) {
-        grid[to] = grid[from];
-        owner[to] = owner[from];
-        clear(from);
-    }
-
-    private void clear(int p) {
-        grid[p] = EMPTY;
-        owner[p] = EMPTY;
-    }
-
-    public int count(int color) {
-        int n = 0;
-        for (int i = 0; i < grid.length; i++) {
-            if (owner[i] == color) {
-                n++;
+            p.revealed = true;      // 交战后双方亮身份
+            q.revealed = true;
+            p.faceDown = false;
+            q.faceDown = false;
+            int outcome = fight(p.type, q.type);
+            if (outcome > 0) {
+                cell[idx(tr, tc)] = p;
+                cell[idx(fr, fc)] = null;
+                captured.add(q);
+                res = RES_WIN;
+                lastBattle = typeName(p.type) + " 吃掉 " + typeName(q.type);
+            } else if (outcome < 0) {
+                cell[idx(fr, fc)] = null;
+                captured.add(p);
+                res = RES_LOSE;
+                lastBattle = typeName(q.type) + " 吃掉 " + typeName(p.type);
+            } else {
+                cell[idx(fr, fc)] = null;
+                cell[idx(tr, tc)] = null;
+                captured.add(p);
+                captured.add(q);
+                res = RES_BOTH;
+                lastBattle = typeName(p.type) + " 与 " + typeName(q.type) + " 同归于尽";
             }
+            quietSteps = 0;
         }
-        return n;
+
+        if (res == RES_MOVE) {
+            quietSteps++;
+        }
+        p.moved = true;
+
+        if (q != null && q.type == JUNQI) {
+            result = (side == RED) ? 1 : 2;          // 扛旗
+        } else if (quietSteps >= DRAW_STEPS) {
+            result = 3;
+        } else if (legalMoves(opponent(side)).isEmpty()) {
+            result = (side == RED) ? 1 : 2;          // 对方无棋可走
+        }
+
+        if (result == 0) {
+            sideToMove = opponent(side);
+        } else {
+            setupPhase = false;
+        }
+        return res;
+    }
+
+    public static int opponent(int side) {
+        return side == RED ? BLACK : RED;
+    }
+
+    /**
+     * 战斗判定（攻方视角）：>0 攻方胜，<0 守方胜，0 同归于尽。
+     * 军衔高者胜；同级同归于尽；炸弹与任何子同归于尽；
+     * 非工兵撞地雷 → 攻方亡、雷保留；工兵撞地雷 → 雷消、工兵胜。
+     */
+    static int fight(int attacker, int defender) {
+        if (attacker == ZHADAN || defender == ZHADAN) {
+            return 0;
+        }
+        if (defender == DILEI) {
+            return attacker == GONGBING ? 1 : -1;
+        }
+        if (attacker == DILEI) {
+            return -1;
+        }
+        if (attacker > defender) {
+            return 1;
+        }
+        if (attacker < defender) {
+            return -1;
+        }
+        return 0;
+    }
+
+    /** 调试用。 */
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                Pc p = cell[idx(r, c)];
+                sb.append(p == null ? "··" : (p.side == RED ? "R" : "B") + Integer.toString(p.type));
+                sb.append(' ');
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
     }
 }

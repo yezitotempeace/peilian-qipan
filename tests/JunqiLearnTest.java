@@ -3,8 +3,6 @@
  * Copyright (C) 2026 yezitotempeace
  */
 
-import com.autogo.JunqiAI;
-import com.autogo.JunqiBoard;
 import com.autogo.JunqiLearn;
 
 import java.io.File;
@@ -73,15 +71,15 @@ public class JunqiLearnTest {
         small.recordGame(Arrays.asList("a", "b", "c"), JunqiLearn.WIN);
         chk("超过容量只留 2 个特征", 2, small.keys());
 
-        // 特征：同一步棋稳定，进攻子不同则不同
-        JunqiBoard b = new JunqiBoard(true);
-        b.put(6, 1, JunqiBoard.RED, JunqiBoard.COMMANDER);
-        b.put(6, 3, JunqiBoard.RED, JunqiBoard.ENGINEER);
-        String k1 = JunqiLearn.keyFor(b, JunqiBoard.RED, new int[]{6, 1, 5, 1});
-        String k2 = JunqiLearn.keyFor(b, JunqiBoard.RED, new int[]{6, 1, 5, 1});
-        String k3 = JunqiLearn.keyFor(b, JunqiBoard.RED, new int[]{6, 3, 5, 3});
-        chk("同一步特征稳定", k1, k2);
-        chk("不同兵种特征不同", true, k1 != null && !k1.equals(k3));
+        // 不同特征各自独立记账
+        JunqiLearn multi = empty();
+        multi.recordGame(Arrays.asList("司令z2"), JunqiLearn.WIN);
+        multi.recordGame(Arrays.asList("司令z2"), JunqiLearn.WIN);
+        multi.recordGame(Arrays.asList("司令z2"), JunqiLearn.WIN);
+        multi.recordGame(Arrays.asList("工兵z0"), JunqiLearn.LOSS);
+        chk("两个特征都记上了", 2, multi.keys());
+        chk("常胜特征加权高于常败特征", true,
+                multi.bonus("司令z2") > multi.bonus("工兵z0"));
 
         
         // ---------- 体积上限：预算调小后，写出来的文件必须被裁到预算以内 ----------

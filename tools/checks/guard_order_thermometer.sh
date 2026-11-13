@@ -27,7 +27,7 @@ build_and_run() {   # $1=源码根（含 src/ tests/） $2=工作目录
     "$R/src/com/autogo/BuildInfo.java" "$R/src/com/autogo/IntegrityGuard.java" "$R/src/com/autogo/Eula.java" "$R/src/com/autogo/GomokuLearn.java" "$R/src/com/autogo/AnimMath.java" "$R/src/com/autogo/XiangqiBoard.java" \
     "$R/src/com/autogo/XiangqiAI.java" "$R/src/com/autogo/XiangqiEngineApi.java" "$R/src/com/autogo/XiangqiEngine.java" \
     "$R/src/com/autogo/XiangqiLearn.java" "$R/src/com/autogo/XiangqiReview.java" \
-    "$R/src/com/autogo/JunqiBoard.java" "$R/src/com/autogo/JunqiAI.java" "$R/src/com/autogo/JunqiLearn.java" "$R/src/com/autogo/JunqiReveal.java" "$R/src/com/autogo/Game2048.java" || return 1
+    "$R/src/com/autogo/JunqiBoard.java" "$R/src/com/autogo/JunqiAI.java" $R/src/com/autogo/JunqiLearn.java "$R/src/com/autogo/Game2048.java" || return 1
   "$JAVAC" -encoding UTF-8 -nowarn -cp "$W/fakecls:$W/basecls:$ANDROID_JAR" -d "$W/stubcls" $(find "$R/tests/ui/stub" -name '*.java') || return 1
   "$JAVAC" -encoding UTF-8 -nowarn -cp "$W/fakecls:$W/basecls:$W/stubcls:$ANDROID_JAR" -d "$W/realcls" \
     "$R/src/com/autogo/GomokuActivity.java" "$R/src/com/autogo/GomokuView.java" "$R/src/com/autogo/GomokuReviewActivity.java" \

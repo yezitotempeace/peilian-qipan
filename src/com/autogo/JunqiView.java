@@ -27,7 +27,6 @@ public class JunqiView extends View {
     }
 
     private JunqiBoard board;
-    private boolean[] hidden;
     private int selected = -1;
     private int[] legal;
     private int lastFrom = -1;
@@ -155,7 +154,6 @@ public class JunqiView extends View {
         invalidate();
     }
 
-    public void setHidden(boolean[] h) { hidden = h; invalidate(); }
     public void setSelected(int row, int col) { selected = (board == null || row < 0) ? -1 : row * cols + col; invalidate(); }
     public void setLegalPoints(int[] points) { legal = points; invalidate(); }
 
@@ -391,8 +389,16 @@ public class JunqiView extends View {
                 if (idxOfFlip(r, c) >= 0) {
                     continue;
                 }
-                boolean back = hidden != null && p < hidden.length && hidden[p];
-                drawPiece(canvas, cx(c), cy(r), color, board.at(r, c), back);
+                boolean back = board.faceDown(r, c);
+                drawPiece(canvas, cx(c), cy(r), color, board.typeAt(r, c), back);
+                JunqiBoard.Pc pc = board.at(r, c);
+                if (pc != null && pc.side == JunqiBoard.BLACK && pc.moved && !pc.revealed) {
+                    // 已移动过的敌子 ⇒ 一定不是地雷/军旗：画个小点帮玩家推断
+                    mark.setStyle(Paint.Style.FILL);
+                    mark.setColor(0xCC1A73E8);
+                    canvas.drawCircle(cx(c) + stationW * 0.30f, cy(r) - stationH * 0.34f,
+                            Math.max(2.5f, cw * 0.045f), mark);
+                }
             }
         }
         if (animPoint >= 0) {
@@ -402,16 +408,16 @@ public class JunqiView extends View {
                 float e = AnimMath.easeOut(animP);
                 float x = AnimMath.lerp(cx(animFrom % cols), cx(tc), e);
                 float y = AnimMath.lerp(cy(animFrom / cols), cy(tr), e);
-                boolean back = hidden != null && animTo < hidden.length && hidden[animTo];
+                boolean back = board.faceDown(tr, tc);
                 // 落子带缩放：从小到大落下，滑动不再是纯位移
-                drawPiece(canvas, x, y, mover, board.at(tr, tc), back, 0.72f + 0.28f * e);
+                drawPiece(canvas, x, y, mover, board.typeAt(tr, tc), back, 0.72f + 0.28f * e);
             }
             float fa = 0.55f * (1f - animP);
             mark.setColor(((int) (fa * 255) << 24) | 0x00FFB300);
             mark.setStrokeWidth(Math.max(2f, cw * 0.04f));
             canvas.drawCircle(cx(tc), cy(tr), stationW * (0.55f + 0.35f * AnimMath.easeOut(animP)), mark);
             // 吃子（交战）再叠一个红色爆点，让「吃掉对方」这一下看得见
-            if (board.lastDefType() != JunqiBoard.EMPTY) {
+            if (board.lastWasFight()) {
                 float bp = AnimMath.easeOut(animP);
                 int ba = (int) (0.55f * (1f - animP) * 255);
                 mark.setColor((ba << 24) | 0x00FF5A3C);
@@ -497,6 +503,13 @@ public class JunqiView extends View {
         face.setColor(back ? (dark ? 0xFF546E7A : 0xFF9E8F72) : body);
         tmpR2.set(x - pw * 0.45f, y - ph * 0.42f, x + pw * 0.45f, y + ph * 0.42f);
         canvas.drawRoundRect(tmpR2, radius * 0.7f, radius * 0.7f, face);
+        if (!back) {
+            // 内框高光：让棋子更有立体感（原来 inner 色定义了没用上）
+            pieceLine.setStrokeWidth(Math.max(1f, cw * 0.010f));
+            pieceLine.setColor(inner);
+            tmpR2.set(x - pw * 0.34f, y - ph * 0.30f, x + pw * 0.34f, y + ph * 0.30f);
+            canvas.drawRoundRect(tmpR2, radius * 0.45f, radius * 0.45f, pieceLine);
+        }
         if (back) {
             face.setColor(dark ? 0xFF7A8FA3 : 0xFF6B5740);
             canvas.drawCircle(x, y, ph * 0.22f, face);

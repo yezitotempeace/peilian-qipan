@@ -246,7 +246,7 @@ public class MenuActivity extends Activity {
         root.addView(sudoku, buttonRow(0, 10));
 
         TextView hint = new TextView(this);
-        hint.setText("围棋：9 / 13 / 19 路 · KataGo 引擎\n五子棋：13 / 15 / 19 路 · 内置 AI\n象棋：内置三档 AI\n军棋：明棋 / 暗棋 · 内置 AI\n2048：4×4 数字合并\n数独：9×9 逻辑填数 · 三档");
+        hint.setText("围棋：9 / 13 / 19 路 · KataGo 引擎\n五子棋：13 / 15 / 19 路 · 内置 AI\n象棋：内置三档 AI\n军棋：暗棋 / 翻棋 · 三档棋力\n2048：4×4 数字合并\n数独：9×9 逻辑填数 · 三档");
         hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         hint.setTextColor(palette.textDim);
         hint.setGravity(Gravity.CENTER);

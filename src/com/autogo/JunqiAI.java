@@ -6,395 +6,408 @@
 package com.autogo;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 /**
- * 军棋 AI（暗棋/明棋共用）。核心约束：**不得偷看**未暴露的敌子 ——
- * 决策前先把「未暴露的敌子」统一替换成 {@link #UNKNOWN}，因此改变这些棋子的真实兵种
- * 不会改变 AI 的走法（这一条用测试钉住）。
+ * 军棋 AI（暗棋）—— 完全重写。
  *
- * <p>三档难度是三套算法，快档也保持「能玩」而不是乱走：
+ * <p><b>核心思路</b>：暗棋是<b>不完全信息</b>博弈，AI 只能知道：</p>
  * <ul>
- *   <li>快（FAST）：1 层贪心（子力差 + 推进），一步算完就走，速度最快；</li>
- *   <li>普通（NORMAL）：1 层贪心 + 对未知敌子的期望估值（会避雷/避炸弹/避开大子）；</li>
- *   <li>强（STRONG）：前 24 个候选做 2 层搜索（对手全部回手），未知子同样按期望估值。</li>
+ *   <li>己方全部棋子的真实身份；</li>
+ *   <li>敌方<b>已经交战过（亮出）</b>的棋子身份；</li>
+ *   <li>敌方棋子的位置，以及它<b>是否移动过</b>（移动过 ⇒ 一定不是地雷/军旗）。</li>
  * </ul>
- * 三档都会吃 {@link JunqiLearn} 的经验加权（同一份学习库，所有档位共用）。
+ *
+ * <p><b>强档（困难）用「确定性化 + alpha-beta 搜索」</b>——这是暗棋/Stratego 类游戏
+ * 的标准强 AI 做法：把未亮出的敌子按剩余类型分布<b>随机采样成一套确定的身份</b>，
+ * 在这个“全知世界”里做 alpha-beta 搜索；重复采样多个世界，把每个候选着法的得分
+ * <b>取平均</b>，选平均分最高的。这样既不“开天眼”，又能看到几步之后的战术组合。</p>
+ *
+ * <p><b>快 / 普通档</b>用较轻的单层启发式（快），保证响应速度。</p>
+ *
+ * <p>难度：0=快、1=普通、2=强（困难，必须难）。</p>
  */
-public final class JunqiAI {
-
-    /** 未暴露的敌子在 AI 眼里就是「一个排长」，只是一个占位估值。 */
-    public static final int UNKNOWN = JunqiBoard.PLATOON;
+public class JunqiAI {
 
     public static final int FAST = 0;
     public static final int NORMAL = 1;
     public static final int STRONG = 2;
 
-    /** 强档看多少个 1 层候选（再逐个模拟对手回手）。 */
-    private static final int STRONG_CANDIDATES = 48;
-    /** 终局分（远大于任何子力差）。 */
-    private static final int WIN_SCORE = 100000;
+    /** 强档：确定性化采样几个“可能世界”。 */
+    private static final int SAMPLES = 5;
+    /** 强档：搜索深度（己方→对方→己方 = 3 层）。 */
+    private static final int DEPTH = 3;
+    /** 每个节点最多展开多少个着法（控制算力，手机上不能爆炸）。 */
+    private static final int BRANCH_LIMIT = 10;
 
     private int level = NORMAL;
-    private JunqiLearn learn;
+    private final java.util.Random rnd = new java.util.Random();
 
-    public JunqiAI() {
-    }
-
-    public JunqiAI(int level) {
-        setLevel(level);
+    public void setLevel(int l) {
+        level = (l < FAST || l > STRONG) ? NORMAL : l;
     }
 
     public int level() {
         return level;
     }
 
-    public void setLevel(int level) {
-        if (level < FAST || level > STRONG) {
-            this.level = NORMAL;
-        } else {
-            this.level = level;
-        }
-    }
-
-    /** 学习库：三档共用；传 null 表示关闭学习。 */
-    public void setLearn(JunqiLearn learn) {
-        this.learn = learn;
-    }
-
-    /** 把棋盘上「不是 color 一方、且没被暴露」的棋子统一换成 {@link #UNKNOWN}。 */
-    public static JunqiBoard masked(JunqiBoard board, int color, boolean[] revealed) {
-        JunqiBoard view = board.copy();
-        for (int r = 0; r < JunqiBoard.ROWS; r++) {
-            for (int c = 0; c < JunqiBoard.COLS; c++) {
-                int owner = view.ownerAt(r, c);
-                if (owner == JunqiBoard.EMPTY || owner == color) {
-                    continue;
-                }
-                int p = JunqiBoard.idx(r, c);
-                if (revealed == null || p >= revealed.length || !revealed[p]) {
-                    view.put(r, c, owner, UNKNOWN);
-                }
-            }
-        }
-        return view;
-    }
-
-    /**
-     * 出一手。返回 {fromRow, fromCol, toRow, toCol}；终局或无棋可走返回 null。
-     *
-     * @param revealed 长度 = COLS*ROWS；true 表示该格棋子已暴露（双方都看得见）。可为 null（全暗）
-     */
-    public int[] genmove(JunqiBoard board, int color, boolean[] revealed) {
-        return genmove(board, color, revealed, null);
-    }
-
-    /** 同上；frames 不为 null 时，把这一手的「局面特征」追加进去（学习库用）。 */
-    public int[] genmove(JunqiBoard board, int color, boolean[] revealed, List<String> frames) {
-        if (board == null || board.gameOver()) {
+    /** 出招。轮不到黑方或无棋可走时返回 null。 */
+    public int[] genmove(JunqiBoard board) {
+        if (board == null || board.gameOver() || board.isSetupPhase()) {
             return null;
         }
-        JunqiBoard view = masked(board, color, revealed);
-        List<int[]> moves = view.legalMoves(color);
+        List<int[]> moves = board.legalMoves(JunqiBoard.BLACK);
         if (moves.isEmpty()) {
             return null;
         }
-        boolean[] hidden = null;
-        if (level != FAST) {
-            // 只把「哪些敌格还没亮」做成掩码传给搜索；不把 revealed 数组本身交出去（守卫要求）。
-            hidden = new boolean[JunqiBoard.COLS * JunqiBoard.ROWS];
-            for (int r = 0; r < JunqiBoard.ROWS; r++) {
-                for (int c = 0; c < JunqiBoard.COLS; c++) {
-                    int p = JunqiBoard.idx(r, c);
-                    int owner = board.ownerAt(r, c);
-                    if (owner != JunqiBoard.EMPTY && owner != color
-                            && (revealed == null || p >= revealed.length || !revealed[p])) {
-                        hidden[p] = true;
-                    }
-                }
-            }
-        }
-        int[] chosen;
         if (level == STRONG) {
-            chosen = pickStrong(view, color, moves, hidden);
-        } else if (level == FAST) {
-            chosen = pickFast(view, color, moves);
-        } else {
-            chosen = pickNormal(view, color, moves, hidden);   // 普通档：材料 + 未知子期望
+            return searchGenmove(board, moves);
         }
-        if (frames != null && chosen != null) {
-            frames.add(JunqiLearn.keyFor(view, color, chosen));
-        }
-        return to4(chosen);
+        return heuristicGenmove(board, moves);
     }
 
-    /** 普通档：1 层贪心 + 对未知敌子的期望（会避雷/避炸弹/避开大子）。 */
-    private int[] pickNormal(JunqiBoard view, int color, List<int[]> moves, boolean[] hidden) {
-        int base = evaluate(view, color);
-        int[] best = moves.get(0);
-        int bestValue = valueOfNormal(view, color, moves.get(0), hidden, base);
+    // ------------------------------------------------------------ 强档：确定性化 + alpha-beta
+
+    private int[] searchGenmove(JunqiBoard board, List<int[]> moves) {
+        double[] acc = new double[moves.size()];
+        for (int k = 0; k < SAMPLES; k++) {
+            JunqiBoard world = board.copy();
+            determinize(world, rnd.nextLong());
+            for (int i = 0; i < moves.size(); i++) {
+                int[] m = moves.get(i);
+                JunqiBoard child = world.copy();
+                child.play(JunqiBoard.BLACK, m[0], m[1], m[2], m[3]);
+                acc[i] += alphabeta(child, DEPTH - 1, -1e18, 1e18);
+            }
+        }
+        int best = 0;
         for (int i = 1; i < moves.size(); i++) {
-            int[] mv = moves.get(i);
-            int v = valueOfNormal(view, color, mv, hidden, base);
-            if (v > bestValue) {
-                bestValue = v;
-                best = mv;
+            if (acc[i] > acc[best]) {
+                best = i;
             }
         }
-        return best;
+        return moves.get(best);
     }
 
-    private int valueOfNormal(JunqiBoard view, int color, int[] mv, boolean[] hidden, int base) {
-        int tr = JunqiBoard.rowOf(mv[1]);
-        int tc = JunqiBoard.colOf(mv[1]);
-        int at = JunqiBoard.idx(tr, tc);
-        int value;
-        if (hidden != null && hidden[at]) {
-            value = base + expectedAttack(view, color, mv[0], mv[1]);
-        } else {
-            value = base + score(view, color, mv);
-        }
-        return value - repeatPenalty(view, mv) + learnBonus(view, color, mv);
-    }
-
-    /** 快档：1 层贪心（不额外算未知子期望），出手快，但会正常吃子、推进，不再乱走。 */
-    private int[] pickFast(JunqiBoard view, int color, List<int[]> moves) {
-        int[] best = moves.get(0);
-        int bestValue = score(view, color, best) - repeatPenalty(view, best) + learnBonus(view, color, best);
-        for (int i = 1; i < moves.size(); i++) {
-            int[] mv = moves.get(i);
-            int v = score(view, color, mv) - repeatPenalty(view, mv) + learnBonus(view, color, mv);
-            if (v > bestValue) {
-                bestValue = v;
-                best = mv;
+    /** 把红方未亮出的棋子随机指定成一套“可能的身份”，并全部视为已知。 */
+    private void determinize(JunqiBoard world, long seed) {
+        List<Integer> pos = new ArrayList<Integer>();
+        for (int r = 0; r < JunqiBoard.ROWS; r++) {
+            for (int c = 0; c < JunqiBoard.COLS; c++) {
+                JunqiBoard.Pc p = world.at(r, c);
+                if (p != null && p.side == JunqiBoard.RED && !p.revealed) {
+                    pos.add(JunqiBoard.idx(r, c));
+                }
             }
         }
-        return best;
+        if (pos.isEmpty()) {
+            return;
+        }
+        int[] unk = unknownCounts(world);
+        List<Integer> bag = new ArrayList<Integer>();
+        for (int t = 1; t <= 12; t++) {
+            for (int i = 0; i < unk[t]; i++) {
+                bag.add(realType(t));
+            }
+        }
+        shuffle(bag, new java.util.Random(seed));
+        for (int i = 0; i < pos.size(); i++) {
+            int idx = pos.get(i);
+            JunqiBoard.Pc p = world.at(idx / JunqiBoard.COLS, idx % JunqiBoard.COLS);
+            p.type = bag.get(i % bag.size());
+        }
+        // 修正：移动过的棋子不可能是地雷/军旗，与“没动过且非雷旗”的位置对调
+        for (int i = 0; i < pos.size(); i++) {
+            int ia = pos.get(i);
+            JunqiBoard.Pc pa = world.at(ia / JunqiBoard.COLS, ia % JunqiBoard.COLS);
+            if (pa.moved && (pa.type == JunqiBoard.DILEI || pa.type == JunqiBoard.JUNQI)) {
+                for (int j = i + 1; j < pos.size(); j++) {
+                    int ib = pos.get(j);
+                    JunqiBoard.Pc pb = world.at(ib / JunqiBoard.COLS, ib % JunqiBoard.COLS);
+                    if (!pb.moved && pb.type != JunqiBoard.DILEI && pb.type != JunqiBoard.JUNQI) {
+                        int t = pa.type;
+                        pa.type = pb.type;
+                        pb.type = t;
+                        break;
+                    }
+                }
+            }
+        }
+        world.revealAll(JunqiBoard.RED);
     }
 
-    /**
-     * 强档：1 层取前 48 个候选，再看对手全部回手里最坏的那个（2 层）；
-     * 未知子按期望估值；三档都吃学习库加成。
-     */
-    private int[] pickStrong(JunqiBoard view, int color, List<int[]> moves, boolean[] hidden) {
-        List<int[]> scored = new ArrayList<int[]>(moves.size());
-        for (int[] mv : moves) {
-            scored.add(new int[]{mv[0], mv[1], score(view, color, mv) - repeatPenalty(view, mv)
-                    + learnBonus(view, color, mv)});
+    private double alphabeta(JunqiBoard b, int depth, double alpha, double beta) {
+        if (b.gameOver() || depth <= 0) {
+            return evaluate(b);
         }
-        Collections.sort(scored, new Comparator<int[]>() {
-            @Override
-            public int compare(int[] a, int[] b) {
-                return Integer.compare(b[2], a[2]);
-            }
-        });
-        int limit = Math.min(STRONG_CANDIDATES, scored.size());
-        int bestValue = Integer.MIN_VALUE;
-        int[] best = null;
+        int side = b.sideToMove();
+        List<int[]> moves = b.legalMoves(side);
+        if (moves.isEmpty()) {
+            // 无棋可走判负
+            return (side == JunqiBoard.BLACK) ? -1e6 : 1e6;
+        }
+        orderMoves(b, moves);
+        int limit = Math.min(moves.size(), BRANCH_LIMIT);
+        boolean maxing = (side == JunqiBoard.BLACK);
+        double best = maxing ? -1e18 : 1e18;
         for (int i = 0; i < limit; i++) {
-            int[] cand = scored.get(i);
-            int tr0 = JunqiBoard.rowOf(cand[1]);
-            int tc0 = JunqiBoard.colOf(cand[1]);
-            int at0 = JunqiBoard.idx(tr0, tc0);
-            int bonus = learnBonusPoints(view, color, cand[0], cand[1]);
-            if (hidden[at0]) {
-                int ev = evaluate(view, color) + expectedAttack(view, color, cand[0], cand[1])
-                        - repeatPenalty(view, cand) + bonus;
-                if (ev > bestValue) {
-                    bestValue = ev;
-                    best = cand;
-                }
-                continue;
-            }
-            JunqiBoard next = view.copy();
-            next.play(JunqiBoard.rowOf(cand[0]), JunqiBoard.colOf(cand[0]),
-                    JunqiBoard.rowOf(cand[1]), JunqiBoard.colOf(cand[1]));
-            int value;
-            if (next.gameOver()) {
-                value = next.winner() == color ? WIN_SCORE : -WIN_SCORE;
+            int[] m = moves.get(i);
+            JunqiBoard child = b.copy();
+            child.play(side, m[0], m[1], m[2], m[3]);
+            double v = alphabeta(child, depth - 1, alpha, beta);
+            if (maxing) {
+                if (v > best) best = v;
+                if (v > alpha) alpha = v;
             } else {
-                value = evaluate(next, color);
-                for (int[] reply : next.legalMoves(JunqiBoard.opponent(color))) {
-                    int tr = JunqiBoard.rowOf(reply[1]);
-                    int tc = JunqiBoard.colOf(reply[1]);
-                    JunqiBoard after = next.copy();
-                    after.play(JunqiBoard.rowOf(reply[0]), JunqiBoard.colOf(reply[0]), tr, tc);
-                    int v;
-                    if (after.gameOver()) {
-                        v = after.winner() == color ? WIN_SCORE : -WIN_SCORE;
-                    } else {
-                        v = evaluate(after, color);
-                        // 再往下看一手「我能马上反吃回来吗」（只展开吃子；只给前 12 个候选加深，控制耗时）
-                        for (int[] back : (i < 12 ? after.legalMoves(color) : java.util.Collections.<int[]>emptyList())) {
-                            int btr = JunqiBoard.rowOf(back[1]);
-                            int btc = JunqiBoard.colOf(back[1]);
-                            if (after.ownerAt(btr, btc) == JunqiBoard.EMPTY) {
-                                continue;
-                            }
-                            JunqiBoard after2 = after.copy();
-                            after2.play(JunqiBoard.rowOf(back[0]), JunqiBoard.colOf(back[0]), btr, btc);
-                            int v2;
-                            if (after2.gameOver()) {
-                                v2 = after2.winner() == color ? WIN_SCORE : -WIN_SCORE;
-                            } else {
-                                v2 = evaluate(after2, color);
-                            }
-                            if (v2 > v) {
-                                v = v2;
-                            }
-                        }
-                    }
-                    if (v < value) {
-                        value = v;
-                    }
-                }
+                if (v < best) best = v;
+                if (v < beta) beta = v;
             }
-            value += bonus;
-            if (value > bestValue) {
-                bestValue = value;
-                best = cand;
+            if (beta <= alpha) {
+                break;
             }
         }
-        return best == null ? moves.get(0) : new int[]{best[0], best[1]};
+        return best;
     }
 
-    private int learnBonus(JunqiBoard view, int color, int[] mv) {
-        return learn == null ? 0 : learn.bonus(JunqiLearn.keyFor(view, color, mv));
+    /** 着法排序：吃子（尤其吃高价值子）排前面，提升剪枝效率。 */
+    private void orderMoves(JunqiBoard b, List<int[]> moves) {
+        double[] score = new double[moves.size()];
+        for (int i = 0; i < moves.size(); i++) {
+            JunqiBoard.Pc t = b.at(moves.get(i)[2], moves.get(i)[3]);
+            score[i] = t == null ? 0 : val(t.type) + 10;
+        }
+        for (int i = 1; i < moves.size(); i++) {
+            int[] mm = moves.get(i);
+            double ss = score[i];
+            int j = i - 1;
+            while (j >= 0 && score[j] < ss) {
+                moves.set(j + 1, moves.get(j));
+                score[j + 1] = score[j];
+                j--;
+            }
+            moves.set(j + 1, mm);
+            score[j + 1] = ss;
+        }
     }
 
-    private int learnBonusPoints(JunqiBoard view, int color, int from, int to) {
-        return learn == null ? 0 : learn.bonus(JunqiLearn.keyFor(view, color, new int[]{from, to}));
-    }
-
-    /** legalMoves 用的是 {fromPoint, toPoint}，对外返回 {fr, fc, tr, tc}。 */
-    private static int[] to4(int[] two) {
-        return new int[]{JunqiBoard.rowOf(two[0]), JunqiBoard.colOf(two[0]),
-                JunqiBoard.rowOf(two[1]), JunqiBoard.colOf(two[1])};
-    }
-
-    private int score(JunqiBoard view, int color, int[] mv) {
-        JunqiBoard next = view.copy();
-        int before = evaluate(next, color);
-        next.play(JunqiBoard.rowOf(mv[0]), JunqiBoard.colOf(mv[0]),
-                JunqiBoard.rowOf(mv[1]), JunqiBoard.colOf(mv[1]));
-        int s = evaluate(next, color) - before;
-        next = null;
+    /** 局面评估（黑方视角）。 */
+    private double evaluate(JunqiBoard b) {
+        if (b.gameOver()) {
+            if (b.result() == 2) return 1e7;    // 黑（AI）胜
+            if (b.result() == 1) return -1e7;   // 红胜
+            return 0;                            // 和
+        }
+        double s = 0;
+        for (int r = 0; r < JunqiBoard.ROWS; r++) {
+            for (int c = 0; c < JunqiBoard.COLS; c++) {
+                JunqiBoard.Pc p = b.at(r, c);
+                if (p == null) {
+                    continue;
+                }
+                double v = val(p.type);
+                if (p.side == JunqiBoard.BLACK) {
+                    s += v;
+                    s += (11 - r) * 1.2;         // 越靠前越有威胁
+                    if (b.isCamp(r, c)) s += 4;  // 占行营安全
+                } else {
+                    s -= v;
+                    s -= r * 1.2;
+                }
+            }
+        }
         return s;
     }
 
-    /** 从 color 视角看子力差 + 少量推进奖励。 */
-    public static int evaluate(JunqiBoard board, int color) {
-        int sum = 0;
-        for (int r = 0; r < JunqiBoard.ROWS; r++) {
-            for (int c = 0; c < JunqiBoard.COLS; c++) {
-                int owner = board.ownerAt(r, c);
-                if (owner == JunqiBoard.EMPTY) {
-                    continue;
-                }
-                int type = board.at(r, c);
-                int v = value(type);
-                if (type != JunqiBoard.MINE && type != JunqiBoard.FLAG && !JunqiBoard.isHq(r, c)) {
-                    int depth = owner == JunqiBoard.RED ? (JunqiBoard.ROWS - 1 - r) : r;
-                    v += depth * 4;
-                }
-                sum += (owner == color) ? v : -v;
+    // ------------------------------------------------------------ 快 / 普通档：单层启发式
+
+    private int[] heuristicGenmove(JunqiBoard board, List<int[]> moves) {
+        int[] unk = unknownCounts(board);
+        double best = -1e18;
+        List<int[]> bestMoves = new ArrayList<int[]>();
+        for (int[] m : moves) {
+            double s = score(board, m, unk);
+            if (s > best + 1e-9) {
+                best = s;
+                bestMoves.clear();
+                bestMoves.add(m);
+            } else if (s > best - 1e-9) {
+                bestMoves.add(m);
             }
         }
-        return sum;
-    }
-
-    /** 上一手是 A→B，这手又 B→A：来回蹭的惩罚。 */
-    private static int repeatPenalty(JunqiBoard board, int[] mv) {
-        List<int[]> h = board.history();
-        if (h.isEmpty()) {
-            return 0;
+        int[] pick = bestMoves.get(0);
+        if (level == NORMAL && bestMoves.size() > 1) {
+            pick = bestMoves.get(rnd.nextInt(Math.min(bestMoves.size(), 3)));
+        } else if (level == FAST) {
+            List<int[]> ok = new ArrayList<int[]>();
+            for (int[] m : moves) {
+                if (score(board, m, unk) > best - 60) {
+                    ok.add(m);
+                }
+            }
+            if (!ok.isEmpty()) {
+                pick = ok.get(rnd.nextInt(ok.size()));
+            }
+        } else if (bestMoves.size() > 1) {
+            pick = bestMoves.get(rnd.nextInt(bestMoves.size()));
         }
-        int[] last = h.get(h.size() - 1);
-        int lastFrom = JunqiBoard.idx(last[0], last[1]);
-        int lastTo = JunqiBoard.idx(last[2], last[3]);
-        return (mv[0] == lastTo && mv[1] == lastFrom) ? 40 : 0;
+        return new int[]{pick[0], pick[1], pick[2], pick[3]};
     }
 
-    /** 敌方 25 子的先验构成（用于「打未知子」的期望值；按位置再过滤地雷/炸弹/军旗）。 */
-    private static final int[] PRIOR_TYPES = {
-            JunqiBoard.COMMANDER, JunqiBoard.ARMY, JunqiBoard.DIVISION, JunqiBoard.BRIGADE,
-            JunqiBoard.REGIMENT, JunqiBoard.BATTALION, JunqiBoard.COMPANY, JunqiBoard.PLATOON,
-            JunqiBoard.ENGINEER, JunqiBoard.MINE, JunqiBoard.BOMB, JunqiBoard.FLAG
-    };
-    private static final int[] PRIOR_COUNTS = {1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 2, 1};
+    private double score(JunqiBoard b, int[] m, int[] unk) {
+        int fr = m[0], fc = m[1], tr = m[2], tc = m[3];
+        JunqiBoard.Pc mover = b.at(fr, fc);
+        JunqiBoard.Pc target = b.at(tr, tc);
+        double s = 0;
 
-    /**
-     * 攻击一个「未知敌子」的期望子力收益（用敌方 25 子的先验构成）。
-     * 位置会过滤掉不可能的兵种：军旗只可能在大本营、地雷只在后两排、炸弹不在第一排。
-     */
-    static int expectedAttack(JunqiBoard view, int color, int fromPoint, int toPoint) {
-        int atk = view.at(JunqiBoard.rowOf(fromPoint), JunqiBoard.colOf(fromPoint));
-        int tr = JunqiBoard.rowOf(toPoint);
-        int tc = JunqiBoard.colOf(toPoint);
-        int enemy = JunqiBoard.opponent(color);
-        boolean enemyHq = JunqiBoard.isHq(tr, tc) && (enemy == JunqiBoard.BLACK ? tr == 0 : tr == JunqiBoard.ROWS - 1);
-        boolean backTwo = enemy == JunqiBoard.BLACK ? (tr == 0 || tr == 1) : (tr == 10 || tr == 11);
-        boolean front = enemy == JunqiBoard.BLACK ? tr == 5 : tr == 6;
-        long sum = 0;
+        // 翻棋：翻牌也算一步。翻出的是啥不知道，但信息很有价值；
+        // 己方还没亮出可动的子时，翻牌优先级更高。
+        if (b.isFlipMode() && fr == tr && fc == tc) {
+            int ownUp = 0;
+            for (int r = 0; r < JunqiBoard.ROWS; r++) {
+                for (int c = 0; c < JunqiBoard.COLS; c++) {
+                    JunqiBoard.Pc p = b.at(r, c);
+                    if (p != null && p.side == JunqiBoard.BLACK && !p.faceDown) ownUp++;
+                }
+            }
+            return 8 + (ownUp == 0 ? 25 : 0) + rnd.nextDouble() * 4;
+        }
+
+        if (target != null && target.revealed && target.type == JunqiBoard.JUNQI) {
+            return 1e9;
+        }
+
+        if (target != null) {
+            if (target.revealed) {
+                int out = JunqiBoard.fight(mover.type, target.type);
+                if (out > 0) {
+                    s += 60 + val(target.type);
+                    if (target.type == JunqiBoard.JUNQI) s += 1e6;
+                } else if (out < 0) {
+                    s -= 60 + val(mover.type);
+                } else {
+                    s += val(target.type) - val(mover.type);
+                }
+            } else {
+                s += unknownFightExpectation(mover, target, unk);
+                if (b.isHq(tr, tc)) s += 30;
+            }
+        } else {
+            s += 1.0;
+        }
+
+        s += advance(mover, fr, tr);
+        if (b.isCamp(tr, tc)) s += 6;
+        s -= riskAfterMove(b, m);
+        return s;
+    }
+
+    private double unknownFightExpectation(JunqiBoard.Pc mover, JunqiBoard.Pc target, int[] unk) {
         int total = 0;
-        for (int i = 0; i < PRIOR_TYPES.length; i++) {
-            int type = PRIOR_TYPES[i];
-            if (type == JunqiBoard.FLAG && !enemyHq) {
-                continue;
-            }
-            if (type == JunqiBoard.MINE && !backTwo) {
-                continue;
-            }
-            if (type == JunqiBoard.BOMB && front) {
-                continue;
-            }
-            int count = PRIOR_COUNTS[i];
-            total += count;
-            sum += (long) count * combatDelta(atk, type);
+        for (int t = 1; t <= 12; t++) total += unk[t];
+        if (total <= 0) return 0;
+        double exp = 0;
+        for (int t = 1; t <= 12; t++) {
+            int n = unk[t];
+            if (n == 0) continue;
+            int def = realType(t);
+            if (target.moved && (def == JunqiBoard.DILEI || def == JunqiBoard.JUNQI)) continue;
+            double p = (double) n / total;
+            int out = JunqiBoard.fight(mover.type, def);
+            double v;
+            if (out > 0) v = (def == JunqiBoard.JUNQI) ? 1e6 : 40 + val(def);
+            else if (out < 0) v = -(40 + val(mover.type));
+            else v = val(def) - val(mover.type);
+            exp += p * v;
         }
-        return total == 0 ? 0 : (int) Math.round(sum / (double) total);
+        return exp;
     }
 
-    /** 我方 atk 攻击敌方 type 的子力差（正数=赚）。 */
-    private static int combatDelta(int atk, int def) {
-        if (def == JunqiBoard.FLAG) {
-            return value(JunqiBoard.FLAG);
-        }
-        if (atk == JunqiBoard.BOMB) {
-            return value(def) - value(atk);
-        }
-        if (def == JunqiBoard.BOMB) {
-            return value(JunqiBoard.BOMB) - value(atk);
-        }
-        if (def == JunqiBoard.MINE) {
-            return atk == JunqiBoard.ENGINEER ? value(JunqiBoard.MINE) : -value(atk);
-        }
-        if (atk > def) {
-            return value(def);
-        }
-        if (atk < def) {
-            return -value(atk);
-        }
-        return value(def) - value(atk);
+    private double advance(JunqiBoard.Pc mover, int fromRow, int toRow) {
+        double s = 0;
+        if (toRow < fromRow) s += (fromRow - toRow) * 1.5;
+        if (fromRow >= 6 && toRow <= 5) s += 8;
+        if (mover.type == JunqiBoard.GONGBING) s -= 3;
+        if (mover.type == JunqiBoard.SILING && toRow <= 5) s -= 4;
+        return s;
     }
 
-    private static int value(int type) {
-        switch (type) {
-            case JunqiBoard.COMMANDER: return 900;
-            case JunqiBoard.ARMY: return 700;
-            case JunqiBoard.DIVISION: return 500;
-            case JunqiBoard.BRIGADE: return 400;
-            case JunqiBoard.REGIMENT: return 300;
-            case JunqiBoard.BATTALION: return 250;
-            case JunqiBoard.COMPANY: return 200;
-            case JunqiBoard.PLATOON: return 150;
-            case JunqiBoard.ENGINEER: return 120;
-            case JunqiBoard.BOMB: return 260;
-            case JunqiBoard.MINE: return 180;
-            case JunqiBoard.FLAG: return 3000;
-            default: return 100;
+    private double riskAfterMove(JunqiBoard b, int[] m) {
+        int fr = m[0], fc = m[1], tr = m[2], tc = m[3];
+        if (b.isFlipMode() && fr == tr && fc == tc) return 0;   // 翻牌不涉及送子
+        JunqiBoard.Pc mover = b.at(fr, fc);
+        if (mover == null) return 0;
+        b.aiSet(fr, fc, null);
+        b.aiSet(tr, tc, mover);
+        double worst = 0;
+        List<int[]> replies = b.legalMoves(JunqiBoard.RED);
+        for (int[] r : replies) {
+            if (r[2] != tr || r[3] != tc) continue;
+            JunqiBoard.Pc attacker = b.at(r[0], r[1]);
+            if (attacker == null) continue;
+            double loss;
+            if (attacker.revealed) {
+                int out = JunqiBoard.fight(attacker.type, mover.type);
+                if (out > 0) loss = val(mover.type) + 30;
+                else if (out < 0) loss = -(val(attacker.type) + 30);
+                else loss = val(mover.type) - val(attacker.type);
+            } else {
+                int[] unk = unknownCounts(b);
+                loss = -unknownFightExpectation(mover, attacker, unk) * 0.6;
+            }
+            if (loss > worst) worst = loss;
+        }
+        b.aiSet(tr, tc, null);
+        b.aiSet(fr, fc, mover);
+        return worst;
+    }
+
+    // ------------------------------------------------------------ 信息推断
+
+    private int[] unknownCounts(JunqiBoard b) {
+        int[] c = new int[13];
+        for (int r = 0; r < JunqiBoard.ROWS; r++) {
+            for (int cc = 0; cc < JunqiBoard.COLS; cc++) {
+                JunqiBoard.Pc p = b.at(r, cc);
+                if (p == null || p.side != JunqiBoard.RED || p.revealed) continue;
+                c[typeIndex(p.type)]++;
+            }
+        }
+        return c;
+    }
+
+    private static int typeIndex(int t) {
+        return t > 0 ? t : (9 - t);
+    }
+
+    private static int realType(int idx) {
+        return idx <= 9 ? idx : (9 - idx);
+    }
+
+    private static void shuffle(List<Integer> a, java.util.Random rnd) {
+        for (int i = a.size() - 1; i > 0; i--) {
+            int j = rnd.nextInt(i + 1);
+            int t = a.get(i);
+            a.set(i, a.get(j));
+            a.set(j, t);
+        }
+    }
+
+    /** 棋子价值（AI 内部评估用）。 */
+    static double val(int t) {
+        switch (t) {
+            case JunqiBoard.SILING: return 100;
+            case JunqiBoard.JUNZHANG: return 90;
+            case JunqiBoard.SHIZHANG: return 78;
+            case JunqiBoard.LVZHANG: return 66;
+            case JunqiBoard.TUANZHANG: return 55;
+            case JunqiBoard.YINGZHANG: return 46;
+            case JunqiBoard.LIANZHANG: return 38;
+            case JunqiBoard.PAIZHANG: return 30;
+            case JunqiBoard.GONGBING: return 50;
+            case JunqiBoard.ZHADAN: return 58;
+            case JunqiBoard.DILEI: return 42;
+            case JunqiBoard.JUNQI: return 1000;
+            default: return 0;
         }
     }
 }
