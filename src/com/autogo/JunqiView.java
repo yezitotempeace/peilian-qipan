@@ -169,7 +169,10 @@ public class JunqiView extends View {
             invalidate();
             return;
         }
-        if (animationsEnabled && fromRow >= 0 && toRow >= 0) {
+        // 翻牌（起点=终点）不是位移：不播滑动动画。
+        // 之前这里会照样起动画，导致动画期间该格被 drawPieces 跳过，
+        // 看起来就像「棋子翻开后消失了一下」——尤其是翻到对方的子时。
+        if (animationsEnabled && fromRow >= 0 && toRow >= 0 && nf != nt) {
             animFrom = lastFrom;
             animTo = lastTo;
             animStart = System.currentTimeMillis();
@@ -382,8 +385,8 @@ public class JunqiView extends View {
                     continue;
                 }
                 int p = JunqiBoard.idx(r, c);
-                if (p == animPoint) {
-                    continue;
+                if (p == animPoint && animFrom != animTo) {
+                    continue;   // 只有真正的移动才跳过终点格；翻牌（起=终）永远照常画
                 }
                 // 正在播翻牌动画的格子跳过：只由 drawFlip 画，避免正面与翻牌同时出现
                 if (idxOfFlip(r, c) >= 0) {
