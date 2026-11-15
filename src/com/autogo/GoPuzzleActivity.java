@@ -151,20 +151,24 @@ public class GoPuzzleActivity extends Activity {
                 final String fail = err;
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        puzzle = p;
-                        board = new Board(p.size, 7.5);
-                        for (int[] s : p.stones) {
-                            board.grid[board.idx(s[0], s[1])] = s[2];
-                        }
-                        engine = ready;
-                        engineFailed = ready == null;
-                        progress.setVisibility(View.GONE);
-                        boardView.setBoard(board);
-                        boardView.setInputEnabled(true);
-                        if (engineFailed) {
-                            setStatus("引擎没启动起来：" + fail);
-                        } else {
-                            sync();
+                        try {
+                            puzzle = p;
+                            board = new Board(p.size, 7.5);
+                            for (int[] s : p.stones) {
+                                board.grid[board.idx(s[0], s[1])] = s[2];
+                            }
+                            engine = ready;
+                            engineFailed = ready == null;
+                            progress.setVisibility(View.GONE);
+                            boardView.setBoard(board);
+                            boardView.setInputEnabled(true);
+                            if (engineFailed) {
+                                setStatus("引擎没启动起来：" + fail);
+                            } else {
+                                sync();
+                            }
+                        } catch (Throwable t) {
+                            PuzzleCrash.report(GoPuzzleActivity.this, "围棋残局 摆子", t);
                         }
                     }
                 });
@@ -176,7 +180,7 @@ public class GoPuzzleActivity extends Activity {
         try {
             onTapInner(point);
         } catch (Throwable t) {
-            setStatus("出错了：" + t);
+            PuzzleCrash.report(this, "围棋残局 落子", t);
         }
     }
 
@@ -243,29 +247,33 @@ public class GoPuzzleActivity extends Activity {
                 final String v = vertex;
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        aiThinking = false;
-                        boardView.setInputEnabled(true);
-                        if (v == null) {
-                            setStatus("引擎没有回手，点「换一局」再来。");
-                            return;
+                        try {
+                            aiThinking = false;
+                            boardView.setInputEnabled(true);
+                            if (v == null) {
+                                setStatus("引擎没有回手，点「换一局」再来。");
+                                return;
+                            }
+                            if ("resign".equalsIgnoreCase(v.trim())) {
+                                setStatus("电脑认输了——过关！");
+                                return;
+                            }
+                            if ("PASS".equalsIgnoreCase(v.trim())) {
+                                board.play(CPU, Board.PASS);
+                                finishGame();
+                                return;
+                            }
+                            int pt = Board.gtpToPoint(v, board.size);
+                            if (!board.isLegal(CPU, pt)) {
+                                setStatus("引擎回了非法点，点「换一局」再来。");
+                                return;
+                            }
+                            board.play(CPU, pt);
+                            boardView.setLastMove(pt);
+                            afterMove();
+                        } catch (Throwable t) {
+                            PuzzleCrash.report(GoPuzzleActivity.this, "围棋残局 电脑回手", t);
                         }
-                        if ("resign".equalsIgnoreCase(v.trim())) {
-                            setStatus("电脑认输了——过关！");
-                            return;
-                        }
-                        if ("PASS".equalsIgnoreCase(v.trim())) {
-                            board.play(CPU, Board.PASS);
-                            finishGame();
-                            return;
-                        }
-                        int pt = Board.gtpToPoint(v, board.size);
-                        if (!board.isLegal(CPU, pt)) {
-                            setStatus("引擎回了非法点，点「换一局」再来。");
-                            return;
-                        }
-                        board.play(CPU, pt);
-                        boardView.setLastMove(pt);
-                        afterMove();
                     }
                 });
             }

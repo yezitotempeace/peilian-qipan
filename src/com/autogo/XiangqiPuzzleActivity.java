@@ -155,7 +155,7 @@ public class XiangqiPuzzleActivity extends Activity {
         try {
             onTapInner(row, col);
         } catch (Throwable t) {
-            setStatus("出错了：" + t);
+            PuzzleCrash.report(this, "象棋残局 落子", t);
         }
     }
 
@@ -245,15 +245,19 @@ public class XiangqiPuzzleActivity extends Activity {
                 final int[] mv = ai.genmove(snapshot);
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        aiThinking = false;
-                        boardView.setInputEnabled(true);
-                        if (mv == null) {
-                            setStatus("电脑无棋可走。");
-                            return;
+                        try {
+                            aiThinking = false;
+                            boardView.setInputEnabled(true);
+                            if (mv == null) {
+                                setStatus("电脑无棋可走。");
+                                return;
+                            }
+                            board.play(mv[0], mv[1], mv[2], mv[3]);
+                            boardView.setLastMove(mv[0] * 9 + mv[1], mv[2] * 9 + mv[3]);
+                            afterMove();
+                        } catch (Throwable t) {
+                            PuzzleCrash.report(XiangqiPuzzleActivity.this, "象棋残局 电脑回手", t);
                         }
-                        board.play(mv[0], mv[1], mv[2], mv[3]);
-                        boardView.setLastMove(mv[0] * 9 + mv[1], mv[2] * 9 + mv[3]);
-                        afterMove();
                     }
                 });
             }

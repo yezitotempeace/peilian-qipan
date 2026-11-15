@@ -25,6 +25,7 @@ public class GomokuPuzzleActivity extends Activity {
     private EndgameGen.Puzzle puzzle;
     private int diff;
     private boolean aiThinking;
+    private final String label = "五子棋残局";
 
     private GomokuView boardView;
     private TextView status;
@@ -153,7 +154,7 @@ public class GomokuPuzzleActivity extends Activity {
         try {
             onTapInner(point);
         } catch (Throwable t) {
-            setStatus("出错了：" + t);
+            PuzzleCrash.report(this, "五子棋残局 落子", t);
         }
     }
 
@@ -197,15 +198,24 @@ public class GomokuPuzzleActivity extends Activity {
                 final int mv = ai.genmove(snapshot, CPU);
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        aiThinking = false;
-                        boardView.setInputEnabled(true);
-                        if (mv < 0) {
-                            setStatus("电脑无棋可走。");
-                            return;
+                        try {
+                            aiThinking = false;
+                            boardView.setInputEnabled(true);
+                            if (mv < 0) {
+                                setStatus("电脑无棋可走。");
+                                return;
+                            }
+                            if (!board.isLegal(CPU, mv)) {
+                                PuzzleCrash.report(GomokuPuzzleActivity.this, label + " 电脑回了非法点 " + mv,
+                                        new IllegalStateException("电脑回了非法点 " + mv));
+                                return;
+                            }
+                            board.play(CPU, mv);
+                            boardView.setLastMove(mv);
+                            afterMove();
+                        } catch (Throwable t) {
+                            PuzzleCrash.report(GomokuPuzzleActivity.this, label + " 电脑回手", t);
                         }
-                        board.play(CPU, mv);
-                        boardView.setLastMove(mv);
-                        afterMove();
                     }
                 });
             }
