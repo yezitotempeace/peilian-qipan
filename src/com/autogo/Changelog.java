@@ -24,6 +24,9 @@ public final class Changelog {
 
     /** 最新的排在前面。 */
     private static final Entry[] ENTRIES = {
+        new Entry("v208",
+                "围棋残局重新接上白方引擎：可以和 KataGo 真刀真枪对下了（之前的崩溃是点击监听器无限递归，上版已修）。",
+                "围棋残局出题加了合法性校验（每个棋组的气都不为空），喂给引擎更稳，不再有非法局面。"),
         new Entry("v207",
                 "修复残局点击就白屏退出的真凶：棋盘点击监听器里误调用了自己（无限递归导致 StackOverflowError），改为调用页面的处理方法。",
                 "三个残局（五子棋 / 围棋 / 象棋）都已修复。"),
