@@ -774,6 +774,7 @@ public class MainActivity extends Activity {
     private void openEndgame() {
         int diff = "fast".equals(modelAlias) ? 0 : ("normal".equals(modelAlias) ? 1 : 2);
         Intent it = new Intent(this, GoPuzzleActivity.class);
+        it.putExtra("size", boardSize);
         it.putExtra("diff", diff);
         startActivity(it);
     }

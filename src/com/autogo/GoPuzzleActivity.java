@@ -31,6 +31,7 @@ public class GoPuzzleActivity extends Activity {
     private Board board;
     private EndgameGen.Puzzle puzzle;
     private int diff;
+    private int size = 19;
 
     private GtpEngine engine;
     private EngineManager engineMgr;
@@ -57,6 +58,7 @@ public class GoPuzzleActivity extends Activity {
         palette = Palette.of(darkTheme);
         screen = Screen.read(this);
         diff = getIntent().getIntExtra("diff", 1);
+        size = getIntent().getIntExtra("size", 19);
         buildShell();
         generateAndStart();
     }
@@ -163,14 +165,15 @@ public class GoPuzzleActivity extends Activity {
         closeEngine();
         final long seed = System.currentTimeMillis();
         final int d = diff;
+        final int ps = size;
         new Thread(new Runnable() {
             public void run() {
-                final EndgameGen.Puzzle p = EndgameGen.generate(EndgameGen.GAME_GO, d, seed);
+                final EndgameGen.Puzzle p = EndgameGen.generate(EndgameGen.GAME_GO, d, seed, ps);
                 GtpEngine ready = null;
                 String fail = null;
                 try {
                     engineMgr = new EngineManager(GoPuzzleActivity.this);
-                    int visits = (d == 0) ? 48 : (d == 1 ? 160 : 900);
+                    int visits = (d == 0) ? 64 : (d == 1 ? 320 : 1600);
                     String alias = (d == 0) ? "fast" : (d == 1 ? "normal" : "strong");
                     ready = engineMgr.start(visits, EngineManager.defaultThreads(), false, alias);
                 } catch (Throwable t) {
@@ -447,7 +450,7 @@ public class GoPuzzleActivity extends Activity {
     }
 
     private LinearLayout.LayoutParams boardParams() {
-        int side = dp(screen == null ? 340 : screen.boardSizeDp(9));
+        int side = dp(screen == null ? 340 : screen.boardSizeDp(8));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(side, side);
         lp.gravity = Gravity.CENTER_HORIZONTAL;
         return lp;

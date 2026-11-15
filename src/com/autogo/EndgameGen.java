@@ -15,8 +15,8 @@ import java.util.Random;
  * <p>做法是「构造式出题」：先按难度摆出一个<strong>必然成立</strong>的胜形，
  * 再随机化位置、方向、镜像和周围的干扰子。这样生成既快，又保证每道题一定有解。</p>
  *
- * <p>围棋残局会额外做<strong>合法性校验</strong>（每个棋组都必须至少有一口气），
- * 因为不合法的局面喂给引擎会让它崩溃。</p>
+ * <p>盘面尺寸与正常对局保持一致（五子棋默认 15、围棋默认 19），
+ * 围棋残局的战斗放在角上、干扰子也限制在角部区域，看起来就是一盘正常的局部攻杀。</p>
  */
 public final class EndgameGen {
 
@@ -26,6 +26,13 @@ public final class EndgameGen {
 
     public static final String[] GAME_NAMES = {"五子棋", "围棋", "象　棋"};
     public static final String[] DIFF_NAMES = {"弱", "中", "强"};
+
+    /** 各棋残局默认盘面（与正常对局一致）。 */
+    public static int defaultSize(int game) {
+        if (game == GAME_GOMOKU) return 15;
+        if (game == GAME_GO) return 19;
+        return 0;
+    }
 
     private EndgameGen() {
     }
@@ -54,24 +61,31 @@ public final class EndgameGen {
         }
     }
 
-    /** 随机生成一道残局。 */
+    /** 随机生成一道残局（用该棋的默认盘面）。 */
     public static Puzzle generate(int game, int diff, long seed) {
+        return generate(game, diff, seed, defaultSize(game));
+    }
+
+    /** 随机生成一道残局，盘面尺寸与正常对局一致。 */
+    public static Puzzle generate(int game, int diff, long seed, int n) {
         Random rnd = new Random(seed ^ (game * 7919L) ^ (diff * 104729L));
         if (game == GAME_GOMOKU) {
-            return genGomoku(diff, rnd, seed);
+            return genGomoku(diff, rnd, seed, Math.max(9, n));
         }
         if (game == GAME_XIANGQI) {
             return genXiangqi(diff, rnd, seed);
         }
-        return genGo(diff, rnd, seed);
+        return genGo(diff, rnd, seed, Math.max(9, n));
     }
 
     // ================================================================ 五子棋
 
-    private static Puzzle genGomoku(int diff, Random rnd, long seed) {
-        int n = 15;
-        int r = 4 + rnd.nextInt(7);
-        int c = 4 + rnd.nextInt(7);
+    private static Puzzle genGomoku(int diff, Random rnd, long seed, int n) {
+        // 落点离边至少留 4 格，保证各难度的连珠/冲四都在盘内
+        int lo = 4;
+        int hi = Math.max(lo, n - 5);
+        int r = lo + rnd.nextInt(hi - lo + 1);
+        int c = lo + rnd.nextInt(hi - lo + 1);
         List<int[]> stones = new ArrayList<int[]>();
         List<int[]> protect = new ArrayList<int[]>();
         String title, goal;
@@ -115,8 +129,7 @@ public final class EndgameGen {
 
     // ================================================================ 围棋
 
-    private static Puzzle genGo(int diff, Random rnd, long seed) {
-        int n = 9;
+    private static Puzzle genGo(int diff, Random rnd, long seed, int n) {
         String title, goal;
         int[][] whites, blacks;
 
@@ -138,8 +151,10 @@ public final class EndgameGen {
             goal = "黑先。这块白棋还有两口气，但共用一个要害——先点在要害上，它就再也逃不掉，随后整块提掉。";
         }
 
-        // 多试几次，直到摆出「合法」的局面（每个棋组都至少有一口气），
-        // 不合法的局面喂给引擎会让它崩，所以这里必须校验。
+        // 干扰子限制在角部区域（战斗周围），看起来是一盘正常的局部攻杀
+        int eLo = 2;
+        int eHi = Math.min(n - 2, 11);
+
         for (int attempt = 0; attempt < 60; attempt++) {
             List<int[]> stones = new ArrayList<int[]>();
             for (int[] p : whites) {
@@ -148,14 +163,12 @@ public final class EndgameGen {
             for (int[] p : blacks) {
                 stones.add(new int[]{p[0], p[1], Board.BLACK});
             }
-            // 随机镜像 / 旋转
             int sym = rnd.nextInt(8);
             List<int[]> mapped = new ArrayList<int[]>();
             for (int[] s : stones) {
                 int[] q = sym8(s[0], s[1], sym, n);
                 mapped.add(new int[]{q[0], q[1], s[2]});
             }
-            // 周围再摆几颗子（只摆合法的）
             boolean[][] used = new boolean[n][n];
             for (int[] s : mapped) {
                 used[s[0]][s[1]] = true;
@@ -164,11 +177,12 @@ public final class EndgameGen {
             for (int[] s : mapped) {
                 probe.grid[probe.idx(s[0], s[1])] = s[2];
             }
-            int extra = 4 + rnd.nextInt(4);
+            int extra = 5 + rnd.nextInt(5);
             int tries = 0;
-            while (extra > 0 && tries < 120) {
+            while (extra > 0 && tries < 160) {
                 tries++;
-                int rr = rnd.nextInt(n), cc = rnd.nextInt(n);
+                int rr = eLo + rnd.nextInt(eHi - eLo + 1);
+                int cc = eLo + rnd.nextInt(eHi - eLo + 1);
                 if (used[rr][cc] || probe.grid[probe.idx(rr, cc)] != Board.EMPTY) {
                     continue;
                 }
@@ -182,12 +196,11 @@ public final class EndgameGen {
                 extra--;
             }
             if (!legalPosition(probe)) {
-                continue;   // 极少数情况下仍不合法 ⇒ 重摆
+                continue;
             }
             int[][] arr = toArr(mapped);
             return new Puzzle(GAME_GO, diff, title, goal, n, arr, null, seed);
         }
-        // 兜底：不走随机干扰子，只摆核心块（一定合法）
         List<int[]> stones = new ArrayList<int[]>();
         for (int[] p : whites) {
             stones.add(new int[]{p[0], p[1], Board.WHITE});
@@ -199,7 +212,7 @@ public final class EndgameGen {
         return new Puzzle(GAME_GO, diff, title, goal, n, arr, null, seed);
     }
 
-    /** 校验局面合法：任何一颗子的棋组都必须至少有一口气（无气子不该出现在盘面上）。 */
+    /** 校验局面合法：任何一颗子的棋组都必须至少有一口气。 */
     private static boolean legalPosition(Board b) {
         boolean[] seen = new boolean[b.grid.length];
         for (int p = 0; p < b.grid.length; p++) {
@@ -331,9 +344,9 @@ public final class EndgameGen {
                     used[s[0]][s[1]] = true;
                 }
             }
-            int extra = 5 + rnd.nextInt(4);
+            int extra = 6 + rnd.nextInt(5);
             int tries = 0;
-            while (extra > 0 && tries < 200) {
+            while (extra > 0 && tries < 240) {
                 tries++;
                 int rr = rnd.nextInt(n), cc = rnd.nextInt(n);
                 if (used[rr][cc]) {

@@ -23,8 +23,8 @@ public class LocalGomokuAI implements GomokuEngine {
     /** 难度档：{搜索深度, 候选宽度, 节点预算}。 */
     private static final int[][] LEVELS = {
         {2, 8, 20000},
-        {4, 10, 120000},
-        {6, 16, 1500000},
+        {4, 12, 200000},
+        {8, 24, 6000000},
     };
 
     /** 「已成五」的量级：比任何棋型都大，配合 depth 用来偏好更快的胜 / 更慢的败。 */

@@ -815,6 +815,7 @@ public class GomokuActivity extends android.app.Activity {
                             public void onClick(View v) {
                                 Intent it = new Intent(GomokuActivity.this, GomokuPuzzleActivity.class);
                                 it.putExtra("diff", level);
+                                it.putExtra("size", size);
                                 startActivity(it);
                             }
                         }}));

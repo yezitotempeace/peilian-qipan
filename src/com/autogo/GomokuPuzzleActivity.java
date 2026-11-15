@@ -24,6 +24,7 @@ public class GomokuPuzzleActivity extends Activity {
     private final LocalGomokuAI ai = new LocalGomokuAI();
     private EndgameGen.Puzzle puzzle;
     private int diff;
+    private int size = 15;
     private boolean aiThinking;
     private final String label = "五子棋残局";
 
@@ -45,6 +46,7 @@ public class GomokuPuzzleActivity extends Activity {
         palette = Palette.of(darkTheme);
         screen = Screen.read(this);
         diff = getIntent().getIntExtra("diff", 1);
+        size = getIntent().getIntExtra("size", 15);
         buildShell();
         generateAndStart();
     }
@@ -137,9 +139,10 @@ public class GomokuPuzzleActivity extends Activity {
         setStatus("正在随机生成残局…");
         final long seed = System.currentTimeMillis();
         final int d = diff;
+        final int ps = size;
         new Thread(new Runnable() {
             public void run() {
-                final EndgameGen.Puzzle p = EndgameGen.generate(EndgameGen.GAME_GOMOKU, d, seed);
+                final EndgameGen.Puzzle p = EndgameGen.generate(EndgameGen.GAME_GOMOKU, d, seed, ps);
                 runOnUiThread(new Runnable() {
                     public void run() {
                         puzzle = p;
@@ -286,7 +289,7 @@ public class GomokuPuzzleActivity extends Activity {
     }
 
     private LinearLayout.LayoutParams boardParams() {
-        int side = dp(screen == null ? 340 : screen.boardSizeDp(15));
+        int side = dp(screen == null ? 340 : screen.boardSizeDp(8));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(side, side);
         lp.gravity = Gravity.CENTER_HORIZONTAL;
         return lp;

@@ -32,6 +32,7 @@ public class XiangqiPuzzleActivity extends Activity {
     private TextView status;
     private ProgressBar progress;
     private Palette palette;
+    private Screen screen;
     private boolean darkTheme;
 
     private int selectedRow = -1, selectedCol = -1;
@@ -46,6 +47,7 @@ public class XiangqiPuzzleActivity extends Activity {
         PuzzleCrash.install(this);
         darkTheme = UiTheme.apply(this);
         palette = Palette.of(darkTheme);
+        screen = Screen.read(this);
         diff = getIntent().getIntExtra("diff", 1);
         buildShell();
         generateAndStart();
@@ -327,8 +329,9 @@ public class XiangqiPuzzleActivity extends Activity {
     }
 
     private LinearLayout.LayoutParams boardParams() {
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(380));
+        // 与正常象棋对局页同一套尺寸：随屏幕自适应的正方形棋盘（9×10 画在里面）
+        int side = dp(screen == null ? 340 : screen.boardSizeDp(8));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(side, side);
         lp.gravity = Gravity.CENTER_HORIZONTAL;
         return lp;
     }

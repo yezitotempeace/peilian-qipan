@@ -26,7 +26,7 @@ public class XiangqiAI implements XiangqiEngineApi {
     static final int WIN = 1000000000;
 
     private static final int[] VALUE = {0, 10000, 250, 250, 500, 900, 450, 100}; // K A B N R C P
-    private static final int[] DEPTH = {1, 2, 3};
+    private static final int[] DEPTH = {1, 3, 5};
     private static final long[] NODE_BUDGET = {2000, 40000, 400000};
 
     /** 开局随机窗口：前 N 手（全程手数）允许在同分候选里随机。 */
