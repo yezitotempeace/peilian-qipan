@@ -92,7 +92,7 @@ public class XiangqiPuzzleActivity extends Activity {
         boardView.setAnimationsEnabled(true);
         boardView.setOnIntersectionTap(new XiangqiView.OnIntersectionTap() {
             public void onTap(int row, int col) {
-                onTap(row, col);
+                XiangqiPuzzleActivity.this.onTap(row, col);
             }
         });
         root.addView(boardView, boardParams());

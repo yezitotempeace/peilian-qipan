@@ -91,7 +91,7 @@ public class GomokuPuzzleActivity extends Activity {
         boardView.setAnimationsEnabled(true);
         boardView.setOnIntersectionTap(new GomokuView.OnIntersectionTap() {
             public void onTap(int point) {
-                onTap(point);
+                GomokuPuzzleActivity.this.onTap(point);
             }
         });
         root.addView(boardView, boardParams());

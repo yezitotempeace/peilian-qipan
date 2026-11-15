@@ -24,11 +24,11 @@ public final class Changelog {
 
     /** 最新的排在前面。 */
     private static final Entry[] ENTRIES = {
+        new Entry("v207",
+                "修复残局点击就白屏退出的真凶：棋盘点击监听器里误调用了自己（无限递归导致 StackOverflowError），改为调用页面的处理方法。",
+                "三个残局（五子棋 / 围棋 / 象棋）都已修复。"),
         new Entry("v206",
                 "围棋残局重做为中国规则吃子题：提掉被围住的白棋即过关，彻底解决之前的原生崩溃。"),
-        new Entry("v204",
-                "修复残局落子闪退：所有残局操作都加了保护，出错不再闪退，而是把原因显示出来并写入日志。",
-                "围棋残局修好引擎同步：之前 KataGo 按空盘计算，回的点和棋盘对不上；现在每手都把真实局面喂给它。"),
     };
 
     public static Entry[] entries() {

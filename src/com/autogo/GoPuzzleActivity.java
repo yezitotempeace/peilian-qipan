@@ -92,7 +92,7 @@ public class GoPuzzleActivity extends Activity {
         boardView.setAnimationsEnabled(true);
         boardView.setOnIntersectionTap(new BoardView.OnIntersectionTap() {
             public void onTap(int point) {
-                onTap(point);
+                GoPuzzleActivity.this.onTap(point);
             }
         });
         root.addView(boardView, boardParams());
