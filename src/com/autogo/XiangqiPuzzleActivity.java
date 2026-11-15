@@ -43,11 +43,18 @@ public class XiangqiPuzzleActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        PuzzleCrash.install(this);
         darkTheme = UiTheme.apply(this);
         palette = Palette.of(darkTheme);
         diff = getIntent().getIntExtra("diff", 1);
         buildShell();
         generateAndStart();
+    }
+
+    @Override
+    protected void onDestroy() {
+        PuzzleCrash.uninstall(this);
+        super.onDestroy();
     }
 
     private void buildShell() {

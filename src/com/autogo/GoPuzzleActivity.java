@@ -44,6 +44,7 @@ public class GoPuzzleActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        PuzzleCrash.install(this);
         darkTheme = UiTheme.apply(this);
         palette = Palette.of(darkTheme);
         screen = Screen.read(this);
@@ -53,6 +54,12 @@ public class GoPuzzleActivity extends Activity {
         engineManager = new EngineManager(this);
         buildShell();
         generateAndStart();
+    }
+
+    @Override
+    protected void onDestroy() {
+        PuzzleCrash.uninstall(this);
+        super.onDestroy();
     }
 
     private void buildShell() {

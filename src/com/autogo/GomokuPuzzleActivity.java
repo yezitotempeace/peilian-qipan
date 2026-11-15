@@ -40,6 +40,7 @@ public class GomokuPuzzleActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        PuzzleCrash.install(this);
         darkTheme = UiTheme.apply(this);
         palette = Palette.of(darkTheme);
         screen = Screen.read(this);
@@ -49,6 +50,12 @@ public class GomokuPuzzleActivity extends Activity {
     }
 
     /** 搭好外壳（标题 / 状态 / 进度条 / 棋盘容器），棋盘数据等生成完再填。 */
+    @Override
+    protected void onDestroy() {
+        PuzzleCrash.uninstall(this);
+        super.onDestroy();
+    }
+
     private void buildShell() {
         ScrollView scroll = new ScrollView(this);
         scroll.setBackgroundColor(palette.background);
