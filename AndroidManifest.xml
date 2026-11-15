@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.autogo"
-    android:versionCode="201"
-    android:versionName="1.20261113.201">
+    android:versionCode="202"
+    android:versionName="1.20261115.202">
 
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34" />
 
@@ -77,6 +77,34 @@
 
         <activity
             android:name=".ReversiActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|fontScale|density|locale|layoutDirection|colorMode" />
+
+
+
+        <activity
+            android:name=".PuzzleHubActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|fontScale|density|locale|layoutDirection|colorMode" />
+
+
+
+        <activity
+            android:name=".GomokuPuzzleActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|fontScale|density|locale|layoutDirection|colorMode" />
+
+
+
+        <activity
+            android:name=".GoPuzzleActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|fontScale|density|locale|layoutDirection|colorMode" />
+
+
+
+        <activity
+            android:name=".XiangqiPuzzleActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|fontScale|density|locale|layoutDirection|colorMode" />
 

@@ -254,6 +254,14 @@ public class MenuActivity extends Activity {
         });
         root.addView(sudoku, buttonRow(0, 10));
 
+        Button endgame = bigButton("残　局", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MenuActivity.this, PuzzleHubActivity.class));
+            }
+        });
+        root.addView(endgame, buttonRow(0, 10));
+
         TextView hint = new TextView(this);
         hint.setText("围棋：9 / 13 / 19 路 · KataGo 引擎\n"
                 + "五子棋：13 / 15 / 19 路 · 15 路走 Rapfi 引擎\n"
@@ -261,7 +269,8 @@ public class MenuActivity extends Activity {
                 + "黑白棋：8×8 · 内置 AI\n"
                 + "军棋：暗棋 / 翻棋 · 内置 AI\n"
                 + "2048：4×4 数字合并\n"
-                + "数独：9×9 逻辑填数 · 三档");
+                + "数独：9×9 逻辑填数 · 三档\n"
+                + "残局：五子棋 / 围棋 / 象棋，各分弱中强");
         hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         hint.setTextColor(palette.textDim);
         hint.setGravity(Gravity.CENTER);

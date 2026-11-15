@@ -92,6 +92,11 @@ public final class XiangqiBoard {
     // ---------- 基本读写 ----------
 
     /** 摆子（不走规则，只给测试／开局用）。 */
+    /** 测试/残局摆子用：指定轮到哪一方。 */
+    public void testSetSideToMove(int color) {
+        sideToMove = color;
+    }
+
     public void put(int row, int col, int color, int type) {
         grid[row][col] = (color << 4) | type;
     }
