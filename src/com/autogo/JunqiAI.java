@@ -336,6 +336,7 @@ public class JunqiAI {
         if (b.isFlipMode() && fr == tr && fc == tc) return 0;   // 翻牌不涉及送子
         JunqiBoard.Pc mover = b.at(fr, fc);
         if (mover == null) return 0;
+        JunqiBoard.Pc target = b.at(tr, tc);   // 记住目标格原来的子（可能是 null）
         b.aiSet(fr, fc, null);
         b.aiSet(tr, tc, mover);
         double worst = 0;
@@ -356,7 +357,7 @@ public class JunqiAI {
             }
             if (loss > worst) worst = loss;
         }
-        b.aiSet(tr, tc, null);
+        b.aiSet(tr, tc, target);   // 还原目标格原来的子，否则它会被永久吃掉（棋子凭空消失）
         b.aiSet(fr, fc, mover);
         return worst;
     }

@@ -677,6 +677,9 @@ public final class JunqiBoard {
         if (q != null && q.side == p.side) {
             return;
         }
+        if (q != null && flipMode && q.faceDown) {
+            return;   // 翻棋：盖着的子只能先翻开，不能直接吃
+        }
         if (q != null && isCamp(tr, tc)) {
             return;
         }
