@@ -24,6 +24,9 @@ public class XiangqiPuzzleActivity extends Activity {
 
     private XiangqiBoard board;
     private final XiangqiAI ai = new XiangqiAI();
+    /** 「强」档用外部强引擎 ElephantEye；起不来就退回内置 AI。 */
+    private XiangqiEngine engine;
+    private boolean engineChecked, engineOk;
     private EndgameGen.Puzzle puzzle;
     private int diff;
     private boolean aiThinking;
@@ -55,6 +58,7 @@ public class XiangqiPuzzleActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        closeEngine();
         PuzzleCrash.uninstall(this);
         super.onDestroy();
     }
@@ -240,6 +244,55 @@ public class XiangqiPuzzleActivity extends Activity {
         }
     }
 
+    private String enginePath() {
+        java.io.File f = NativeExe.prepare(this, "engine/eleeye", "libeleye.so");
+        return f == null ? "" : f.getAbsolutePath();
+    }
+
+    /** ElephantEye 能不能用：真起一次进程握手，能正常回一手才算可用。 */
+    private boolean engineUsable() {
+        if (!engineChecked) {
+            engineChecked = true;
+            String p = enginePath();
+            if (p.isEmpty()) {
+                engineOk = false;
+            } else {
+                try {
+                    XiangqiEngine probe = new XiangqiEngine(p);
+                    XiangqiBoard b = new XiangqiBoard();
+                    probe.setLevel(XiangqiAI.STRONG);
+                    int[] mv = probe.genmove(b);
+                    probe.close();
+                    engineOk = mv != null;
+                } catch (RuntimeException e) {
+                    engineOk = false;
+                }
+            }
+        }
+        return engineOk;
+    }
+
+    /** 这一手交给谁算：引擎可用就走 ElephantEye（残局的强档是真强引擎），否则内置 AI。 */
+    private XiangqiEngineApi engineForMove() {
+        if (engineUsable()) {
+            if (engine == null) engine = new XiangqiEngine(enginePath());
+            engine.setLevel(diff);
+            return engine;
+        }
+        ai.setLevel(diff);
+        return ai;
+    }
+
+    private void closeEngine() {
+        if (engine != null) {
+            try {
+                engine.close();
+            } catch (Throwable ignore) {
+            }
+            engine = null;
+        }
+    }
+
     private void aiTurn() {
         if (board.gameOver()) {
             finishGame();
@@ -251,7 +304,14 @@ public class XiangqiPuzzleActivity extends Activity {
         final XiangqiBoard snapshot = board.copy();
         new Thread(new Runnable() {
             public void run() {
-                final int[] mv = ai.genmove(snapshot);
+                int[] mv0;
+                try {
+                    mv0 = engineForMove().genmove(snapshot);
+                } catch (RuntimeException e) {
+                    ai.setLevel(diff);
+                    mv0 = ai.genmove(snapshot);
+                }
+                final int[] mv = mv0;
                 runOnUiThread(new Runnable() {
                     public void run() {
                         try {

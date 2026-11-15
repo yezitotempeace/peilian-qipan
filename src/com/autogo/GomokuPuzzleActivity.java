@@ -22,6 +22,9 @@ public class GomokuPuzzleActivity extends Activity {
 
     private GomokuBoard board;
     private final LocalGomokuAI ai = new LocalGomokuAI();
+    /** 「强」档用外部强引擎 Rapfi（15 路）；起不来就退回内置 AI。 */
+    private RapfiGomokuEngine rapfi;
+    private boolean rapfiChecked, rapfiOk;
     private EndgameGen.Puzzle puzzle;
     private int diff;
     private int size = 15;
@@ -54,6 +57,7 @@ public class GomokuPuzzleActivity extends Activity {
     /** 搭好外壳（标题 / 状态 / 进度条 / 棋盘容器），棋盘数据等生成完再填。 */
     @Override
     protected void onDestroy() {
+        closeRapfi();
         PuzzleCrash.uninstall(this);
         super.onDestroy();
     }
@@ -194,6 +198,55 @@ public class GomokuPuzzleActivity extends Activity {
         }
     }
 
+    private String rapfiPath() {
+        java.io.File f = NativeExe.prepare(this, "engine/rapfi", "librapfi.so");
+        return f == null ? "" : f.getAbsolutePath();
+    }
+
+    /** Rapfi 能不能用：真起一次进程握手，能正常回一手才算可用。 */
+    private boolean rapfiUsable() {
+        if (!rapfiChecked) {
+            rapfiChecked = true;
+            String p = rapfiPath();
+            if (p.isEmpty()) {
+                rapfiOk = false;
+            } else {
+                try {
+                    RapfiGomokuEngine probe = new RapfiGomokuEngine(p);
+                    GomokuBoard b = new GomokuBoard(15, false);
+                    probe.setLevel(LocalGomokuAI.STRONG);
+                    int mv = probe.genmove(b, GomokuBoard.BLACK);
+                    probe.close();
+                    rapfiOk = mv >= 0;
+                } catch (RuntimeException e) {
+                    rapfiOk = false;
+                }
+            }
+        }
+        return rapfiOk;
+    }
+
+    /** 这一手交给谁算：15 路且 Rapfi 可用就走 Rapfi（残局的强档是真强引擎），否则内置 AI。 */
+    private GomokuEngine engineForMove() {
+        if (puzzle != null && puzzle.size == 15 && rapfiUsable()) {
+            if (rapfi == null) rapfi = new RapfiGomokuEngine(rapfiPath());
+            rapfi.setLevel(diff);
+            return rapfi;
+        }
+        ai.setLevel(diff);
+        return ai;
+    }
+
+    private void closeRapfi() {
+        if (rapfi != null) {
+            try {
+                rapfi.close();
+            } catch (Throwable ignore) {
+            }
+            rapfi = null;
+        }
+    }
+
     private void aiTurn() {
         if (board.gameOver) {
             finishGame();
@@ -205,7 +258,14 @@ public class GomokuPuzzleActivity extends Activity {
         final GomokuBoard snapshot = board.copy();
         new Thread(new Runnable() {
             public void run() {
-                final int mv = ai.genmove(snapshot, CPU);
+                int mv0;
+                try {
+                    mv0 = engineForMove().genmove(snapshot, CPU);
+                } catch (RuntimeException e) {
+                    ai.setLevel(diff);
+                    mv0 = ai.genmove(snapshot, CPU);
+                }
+                final int mv = mv0;
                 runOnUiThread(new Runnable() {
                     public void run() {
                         try {

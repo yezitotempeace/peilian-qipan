@@ -173,7 +173,7 @@ public class GoPuzzleActivity extends Activity {
                 String fail = null;
                 try {
                     engineMgr = new EngineManager(GoPuzzleActivity.this);
-                    int visits = (d == 0) ? 64 : (d == 1 ? 320 : 1600);
+                    int visits = (d == 0) ? 96 : (d == 1 ? 480 : 3200);
                     String alias = (d == 0) ? "fast" : (d == 1 ? "normal" : "strong");
                     ready = engineMgr.start(visits, EngineManager.defaultThreads(), false, alias);
                 } catch (Throwable t) {

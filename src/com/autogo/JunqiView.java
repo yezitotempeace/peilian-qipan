@@ -512,23 +512,35 @@ public class JunqiView extends View {
         float radius = ph * 0.24f;
         boolean red = color == JunqiBoard.RED;
 
-        // 柔和配色：棋身用米色 / 深木色，红蓝只出现在文字与一圈细边线上，不再整块大红大蓝
+        // 配色：盖着的子保持原来的中性木色（不分红蓝、不动）；
+        // 翻开的子整块染上红 / 蓝，阵营一眼可辨。
         int faceTop, faceBot, edge, txtCol, dotCol;
-        if (dark) {
-            faceTop = 0xFF6E5C44; faceBot = 0xFF453827;
-            edge    = 0xFF2B2318;
-            txtCol  = red ? 0xFFF0B4A8 : 0xFFA9C6E2;
-            dotCol  = 0xFF8FA3B8;
-        } else {
-            faceTop = 0xFFFCF3DE; faceBot = 0xFFE4CFA4;
-            edge    = 0xFFB0986F;
-            txtCol  = red ? 0xFFA93A2E : 0xFF2F5C8A;
-            dotCol  = 0xFF9C8B6A;
-        }
         if (back) {
-            faceTop = dark ? 0xFF57636E : 0xFFDAC89F;
-            faceBot = dark ? 0xFF3D4954 : 0xFFC2AC83;
-            dotCol  = dark ? 0xFF8FA3B8 : 0xFF9C8B6A;
+            if (dark) {
+                faceTop = 0xFF57636E; faceBot = 0xFF3D4954;
+                edge    = 0xFF2B2318;
+                txtCol  = 0xFF8FA3B8;
+                dotCol  = 0xFF8FA3B8;
+            } else {
+                faceTop = 0xFFDAC89F; faceBot = 0xFFC2AC83;
+                edge    = 0xFFB0986F;
+                txtCol  = 0xFF6B5B45;
+                dotCol  = 0xFF9C8B6A;
+            }
+        } else if (red) {
+            if (dark) {
+                faceTop = 0xFFD96A5E; faceBot = 0xFF9C2B22; edge = 0xFF5E150F; txtCol = 0xFFFFE9E6;
+            } else {
+                faceTop = 0xFFF08A7E; faceBot = 0xFFC62B1E; edge = 0xFF7E150C; txtCol = 0xFFFFFFFF;
+            }
+            dotCol = edge;
+        } else {
+            if (dark) {
+                faceTop = 0xFF5B93D6; faceBot = 0xFF1E5698; edge = 0xFF0F3560; txtCol = 0xFFE3F0FF;
+            } else {
+                faceTop = 0xFF7FB3EA; faceBot = 0xFF2A6FB8; edge = 0xFF174B7E; txtCol = 0xFFFFFFFF;
+            }
+            dotCol = edge;
         }
 
         // 投影：棋子压在盘面上的一圈软阴影（立体感）
