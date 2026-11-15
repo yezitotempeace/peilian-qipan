@@ -569,7 +569,7 @@ public class Driver95 {
         chk("⑱ 最后一行第一个按钮是「对战」（v128 起）", "对战", callAny(modeBtn0, "getText", new Class<?>[]{}));
         Object learnBtn = callAny(lastRow, "getChildAt", new Class<?>[]{int.class}, Integer.valueOf(1));
         chk("⑱ 最后一行第二个按钮是「学习」", "学习", callAny(learnBtn, "getText", new Class<?>[]{}));
-        chk("⑱ 最后一行是 5 个按钮（对战/学习/全屏/复盘/返回）", Integer.valueOf(5), Integer.valueOf(cells));
+        chk("⑱ 最后一行是 6 个按钮（对战/学习/全屏/复盘/返回/残局）", Integer.valueOf(6), Integer.valueOf(cells));
 
         // 用真构造器造的页面来点（字段初始化器跑过 ⇒ learnClick 非空；Unsafe 造的实例监听器是 null）
         GomokuActivity clickUi = null;

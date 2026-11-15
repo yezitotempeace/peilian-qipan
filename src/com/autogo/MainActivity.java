@@ -260,6 +260,9 @@ public class MainActivity extends Activity {
         Button btnSettings = button("设置", v -> showSettingsDialog());
         controls.addView(buttonRow(btnImport, btnNumbers, btnFullscreen, btnSettings));
 
+        Button btnEndgame = button("残局", v -> openEndgame());
+        controls.addView(buttonRow(btnEndgame));
+
         // 状态面板：放在按钮下方。横屏时右下角本来空着，正好填上。
         // 竖屏时也在按钮下面，滚一滚就看得到。
         statusPanelView = new LinearLayout(this);
@@ -765,6 +768,14 @@ public class MainActivity extends Activity {
             return;
         }
         engineMove(toMove);
+    }
+
+    /** 进残局：难度跟着当前档位走（快=弱，普通=中，强=强）。 */
+    private void openEndgame() {
+        int diff = "fast".equals(modelAlias) ? 0 : ("normal".equals(modelAlias) ? 1 : 2);
+        Intent it = new Intent(this, GoPuzzleActivity.class);
+        it.putExtra("diff", diff);
+        startActivity(it);
     }
 
     private void engineMove(int color) {

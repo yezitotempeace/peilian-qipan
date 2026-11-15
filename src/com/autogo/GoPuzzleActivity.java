@@ -13,18 +13,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.io.IOException;
 
-/** 围棋残局：黑先，从给定局面开始赢下 KataGo 即过关。档位越高引擎越强。 */
+/** 围棋残局：本地随机生成一道可胜残局，黑先，赢下 KataGo 即过关。 */
 public class GoPuzzleActivity extends Activity {
 
     private Board board;
-    private EndgamePuzzles.Puzzle puzzle;
+    private EndgameGen.Puzzle puzzle;
     private int diff;
-    private boolean aiThinking, engineStarting;
+    private boolean aiThinking, engineStarting, engineFailed;
     private EngineManager engineManager;
     private GtpEngine engine;
     private String modelAlias;
@@ -32,7 +33,9 @@ public class GoPuzzleActivity extends Activity {
 
     private BoardView boardView;
     private TextView status;
+    private ProgressBar progress;
     private Palette palette;
+    private Screen screen;
     private boolean darkTheme;
 
     private static final int ME = Board.BLACK;
@@ -44,52 +47,15 @@ public class GoPuzzleActivity extends Activity {
         darkTheme = UiTheme.apply(this);
         palette = Palette.of(darkTheme);
         screen = Screen.read(this);
-        diff = getIntent().getIntExtra("diff", 0);
-        puzzle = EndgamePuzzles.get(EndgamePuzzles.GAME_GO, diff);
+        diff = getIntent().getIntExtra("diff", 1);
         modelAlias = diff == 0 ? "fast" : (diff == 1 ? "normal" : "strong");
-        board = new Board(puzzle.size, 7.5);
-        for (int[] s : puzzle.stones) {
-            board.grid[board.idx(s[0], s[1])] = s[2];
-        }
+        visits = diff == 0 ? 200 : (diff == 1 ? 120 : 300);
         engineManager = new EngineManager(this);
-        visits = 120;
-        buildUi();
-        startEngine();
-        sync();
+        buildShell();
+        generateAndStart();
     }
 
-    private void startEngine() {
-        if (engine != null || engineStarting) {
-            return;
-        }
-        engineStarting = true;
-        setStatus("引擎启动中…");
-        final EngineManager mgr = engineManager;
-        new Thread(new Runnable() {
-            public void run() {
-                GtpEngine e = null;
-                try {
-                    e = mgr.start(visits, EngineManager.defaultThreads(), false, modelAlias);
-                } catch (IOException ex) {
-                    e = null;
-                }
-                final GtpEngine ready = e;
-                runOnUiThread(new Runnable() {
-                    public void run() {
-                        engineStarting = false;
-                        engine = ready;
-                        if (ready == null) {
-                            setStatus("引擎没启动起来，残局暂时只能看不能下。");
-                        } else {
-                            sync();
-                        }
-                    }
-                });
-            }
-        }, "go-puzzle-engine").start();
-    }
-
-    private void buildUi() {
+    private void buildShell() {
         ScrollView scroll = new ScrollView(this);
         scroll.setBackgroundColor(palette.background);
         LinearLayout root = new LinearLayout(this);
@@ -101,7 +67,7 @@ public class GoPuzzleActivity extends Activity {
         LinearLayout top = new LinearLayout(this);
         top.setOrientation(LinearLayout.VERTICAL);
         TextView title = new TextView(this);
-        title.setText("围棋残局 · " + EndgamePuzzles.DIFF_NAMES[diff]);
+        title.setText("围棋残局 · " + EndgameGen.DIFF_NAMES[diff]);
         title.setTextSize(19f);
         title.setTextColor(palette.text);
         title.setGravity(Gravity.CENTER);
@@ -112,12 +78,16 @@ public class GoPuzzleActivity extends Activity {
         status.setGravity(Gravity.CENTER);
         status.setPadding(dp(6), dp(2), dp(6), dp(2));
         top.addView(status);
+        progress = new ProgressBar(this);
+        LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        pp.gravity = Gravity.CENTER_HORIZONTAL;
+        top.addView(progress, pp);
         root.addView(top, matchWrap());
 
         boardView = new BoardView(this);
         boardView.setPalette(palette);
         boardView.setAnimationsEnabled(true);
-        boardView.setBoard(board);
         boardView.setOnIntersectionTap(new BoardView.OnIntersectionTap() {
             public void onTap(int point) {
                 onTap(point);
@@ -127,13 +97,11 @@ public class GoPuzzleActivity extends Activity {
 
         LinearLayout bottom = new LinearLayout(this);
         bottom.setOrientation(LinearLayout.VERTICAL);
-        bottom.addView(buttonRow(new String[]{"重摆这局", "返回"},
+        bottom.addView(buttonRow(new String[]{"换一局", "返回"},
                 new View.OnClickListener[]{
                         new View.OnClickListener() {
                             public void onClick(View v) {
-                                resetBoard();
-                                startEngine();
-                                sync();
+                                generateAndStart();
                             }
                         },
                         new View.OnClickListener() {
@@ -147,32 +115,77 @@ public class GoPuzzleActivity extends Activity {
         goal.setTextSize(12f);
         goal.setTextColor(palette.textDim);
         goal.setPadding(dp(12), dp(6), dp(12), dp(6));
-        goal.setText("【目标】" + puzzle.goal + "\n【规则】黑先。提掉对方棋子、围住地盘，终局数子多者胜。你执黑，电脑执白。");
+        goal.setText("【目标】黑先，提掉对方的子、围住地盘，终局数子多者胜。你执黑，电脑执白（KataGo）。\n【难度】弱＝一手提子；中＝全歼一块；强＝先点要害再提，对手也最强。");
         root.addView(goal, matchWrap());
 
         scroll.addView(root);
         Watermark.wrap(this, scroll, palette, 6);
         RulesHelp.attach(this, palette,
-                "【残局·围棋】从给定局面开始，你执黑先走，终局数子比电脑多就过关。\n"
+                "【残局·围棋】每局都是本地随机生成的一道可胜残局。你执黑先走，终局数子比电脑多就过关。\n"
               + "【提子】把对方棋子的气全部堵光就能提走；提子越大优势越大。\n"
               + "【气】棋子横竖相邻的空点叫气。\n"
-              + "【难度】弱＝一手提子；中＝一整块只剩一口气；强＝要点隐藏，先点要害再提。\n"
+              + "【难度】弱＝一手提子；中＝全歼一块；强＝先点要害再提，而且对手是 KataGo 最强档。\n"
               + "【提示】先数一数目标白棋还剩几口气，再找能把最后一口堵上的那个点。");
-        setContentView(scroll);
     }
 
-    private void resetBoard() {
-        board = new Board(puzzle.size, 7.5);
-        for (int[] s : puzzle.stones) {
-            board.grid[board.idx(s[0], s[1])] = s[2];
-        }
+    /** 后台生成随机残局，并同时把 KataGo 拉起来（首次要把权重释放到本地，较慢）。 */
+    private void generateAndStart() {
         aiThinking = false;
-        boardView.setInputEnabled(true);
-        boardView.setBoard(board);
+        boardView.setInputEnabled(false);
+        progress.setVisibility(View.VISIBLE);
+        setStatus("正在随机生成残局并启动引擎…");
+        final long seed = System.currentTimeMillis();
+        final int d = diff;
+        new Thread(new Runnable() {
+            public void run() {
+                final EndgameGen.Puzzle p = EndgameGen.generate(EndgameGen.GAME_GO, d, seed);
+                GtpEngine e = null;
+                String err = null;
+                try {
+                    EngineManager mgr = new EngineManager(GoPuzzleActivity.this);
+                    e = mgr.start(visits, EngineManager.defaultThreads(), false, modelAlias);
+                } catch (Throwable ex) {
+                    err = String.valueOf(ex.getMessage());
+                }
+                final GtpEngine ready = e;
+                final String fail = err;
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        puzzle = p;
+                        board = new Board(p.size, 7.5);
+                        for (int[] s : p.stones) {
+                            board.grid[board.idx(s[0], s[1])] = s[2];
+                        }
+                        engine = ready;
+                        engineFailed = ready == null;
+                        progress.setVisibility(View.GONE);
+                        boardView.setBoard(board);
+                        boardView.setInputEnabled(true);
+                        if (engineFailed) {
+                            setStatus("引擎没启动起来：" + fail);
+                        } else {
+                            sync();
+                        }
+                    }
+                });
+            }
+        }, "go-puzzle-gen").start();
     }
 
     private void onTap(int point) {
-        if (aiThinking || engineStarting || board == null) {
+        try {
+            onTapInner(point);
+        } catch (Throwable t) {
+            setStatus("出错了：" + t);
+        }
+    }
+
+    private void onTapInner(int point) {
+        if (aiThinking || engineStarting || puzzle == null || board == null || bothPassed()) {
+            return;
+        }
+        if (engine == null) {
+            setStatus("引擎还没就绪，稍等一下。");
             return;
         }
         if (!board.isLegal(ME, point)) {
@@ -195,7 +208,7 @@ public class GoPuzzleActivity extends Activity {
 
     private void aiTurn() {
         if (engine == null) {
-            startEngine();
+            startEngineAgain();
             return;
         }
         if (bothPassed()) {
@@ -206,14 +219,25 @@ public class GoPuzzleActivity extends Activity {
         boardView.setInputEnabled(false);
         setStatus("KataGo 思考中…");
         final GtpEngine e = engine;
-        final Board snapshot = board;
         final long timeout = Math.max(60_000L, visits * 1500L);
         new Thread(new Runnable() {
             public void run() {
                 String vertex = null;
                 try {
+                    // KataGo 自己记盘，所以每次都要把当前局面重新喂给它，
+                    // 否则它按空盘算，回的点和真实棋盘对不上。
+                    e.clearBoard();
+                    int n = board.size;
+                    for (int r = 0; r < n; r++) {
+                        for (int c = 0; c < n; c++) {
+                            int v = board.grid[board.idx(r, c)];
+                            if (v != Board.EMPTY) {
+                                e.play(v, Board.pointToGtp(board.idx(r, c), n));
+                            }
+                        }
+                    }
                     vertex = e.genmove(CPU, timeout);
-                } catch (IOException ex) {
+                } catch (Throwable ex) {
                     vertex = null;
                 }
                 final String v = vertex;
@@ -222,17 +246,21 @@ public class GoPuzzleActivity extends Activity {
                         aiThinking = false;
                         boardView.setInputEnabled(true);
                         if (v == null) {
-                            setStatus("引擎没有回手，再试一次或重摆。");
+                            setStatus("引擎没有回手，点「换一局」再来。");
                             return;
                         }
-                        if ("PASS".equalsIgnoreCase(v.trim()) || "resign".equalsIgnoreCase(v.trim())) {
+                        if ("resign".equalsIgnoreCase(v.trim())) {
+                            setStatus("电脑认输了——过关！");
+                            return;
+                        }
+                        if ("PASS".equalsIgnoreCase(v.trim())) {
                             board.play(CPU, Board.PASS);
                             finishGame();
                             return;
                         }
                         int pt = Board.gtpToPoint(v, board.size);
                         if (!board.isLegal(CPU, pt)) {
-                            setStatus("引擎回了非法点，跳过。");
+                            setStatus("引擎回了非法点，点「换一局」再来。");
                             return;
                         }
                         board.play(CPU, pt);
@@ -244,8 +272,14 @@ public class GoPuzzleActivity extends Activity {
         }, "go-puzzle-ai").start();
     }
 
+    private void startEngineAgain() {
+        engine = null;
+        engineStarting = false;
+        generateAndStart();
+    }
+
     private boolean bothPassed() {
-        return board.moves.size() >= 2
+        return board != null && board.moves.size() >= 2
                 && board.moves.get(board.moves.size() - 1)[1] == Board.PASS
                 && board.moves.get(board.moves.size() - 2)[1] == Board.PASS;
     }
@@ -258,7 +292,7 @@ public class GoPuzzleActivity extends Activity {
         if (mine > other) {
             msg += "你赢了！";
         } else if (other > mine) {
-            msg += "电脑赢了，再来一次。";
+            msg += "电脑赢了，点「换一局」再来。";
         } else {
             msg += "和棋。";
         }
@@ -266,11 +300,11 @@ public class GoPuzzleActivity extends Activity {
     }
 
     private void sync() {
-        if (boardView != null) {
-            boardView.setBoard(board);
+        if (boardView == null || board == null) {
+            return;
         }
-        if (engine == null) {
-            setStatus(engineStarting ? "引擎启动中…" : "引擎未就绪。");
+        boardView.setBoard(board);
+        if (engineFailed) {
             return;
         }
         if (aiThinking) {
@@ -311,13 +345,11 @@ public class GoPuzzleActivity extends Activity {
     }
 
     private LinearLayout.LayoutParams boardParams() {
-        int side = dp(screen.boardSizeDp(puzzle.size));
+        int side = dp(screen == null ? 340 : screen.boardSizeDp(9));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(side, side);
         lp.gravity = Gravity.CENTER_HORIZONTAL;
         return lp;
     }
-
-    private Screen screen;
 
     private int dp(int v) {
         return Math.round(v * getResources().getDisplayMetrics().density);

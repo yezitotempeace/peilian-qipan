@@ -50,7 +50,7 @@ cp "$PROJ/src/com/autogo/Board.java" \
    "$PROJ/src/com/autogo/XiangqiEngine.java" \
    "$PROJ/src/com/autogo/XiangqiLearn.java" \
    "$PROJ/src/com/autogo/XiangqiReview.java" \
-   "$PROJ/src/com/autogo/ReversiBoard.java" "$PROJ/src/com/autogo/ReversiAi.java" \
+   "$PROJ/src/com/autogo/ReversiBoard.java" "$PROJ/src/com/autogo/ReversiAi.java" "$PROJ/src/com/autogo/EndgameGen.java" \
    "$PROJ/src/com/autogo/JunqiBoard.java" \
    "$PROJ/src/com/autogo/JunqiAI.java" "$PROJ/src/com/autogo/JunqiLearn.java" \
    "$PROJ/src/com/autogo/GomokuLearn.java" \
@@ -188,8 +188,8 @@ javac -encoding UTF-8 -nowarn -d "$OUT/ui/fakecls" $(find "$OUT/ui/fake" -name '
 # 围棋对局页（1800+ 行、拖着一堆只在真机上存在的 API）编不进桩测，这里只放一个空壳 ——
 # 探针断的是「点了按钮跳到哪个类名」，不测那一页的行为。
 mkdir -p "$OUT/ui/stub"
-cp "$PROJ/tests/ui/stub/com/autogo/MainActivity.java" "$PROJ/tests/ui/stub/com/autogo/ReversiActivity.java" "$PROJ/tests/ui/stub/com/autogo/PuzzleHubActivity.java" "$OUT/ui/stub/"
-javac -encoding UTF-8 -nowarn -d "$OUT/ui/stubcls" -cp "$OUT/ui/fakecls:$ANDROID_JAR" "$OUT/ui/stub/MainActivity.java" "$OUT/ui/stub/ReversiActivity.java" "$OUT/ui/stub/PuzzleHubActivity.java"
+cp "$PROJ/tests/ui/stub/com/autogo/MainActivity.java" "$PROJ/tests/ui/stub/com/autogo/ReversiActivity.java" "$PROJ/tests/ui/stub/com/autogo/GomokuPuzzleActivity.java" "$PROJ/tests/ui/stub/com/autogo/XiangqiPuzzleActivity.java" "$OUT/ui/stub/"
+javac -encoding UTF-8 -nowarn -d "$OUT/ui/stubcls" -cp "$OUT/ui/fakecls:$ANDROID_JAR" "$OUT/ui/stub/MainActivity.java" "$OUT/ui/stub/ReversiActivity.java" "$OUT/ui/stub/GomokuPuzzleActivity.java" "$OUT/ui/stub/XiangqiPuzzleActivity.java"
 javac -encoding UTF-8 -nowarn -d "$OUT/ui/realcls" -cp "$OUT/ui/fakecls:$OUT/ui/stubcls:$OUT/classes:$ANDROID_JAR" "$OUT"/ui/src/*.java
 javac -encoding UTF-8 -nowarn -d "$OUT/ui/testcls" -cp "$OUT/ui/fakecls:$OUT/ui/realcls:$OUT/ui/stubcls:$OUT/classes:$ANDROID_JAR" \
   "$PROJ/tests/ui/Driver95.java" "$PROJ/tests/ui/ViewProbe.java" "$PROJ/tests/ui/ReviewProbe.java" \

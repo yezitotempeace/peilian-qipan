@@ -808,8 +808,16 @@ public class GomokuActivity extends android.app.Activity {
                 new String[]{"棋盘", "我执", "禁手", "手顺"},
                 new View.OnClickListener[]{sizeClick, humanClick, forbidClick, numbersClick}));
         bottomChrome.addView(buttonRow(
-                new String[]{"对战", "学习", "全屏", "复盘", "返回"},
-                new View.OnClickListener[]{modeClick, learnClick, fullscreenClick, reviewClick, backClick}));
+                new String[]{"对战", "学习", "全屏", "复盘", "返回", "残局"},
+                new View.OnClickListener[]{modeClick, learnClick, fullscreenClick, reviewClick, backClick,
+                        new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                Intent it = new Intent(GomokuActivity.this, GomokuPuzzleActivity.class);
+                                it.putExtra("diff", level);
+                                startActivity(it);
+                            }
+                        }}));
 
         syncBoardView();
         setStatus(statusText);

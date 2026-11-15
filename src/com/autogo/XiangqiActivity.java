@@ -10,6 +10,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -213,6 +214,17 @@ public class XiangqiActivity extends Activity {
                             @Override
                             public void onClick(View v) {
                                 startReview();
+                            }
+                        }
+                }), linearWrap(0, 2));
+        bottomChrome.addView(buttonRow(new String[]{"残局"},
+                new View.OnClickListener[]{
+                        new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                Intent it = new Intent(XiangqiActivity.this, XiangqiPuzzleActivity.class);
+                                it.putExtra("diff", level);
+                                startActivity(it);
                             }
                         }
                 }), linearWrap(0, 2));
