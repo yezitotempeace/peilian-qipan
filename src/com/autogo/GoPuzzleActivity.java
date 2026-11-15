@@ -17,19 +17,18 @@ import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import java.io.IOException;
-
-/** 围棋残局：本地随机生成一道可胜残局，黑先，赢下 KataGo 即过关。 */
+/**
+ * 围棋残局：本地随机生成一道吃子题，黑先，把被围的白棋提掉即过关。
+ *
+ * <p>这是「死活/吃子」型的独立残局：不接 KataGo（之前的原生崩溃就出在这），
+ * 规则判定全部走本地 {@link Board}，稳定且可离线玩。</p>
+ */
 public class GoPuzzleActivity extends Activity {
 
     private Board board;
     private EndgameGen.Puzzle puzzle;
     private int diff;
-    private boolean aiThinking, engineStarting, engineFailed;
-    private EngineManager engineManager;
-    private GtpEngine engine;
-    private String modelAlias;
-    private int visits;
+    private int targetCaptures;
 
     private BoardView boardView;
     private TextView status;
@@ -39,7 +38,6 @@ public class GoPuzzleActivity extends Activity {
     private boolean darkTheme;
 
     private static final int ME = Board.BLACK;
-    private static final int CPU = Board.WHITE;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -49,9 +47,6 @@ public class GoPuzzleActivity extends Activity {
         palette = Palette.of(darkTheme);
         screen = Screen.read(this);
         diff = getIntent().getIntExtra("diff", 1);
-        modelAlias = diff == 0 ? "fast" : (diff == 1 ? "normal" : "strong");
-        visits = diff == 0 ? 200 : (diff == 1 ? 120 : 300);
-        engineManager = new EngineManager(this);
         buildShell();
         generateAndStart();
     }
@@ -122,40 +117,29 @@ public class GoPuzzleActivity extends Activity {
         goal.setTextSize(12f);
         goal.setTextColor(palette.textDim);
         goal.setPadding(dp(12), dp(6), dp(12), dp(6));
-        goal.setText("【目标】黑先，提掉对方的子、围住地盘，终局数子多者胜。你执黑，电脑执白（KataGo）。\n【难度】弱＝一手提子；中＝全歼一块；强＝先点要害再提，对手也最强。");
+        goal.setText("【目标】黑先。把被围住的那块白棋提掉，提够 " + targetCaptures + " 颗就过关。\n【难度】弱＝一口气，一手提；中＝全歼四子；强＝两口气，要先点在要害上。");
         root.addView(goal, matchWrap());
 
         scroll.addView(root);
         Watermark.wrap(this, scroll, palette, 6);
         RulesHelp.attach(this, palette,
-                "【残局·围棋】每局都是本地随机生成的一道可胜残局。你执黑先走，终局数子比电脑多就过关。\n"
-              + "【提子】把对方棋子的气全部堵光就能提走；提子越大优势越大。\n"
-              + "【气】棋子横竖相邻的空点叫气。\n"
-              + "【难度】弱＝一手提子；中＝全歼一块；强＝先点要害再提，而且对手是 KataGo 最强档。\n"
+                "【残局·围棋】每局都是本地随机生成的吃子题。你执黑，把被围住的白棋提掉就过关。\n"
+              + "【气】棋子横竖相邻的空点叫气；气被堵光就被提走。\n"
+              + "【难度】弱＝白棋只剩一口气，一手提掉；中＝白棋四子被围，闭气全歼；强＝白棋有两口气，要先点在两口气共用的要害上。\n"
+              + "【注意】自己落子的地方如果也没气，是自杀，不允许。\n"
               + "【提示】先数一数目标白棋还剩几口气，再找能把最后一口堵上的那个点。");
     }
 
-    /** 后台生成随机残局，并同时把 KataGo 拉起来（首次要把权重释放到本地，较慢）。 */
+    /** 后台生成一道随机吃子残局，完成后把棋盘摆上。 */
     private void generateAndStart() {
-        aiThinking = false;
         boardView.setInputEnabled(false);
         progress.setVisibility(View.VISIBLE);
-        setStatus("正在随机生成残局并启动引擎…");
+        setStatus("正在随机生成残局…");
         final long seed = System.currentTimeMillis();
         final int d = diff;
         new Thread(new Runnable() {
             public void run() {
                 final EndgameGen.Puzzle p = EndgameGen.generate(EndgameGen.GAME_GO, d, seed);
-                GtpEngine e = null;
-                String err = null;
-                try {
-                    EngineManager mgr = new EngineManager(GoPuzzleActivity.this);
-                    e = mgr.start(visits, EngineManager.defaultThreads(), false, modelAlias);
-                } catch (Throwable ex) {
-                    err = String.valueOf(ex.getMessage());
-                }
-                final GtpEngine ready = e;
-                final String fail = err;
                 runOnUiThread(new Runnable() {
                     public void run() {
                         try {
@@ -164,16 +148,16 @@ public class GoPuzzleActivity extends Activity {
                             for (int[] s : p.stones) {
                                 board.grid[board.idx(s[0], s[1])] = s[2];
                             }
-                            engine = ready;
-                            engineFailed = ready == null;
+                            // 目标 = 初始局面上白棋的总数（全部提掉才过关）
+                            int w = 0;
+                            for (int i = 0; i < board.grid.length; i++) {
+                                if (board.grid[i] == Board.WHITE) w++;
+                            }
+                            targetCaptures = w;
                             progress.setVisibility(View.GONE);
                             boardView.setBoard(board);
                             boardView.setInputEnabled(true);
-                            if (engineFailed) {
-                                setStatus("引擎没启动起来：" + fail);
-                            } else {
-                                sync();
-                            }
+                            sync();
                         } catch (Throwable t) {
                             PuzzleCrash.report(GoPuzzleActivity.this, "围棋残局 摆子", t);
                         }
@@ -192,126 +176,20 @@ public class GoPuzzleActivity extends Activity {
     }
 
     private void onTapInner(int point) {
-        if (aiThinking || engineStarting || puzzle == null || board == null || bothPassed()) {
-            return;
-        }
-        if (engine == null) {
-            setStatus("引擎还没就绪，稍等一下。");
+        if (puzzle == null || board == null) {
             return;
         }
         if (!board.isLegal(ME, point)) {
-            setStatus("这里不能下（自杀 / 已有子 / 打劫须先隔一手）。");
+            setStatus("这里不能下（自杀，或打劫须先隔一手）。");
             return;
         }
         board.play(ME, point);
         boardView.setLastMove(point);
-        afterMove();
-    }
-
-    private void afterMove() {
         sync();
-        if (bothPassed()) {
-            finishGame();
-            return;
+        if (board.captures[ME] >= targetCaptures) {
+            boardView.setInputEnabled(false);
+            setStatus("过关！提掉 " + board.captures[ME] + " 颗白子。点「换一局」再来。");
         }
-        aiTurn();
-    }
-
-    private void aiTurn() {
-        if (engine == null) {
-            startEngineAgain();
-            return;
-        }
-        if (bothPassed()) {
-            finishGame();
-            return;
-        }
-        aiThinking = true;
-        boardView.setInputEnabled(false);
-        setStatus("KataGo 思考中…");
-        final GtpEngine e = engine;
-        final long timeout = Math.max(60_000L, visits * 1500L);
-        new Thread(new Runnable() {
-            public void run() {
-                String vertex = null;
-                try {
-                    // KataGo 自己记盘，所以每次都要把当前局面重新喂给它，
-                    // 否则它按空盘算，回的点和真实棋盘对不上。
-                    e.clearBoard();
-                    int n = board.size;
-                    for (int r = 0; r < n; r++) {
-                        for (int c = 0; c < n; c++) {
-                            int v = board.grid[board.idx(r, c)];
-                            if (v != Board.EMPTY) {
-                                e.play(v, Board.pointToGtp(board.idx(r, c), n));
-                            }
-                        }
-                    }
-                    vertex = e.genmove(CPU, timeout);
-                } catch (Throwable ex) {
-                    vertex = null;
-                }
-                final String v = vertex;
-                runOnUiThread(new Runnable() {
-                    public void run() {
-                        try {
-                            aiThinking = false;
-                            boardView.setInputEnabled(true);
-                            if (v == null) {
-                                setStatus("引擎没有回手，点「换一局」再来。");
-                                return;
-                            }
-                            if ("resign".equalsIgnoreCase(v.trim())) {
-                                setStatus("电脑认输了——过关！");
-                                return;
-                            }
-                            if ("PASS".equalsIgnoreCase(v.trim())) {
-                                board.play(CPU, Board.PASS);
-                                finishGame();
-                                return;
-                            }
-                            int pt = Board.gtpToPoint(v, board.size);
-                            if (!board.isLegal(CPU, pt)) {
-                                setStatus("引擎回了非法点，点「换一局」再来。");
-                                return;
-                            }
-                            board.play(CPU, pt);
-                            boardView.setLastMove(pt);
-                            afterMove();
-                        } catch (Throwable t) {
-                            PuzzleCrash.report(GoPuzzleActivity.this, "围棋残局 电脑回手", t);
-                        }
-                    }
-                });
-            }
-        }, "go-puzzle-ai").start();
-    }
-
-    private void startEngineAgain() {
-        engine = null;
-        engineStarting = false;
-        generateAndStart();
-    }
-
-    private boolean bothPassed() {
-        return board != null && board.moves.size() >= 2
-                && board.moves.get(board.moves.size() - 1)[1] == Board.PASS
-                && board.moves.get(board.moves.size() - 2)[1] == Board.PASS;
-    }
-
-    private void finishGame() {
-        boardView.setInputEnabled(false);
-        double[] sc = board.scoreArea();
-        double mine = sc[0], other = sc[1];
-        String msg = "黑 " + String.format("%.1f", mine) + " : 白 " + String.format("%.1f", other) + "  ";
-        if (mine > other) {
-            msg += "你赢了！";
-        } else if (other > mine) {
-            msg += "电脑赢了，点「换一局」再来。";
-        } else {
-            msg += "和棋。";
-        }
-        setStatus(msg);
     }
 
     private void sync() {
@@ -319,14 +197,8 @@ public class GoPuzzleActivity extends Activity {
             return;
         }
         boardView.setBoard(board);
-        if (engineFailed) {
-            return;
-        }
-        if (aiThinking) {
-            setStatus("KataGo 思考中…");
-        } else {
-            setStatus("轮到你（黑）。");
-        }
+        int left = Math.max(0, targetCaptures - board.captures[ME]);
+        setStatus("还差提 " + left + " 颗白子 · 已提 " + board.captures[ME] + " / " + targetCaptures);
     }
 
     private void setStatus(String s) {
