@@ -266,7 +266,15 @@ public class GoPuzzleActivity extends Activity {
         if (engineFailed) {
             return;
         }
-        aiTurn();
+        // 只有黑（玩家）走完才轮到白（引擎）。之前无条件叫引擎走，
+        // 导致白方走完又立刻轮到白方——白棋一直下一直下，玩家插不进手。
+        int n = board.moves.size();
+        int lastColor = n > 0 ? board.moves.get(n - 1)[0] : ME;
+        if (lastColor == ME) {
+            aiTurn();
+        } else {
+            setStatus("轮到你（黑）。");
+        }
     }
 
     private void aiTurn() {
